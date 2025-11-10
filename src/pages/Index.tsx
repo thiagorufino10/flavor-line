@@ -1,12 +1,102 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { UtensilsCrossed, Settings, ShoppingCart, ChefHat, Tv } from "lucide-react";
 
 const Index = () => {
+  const navigate = useNavigate();
+
+  const modules = [
+    {
+      icon: Settings,
+      title: "Administração",
+      description: "Configurações e cadastros do sistema",
+      path: "/login",
+      color: "bg-primary",
+      demo: "admin / admin"
+    },
+    {
+      icon: ShoppingCart,
+      title: "Lançamento de Pedidos",
+      description: "Tela de atendimento e vendas",
+      path: "/login",
+      color: "bg-warning",
+      demo: "atendente / atendente"
+    },
+    {
+      icon: ChefHat,
+      title: "Cozinha (KDS)",
+      description: "Visualização de pedidos para produção",
+      path: "/login",
+      color: "bg-accent",
+      demo: "cozinha / cozinha"
+    },
+    {
+      icon: Tv,
+      title: "Display do Cliente",
+      description: "Chamada de pedidos prontos",
+      path: "/customer-display",
+      color: "bg-destructive",
+      demo: "Acesso público"
+    }
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
+      {/* Header */}
+      <header className="bg-card/80 backdrop-blur-sm border-b shadow-sm">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-center gap-3">
+            <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
+              <UtensilsCrossed className="w-7 h-7 text-primary-foreground" />
+            </div>
+            <div className="text-center">
+              <h1 className="text-3xl font-bold">Pastel Favorite</h1>
+              <p className="text-sm text-muted-foreground">Sistema de Pedidos v1.0</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* Welcome Card */}
+          <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Bem-vindo ao Sistema de Pedidos</CardTitle>
+              <CardDescription className="text-base">
+                Selecione o módulo que deseja acessar
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          {/* Modules Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {modules.map((module) => (
+              <Card 
+                key={module.title}
+                className="cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1"
+                onClick={() => navigate(module.path)}
+              >
+                <CardHeader>
+                  <div className={`w-14 h-14 ${module.color} rounded-2xl flex items-center justify-center mb-4`}>
+                    <module.icon className="w-8 h-8 text-white" />
+                  </div>
+                  <CardTitle className="text-xl">{module.title}</CardTitle>
+                  <CardDescription className="text-base">{module.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{module.demo}</span>
+                    <Button>Acessar</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
