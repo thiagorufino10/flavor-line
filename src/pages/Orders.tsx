@@ -3,23 +3,32 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Plus, Trash2, ShoppingCart } from "lucide-react";
+import { LogOut, Trash2, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
+import { ComplementsModal, Complement } from "@/components/ComplementsModal";
 
 interface OrderItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
+  complements?: Complement[];
 }
 
 const Orders = () => {
   const navigate = useNavigate();
   const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
+  const [complementsModalOpen, setComplementsModalOpen] = useState(false);
+  const [selectedMenuItem, setSelectedMenuItem] = useState<{
+    name: string;
+    price: number;
+    category: "pasteis" | "salgados" | "acai";
+  } | null>(null);
 
   const menuCategories = [
     {
       name: "Pastéis",
+      category: "pasteis" as const,
       items: [
         { name: "Pastel de Carne", price: 8.00 },
         { name: "Pastel de Queijo", price: 7.00 },
@@ -29,6 +38,7 @@ const Orders = () => {
     },
     {
       name: "Salgados",
+      category: "salgados" as const,
       items: [
         { name: "Coxinha", price: 6.00 },
         { name: "Kibe", price: 6.00 },
@@ -37,6 +47,7 @@ const Orders = () => {
     },
     {
       name: "Açaí",
+      category: "acai" as const,
       items: [
         { name: "Açaí 300ml", price: 12.00 },
         { name: "Açaí 500ml", price: 18.00 }
@@ -44,6 +55,7 @@ const Orders = () => {
     },
     {
       name: "Bebidas",
+      category: "bebidas" as const,
       items: [
         { name: "Refrigerante", price: 5.00 },
         { name: "Suco Natural", price: 8.00 },
@@ -52,23 +64,35 @@ const Orders = () => {
     }
   ];
 
-  const addItem = (item: { name: string; price: number }) => {
-    const existingItem = currentOrder.find(i => i.name === item.name);
-    
-    if (existingItem) {
-      setCurrentOrder(currentOrder.map(i => 
-        i.name === item.name 
-          ? { ...i, quantity: i.quantity + 1 }
-          : i
-      ));
-    } else {
-      setCurrentOrder([...currentOrder, { 
-        id: Math.random().toString(), 
-        ...item, 
-        quantity: 1 
-      }]);
+  const handleItemClick = (
+    item: { name: string; price: number },
+    category: "pasteis" | "salgados" | "acai" | "bebidas"
+  ) => {
+    // Bebidas não têm complementos, adiciona direto
+    if (category === "bebidas") {
+      addItemToOrder(item, [], item.price);
+      return;
     }
-    
+
+    // Para Pastéis, Salgados e Açaí, abre o modal de complementos
+    setSelectedMenuItem({ ...item, category });
+    setComplementsModalOpen(true);
+  };
+
+  const addItemToOrder = (
+    item: { name: string; price: number },
+    complements: Complement[],
+    totalPrice: number
+  ) => {
+    const newItem: OrderItem = {
+      id: Math.random().toString(),
+      name: item.name,
+      price: totalPrice,
+      quantity: 1,
+      complements,
+    };
+
+    setCurrentOrder([...currentOrder, newItem]);
     toast.success(`${item.name} adicionado ao pedido`);
   };
 
@@ -130,7 +154,7 @@ const Orders = () => {
                       key={item.name}
                       variant="outline"
                       className="h-24 flex flex-col gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
-                      onClick={() => addItem(item)}
+                      onClick={() => handleItemClick(item, category.category)}
                     >
                       <span className="font-semibold text-sm">{item.name}</span>
                       <span className="text-lg font-bold">
@@ -173,6 +197,11 @@ const Orders = () => {
                           <p className="text-sm text-muted-foreground">
                             {item.quantity}x R$ {item.price.toFixed(2)}
                           </p>
+                          {item.complements && item.complements.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              + {item.complements.map(c => c.name).join(", ")}
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold">
@@ -209,6 +238,18 @@ const Orders = () => {
           </Card>
         </div>
       </div>
+
+      {/* Modal de Complementos */}
+      <ComplementsModal
+        open={complementsModalOpen}
+        onOpenChange={setComplementsModalOpen}
+        item={selectedMenuItem}
+        onConfirm={(complements, totalPrice) => {
+          if (selectedMenuItem) {
+            addItemToOrder(selectedMenuItem, complements, totalPrice);
+          }
+        }}
+      />
     </div>
   );
 };

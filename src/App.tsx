@@ -9,6 +9,9 @@ import Admin from "./pages/Admin";
 import Orders from "./pages/Orders";
 import Kitchen from "./pages/Kitchen";
 import CustomerDisplay from "./pages/CustomerDisplay";
+import Complements from "./pages/admin/Complements";
+import CashFlow from "./pages/admin/CashFlow";
+import Reports from "./pages/admin/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +26,9 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/complements" element={<Complements />} />
+          <Route path="/admin/cash-flow" element={<CashFlow />} />
+          <Route path="/admin/reports" element={<Reports />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/kitchen" element={<Kitchen />} />
           <Route path="/customer-display" element={<CustomerDisplay />} />
