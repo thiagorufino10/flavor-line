@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,13 @@ import { ArrowLeft, TrendingUp, ShoppingCart, Users, DollarSign, CalendarIcon, F
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -16,29 +23,101 @@ const Reports = () => {
   const navigate = useNavigate();
   const [filterStartDate, setFilterStartDate] = useState<Date>();
   const [filterEndDate, setFilterEndDate] = useState<Date>();
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<string>("todos");
+  const [filterProduct, setFilterProduct] = useState<string>("todos");
   const [showFiltered, setShowFiltered] = useState(false);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
 
-  // Mock de dados - depois virá do banco de dados
-  const stats = {
-    totalVendas: 1250.00,
-    totalPedidos: 45,
-    ticketMedio: 27.78,
-    clientesAtendidos: 38,
+  useEffect(() => {
+    const stored = localStorage.getItem("menuItems");
+    if (stored) {
+      setMenuItems(JSON.parse(stored));
+    }
+  }, []);
+
+  const paymentMethodOptions = [
+    { value: "todos", label: "Todos" },
+    { value: "pix", label: "Pix" },
+    { value: "dinheiro", label: "Dinheiro" },
+    { value: "debito", label: "Débito" },
+    { value: "credito", label: "Crédito" },
+  ];
+
+  // Mock de dados - depois virá do banco de dados (dados completos sem filtro)
+  const allData = {
+    pix: { vendas: 100.00, pedidos: 5, produtos: { "Pastel de Carne": 3, "Açaí 500ml": 2 } },
+    dinheiro: { vendas: 220.00, pedidos: 8, produtos: { "Pastel de Carne": 4, "Coxinha": 4 } },
+    debito: { vendas: 380.00, pedidos: 12, produtos: { "Açaí 500ml": 8, "Pastel Disco": 4 } },
+    credito: { vendas: 550.00, pedidos: 20, produtos: { "Pastel de Carne": 18, "Pastel Disco": 8, "Açaí 500ml": 8, "Coxinha": 11 } },
   };
 
-  const topProducts = [
-    { name: "Pastel de Carne", quantity: 25, revenue: 200.00 },
-    { name: "Açaí 500ml", quantity: 18, revenue: 324.00 },
-    { name: "Pastel Disco", quantity: 12, revenue: 144.00 },
-    { name: "Coxinha", quantity: 15, revenue: 90.00 },
-  ];
+  // Aplicar filtros
+  const getFilteredStats = () => {
+    let totalVendas = 0;
+    let totalPedidos = 0;
+    let produtosCombinados: any = {};
+
+    const paymentMethods = filterPaymentMethod === "todos" 
+      ? ["pix", "dinheiro", "debito", "credito"]
+      : [filterPaymentMethod];
+
+    paymentMethods.forEach(method => {
+      const data = allData[method as keyof typeof allData];
+      if (data) {
+        totalVendas += data.vendas;
+        totalPedidos += data.pedidos;
+        
+        Object.entries(data.produtos).forEach(([produto, qty]) => {
+          if (!produtosCombinados[produto]) {
+            produtosCombinados[produto] = 0;
+          }
+          produtosCombinados[produto] += qty;
+        });
+      }
+    });
+
+    // Filtrar por produto se necessário
+    if (filterProduct !== "todos") {
+      const produtoSelecionado = menuItems.find(item => item.id === filterProduct);
+      if (produtoSelecionado) {
+        const qtyProduto = produtosCombinados[produtoSelecionado.name] || 0;
+        totalPedidos = qtyProduto;
+        totalVendas = qtyProduto * (produtoSelecionado.price || 0);
+        produtosCombinados = { [produtoSelecionado.name]: qtyProduto };
+      }
+    }
+
+    const ticketMedio = totalPedidos > 0 ? totalVendas / totalPedidos : 0;
+
+    return {
+      totalVendas,
+      totalPedidos,
+      ticketMedio,
+      clientesAtendidos: Math.floor(totalPedidos * 0.85),
+      produtos: produtosCombinados,
+    };
+  };
+
+  const stats = getFilteredStats();
+
+  const topProducts = Object.entries(stats.produtos)
+    .map(([name, quantity]) => ({
+      name,
+      quantity: quantity as number,
+      revenue: (quantity as number) * 8.00, // Mock price
+    }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 4);
 
   const paymentMethods = [
     { method: "Crédito", count: 20, amount: 550.00, percentage: 44 },
     { method: "Débito", count: 12, amount: 380.00, percentage: 30 },
     { method: "Dinheiro", count: 8, amount: 220.00, percentage: 18 },
     { method: "Pix", count: 5, amount: 100.00, percentage: 8 },
-  ];
+  ].filter(pm => {
+    if (filterPaymentMethod === "todos") return true;
+    return pm.method.toLowerCase() === filterPaymentMethod.toLowerCase();
+  });
 
   const handleShowFiltered = () => {
     if (!filterStartDate || !filterEndDate) {
@@ -51,9 +130,15 @@ const Reports = () => {
     }
     
     setShowFiltered(true);
+    
+    const paymentLabel = paymentMethodOptions.find(p => p.value === filterPaymentMethod)?.label || "Todos";
+    const productLabel = filterProduct === "todos" 
+      ? "Todos" 
+      : menuItems.find(item => item.id === filterProduct)?.name || "Todos";
+    
     toast({
       title: "Relatório Filtrado",
-      description: `Exibindo dados de ${format(filterStartDate, "PPP", { locale: ptBR })} até ${format(filterEndDate, "PPP", { locale: ptBR })}`,
+      description: `Exibindo dados de ${format(filterStartDate, "PPP", { locale: ptBR })} até ${format(filterEndDate, "PPP", { locale: ptBR })} - Pagamento: ${paymentLabel} - Produto: ${productLabel}`,
     });
   };
 
@@ -67,7 +152,6 @@ const Reports = () => {
       return;
     }
 
-    // Criar workbook
     const wb = XLSX.utils.book_new();
 
     // Sheet 1: Resumo de Vendas
@@ -80,14 +164,14 @@ const Reports = () => {
     const ws1 = XLSX.utils.json_to_sheet(summaryData);
     XLSX.utils.book_append_sheet(wb, ws1, "Resumo de Vendas");
 
-    // Sheet 2: Produtos Mais Vendidos
+    // Sheet 2: Produtos
     const productsData = topProducts.map((p) => ({
       Produto: p.name,
       Quantidade: p.quantity,
       "Receita Total": `R$ ${p.revenue.toFixed(2)}`,
     }));
     const ws2 = XLSX.utils.json_to_sheet(productsData);
-    XLSX.utils.book_append_sheet(wb, ws2, "Produtos Mais Vendidos");
+    XLSX.utils.book_append_sheet(wb, ws2, "Produtos");
 
     // Sheet 3: Formas de Pagamento
     const paymentsData = paymentMethods.map((p) => ({
@@ -99,16 +183,22 @@ const Reports = () => {
     const ws3 = XLSX.utils.json_to_sheet(paymentsData);
     XLSX.utils.book_append_sheet(wb, ws3, "Formas de Pagamento");
 
-    // Sheet 4: Informações do Período
-    const periodData = [
+    // Sheet 4: Informações do Filtro
+    const paymentLabel = paymentMethodOptions.find(p => p.value === filterPaymentMethod)?.label || "Todos";
+    const productLabel = filterProduct === "todos" 
+      ? "Todos" 
+      : menuItems.find(item => item.id === filterProduct)?.name || "Todos";
+    
+    const filterData = [
       { Campo: "Data Inicial", Valor: format(filterStartDate, "PPP", { locale: ptBR }) },
       { Campo: "Data Final", Valor: format(filterEndDate, "PPP", { locale: ptBR }) },
+      { Campo: "Forma de Pagamento", Valor: paymentLabel },
+      { Campo: "Produto", Valor: productLabel },
       { Campo: "Data da Exportação", Valor: format(new Date(), "PPP", { locale: ptBR }) },
     ];
-    const ws4 = XLSX.utils.json_to_sheet(periodData);
-    XLSX.utils.book_append_sheet(wb, ws4, "Informações do Período");
+    const ws4 = XLSX.utils.json_to_sheet(filterData);
+    XLSX.utils.book_append_sheet(wb, ws4, "Filtros Aplicados");
 
-    // Exportar
     const fileName = `relatorio-completo-${format(filterStartDate, "yyyy-MM-dd")}-ate-${format(filterEndDate, "yyyy-MM-dd")}.xlsx`;
     XLSX.writeFile(wb, fileName);
     
@@ -230,21 +320,25 @@ const Reports = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {topProducts.map((product, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="font-medium">{product.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {product.quantity} unidades vendidas
-                      </p>
+                {topProducts.length > 0 ? (
+                  topProducts.map((product, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="font-medium">{product.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {product.quantity} unidades vendidas
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-success">
+                          R$ {product.revenue.toFixed(2)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-success">
-                        R$ {product.revenue.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhum produto encontrado com os filtros aplicados</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -257,27 +351,31 @@ const Reports = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {paymentMethods.map((payment, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{payment.method}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {payment.count} transações
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 bg-secondary rounded-full h-2">
-                        <div
-                          className="bg-primary h-2 rounded-full transition-all"
-                          style={{ width: `${payment.percentage}%` }}
-                        />
+                {paymentMethods.length > 0 ? (
+                  paymentMethods.map((payment, index) => (
+                    <div key={index} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">{payment.method}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {payment.count} transações
+                        </span>
                       </div>
-                      <span className="text-sm font-bold min-w-24 text-right">
-                        R$ {payment.amount.toFixed(2)}
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 bg-secondary rounded-full h-2">
+                          <div
+                            className="bg-primary h-2 rounded-full transition-all"
+                            style={{ width: `${payment.percentage}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-bold min-w-24 text-right">
+                          R$ {payment.amount.toFixed(2)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhuma forma de pagamento encontrada</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -288,17 +386,18 @@ const Reports = () => {
           <CardHeader>
             <CardTitle>Filtrar e Exportar Relatório Completo</CardTitle>
             <CardDescription>
-              Selecione o período desejado para visualizar ou exportar os dados completos do sistema
+              Selecione o período, forma de pagamento e produto desejados para visualizar ou exportar os dados
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex flex-wrap gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Data Inicial */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-[240px] justify-start text-left font-normal",
+                      "justify-start text-left font-normal",
                       !filterStartDate && "text-muted-foreground"
                     )}
                   >
@@ -317,12 +416,13 @@ const Reports = () => {
                 </PopoverContent>
               </Popover>
 
+              {/* Data Final */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-[240px] justify-start text-left font-normal",
+                      "justify-start text-left font-normal",
                       !filterEndDate && "text-muted-foreground"
                     )}
                   >
@@ -340,6 +440,35 @@ const Reports = () => {
                   />
                 </PopoverContent>
               </Popover>
+
+              {/* Forma de Pagamento */}
+              <Select value={filterPaymentMethod} onValueChange={setFilterPaymentMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Forma de Pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentMethodOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Produto */}
+              <Select value={filterProduct} onValueChange={setFilterProduct}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Produto" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {menuItems.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <Separator />
@@ -356,11 +485,20 @@ const Reports = () => {
             </div>
 
             {showFiltered && filterStartDate && filterEndDate && (
-              <div className="mt-6 p-4 bg-muted rounded-lg space-y-2">
-                <h3 className="font-semibold text-lg">Período Selecionado:</h3>
-                <p className="text-sm text-muted-foreground">
-                  De <span className="font-medium text-foreground">{format(filterStartDate, "PPP", { locale: ptBR })}</span> até <span className="font-medium text-foreground">{format(filterEndDate, "PPP", { locale: ptBR })}</span>
-                </p>
+              <div className="mt-6 p-4 bg-muted rounded-lg space-y-3">
+                <h3 className="font-semibold text-lg">Período e Filtros Selecionados:</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                  <p className="text-muted-foreground">
+                    <span className="font-medium text-foreground">Período:</span> {format(filterStartDate, "PPP", { locale: ptBR })} até {format(filterEndDate, "PPP", { locale: ptBR })}
+                  </p>
+                  <p className="text-muted-foreground">
+                    <span className="font-medium text-foreground">Pagamento:</span> {paymentMethodOptions.find(p => p.value === filterPaymentMethod)?.label}
+                  </p>
+                  <p className="text-muted-foreground">
+                    <span className="font-medium text-foreground">Produto:</span> {filterProduct === "todos" ? "Todos" : menuItems.find(item => item.id === filterProduct)?.name}
+                  </p>
+                </div>
+                <Separator />
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Total de Vendas</p>
