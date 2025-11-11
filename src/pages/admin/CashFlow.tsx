@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, CreditCard } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Plus, Download, CalendarIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -13,6 +13,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import * as XLSX from "xlsx";
 
 interface Transaction {
   id: string;
@@ -28,7 +51,7 @@ const CashFlow = () => {
   const navigate = useNavigate();
   
   // Mock de transações - depois virá do banco de dados
-  const [transactions] = useState<Transaction[]>([
+  const [transactions, setTransactions] = useState<Transaction[]>([
     {
       id: "1",
       date: "2025-11-10 14:30",
@@ -66,15 +89,97 @@ const CashFlow = () => {
     },
   ]);
 
-  const totalEntradas = transactions
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
+  const [newTransaction, setNewTransaction] = useState({
+    type: "entrada" as "entrada" | "saida",
+    description: "",
+    category: "",
+    amount: "",
+    paymentMethod: "",
+  });
+
+  const filteredTransactions = transactions.filter((t) => {
+    if (!startDate && !endDate) return true;
+    const transactionDate = new Date(t.date);
+    if (startDate && endDate) {
+      return transactionDate >= startDate && transactionDate <= endDate;
+    }
+    if (startDate) {
+      return transactionDate >= startDate;
+    }
+    if (endDate) {
+      return transactionDate <= endDate;
+    }
+    return true;
+  });
+
+  const totalEntradas = filteredTransactions
     .filter(t => t.type === "entrada")
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const totalSaidas = transactions
+  const totalSaidas = filteredTransactions
     .filter(t => t.type === "saida")
     .reduce((sum, t) => sum + t.amount, 0);
 
   const saldo = totalEntradas - totalSaidas;
+
+  const handleAddTransaction = () => {
+    if (!newTransaction.description || !newTransaction.amount) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const transaction: Transaction = {
+      id: `${Date.now()}`,
+      date: new Date().toISOString().split("T")[0] + " " + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      type: newTransaction.type,
+      description: newTransaction.description,
+      category: newTransaction.category || "Outros",
+      amount: parseFloat(newTransaction.amount),
+      paymentMethod: newTransaction.paymentMethod,
+    };
+
+    setTransactions([transaction, ...transactions]);
+    setNewTransaction({
+      type: "entrada",
+      description: "",
+      category: "",
+      amount: "",
+      paymentMethod: "",
+    });
+    setIsDialogOpen(false);
+    toast({
+      title: "Sucesso",
+      description: "Transação adicionada com sucesso",
+    });
+  };
+
+  const handleExportToExcel = () => {
+    const data = filteredTransactions.map((t) => ({
+      Data: t.date,
+      Tipo: t.type === "entrada" ? "Entrada" : "Saída",
+      Descrição: t.description,
+      Categoria: t.category,
+      Valor: t.amount,
+      "Forma de Pagamento": t.paymentMethod || "-",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Fluxo de Caixa");
+    XLSX.writeFile(wb, `fluxo-caixa-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+    
+    toast({
+      title: "Sucesso",
+      description: "Relatório exportado com sucesso",
+    });
+  };
 
   const getPaymentMethodBadge = (method?: string) => {
     if (!method) return null;
@@ -96,19 +201,104 @@ const CashFlow = () => {
       {/* Header */}
       <header className="bg-card border-b sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/admin")}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Fluxo de Caixa</h1>
-              <p className="text-sm text-muted-foreground">
-                Acompanhe todas as entradas e saídas do seu negócio
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/admin")}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">Fluxo de Caixa</h1>
+                <p className="text-sm text-muted-foreground">
+                  Acompanhe todas as entradas e saídas do seu negócio
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nova Transação
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Adicionar Transação</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="type">Tipo *</Label>
+                      <Select
+                        value={newTransaction.type}
+                        onValueChange={(value: "entrada" | "saida") =>
+                          setNewTransaction({ ...newTransaction, type: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="entrada">Entrada</SelectItem>
+                          <SelectItem value="saida">Saída</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="description">Descrição *</Label>
+                      <Textarea
+                        id="description"
+                        value={newTransaction.description}
+                        onChange={(e) =>
+                          setNewTransaction({ ...newTransaction, description: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="category">Categoria</Label>
+                      <Input
+                        id="category"
+                        value={newTransaction.category}
+                        onChange={(e) =>
+                          setNewTransaction({ ...newTransaction, category: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="amount">Valor *</Label>
+                      <Input
+                        id="amount"
+                        type="number"
+                        step="0.01"
+                        value={newTransaction.amount}
+                        onChange={(e) =>
+                          setNewTransaction({ ...newTransaction, amount: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="payment">Forma de Pagamento</Label>
+                      <Input
+                        id="payment"
+                        value={newTransaction.paymentMethod}
+                        onChange={(e) =>
+                          setNewTransaction({ ...newTransaction, paymentMethod: e.target.value })
+                        }
+                      />
+                    </div>
+                    <Button onClick={handleAddTransaction} className="w-full">
+                      Adicionar
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Button variant="outline" onClick={handleExportToExcel}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar Excel
+              </Button>
             </div>
           </div>
         </div>
@@ -116,6 +306,69 @@ const CashFlow = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 space-y-6">
+        {/* Filtros de Período */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Filtros</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <Label>Data Inicial</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "PPP") : "Selecione"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="flex-1">
+                <Label>Data Final</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "PPP") : "Selecione"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Cards de Resumo */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
@@ -198,7 +451,7 @@ const CashFlow = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions.map((transaction) => (
+                    {filteredTransactions.map((transaction) => (
                       <TableRow key={transaction.id}>
                         <TableCell className="font-mono text-sm">
                           {transaction.date}
@@ -233,7 +486,7 @@ const CashFlow = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions
+                    {filteredTransactions
                       .filter(t => t.type === "entrada")
                       .map((transaction) => (
                         <TableRow key={transaction.id}>
@@ -264,7 +517,7 @@ const CashFlow = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions
+                    {filteredTransactions
                       .filter(t => t.type === "saida")
                       .map((transaction) => (
                         <TableRow key={transaction.id}>

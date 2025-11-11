@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Download, TrendingUp, ShoppingCart, Users, DollarSign } from "lucide-react";
+import { ArrowLeft, Download, TrendingUp, ShoppingCart, Users, DollarSign, CalendarIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -10,10 +10,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
+import * as XLSX from "xlsx";
+import { ptBR } from "date-fns/locale";
 
 const Reports = () => {
   const navigate = useNavigate();
   const [period, setPeriod] = useState("hoje");
+  const [customStartDate, setCustomStartDate] = useState<Date>();
+  const [customEndDate, setCustomEndDate] = useState<Date>();
+
+  const getDateRange = () => {
+    const today = new Date();
+    switch (period) {
+      case "hoje":
+        return { start: today, end: today };
+      case "semana":
+        return { start: startOfWeek(today, { locale: ptBR }), end: endOfWeek(today, { locale: ptBR }) };
+      case "mes":
+        return { start: startOfMonth(today), end: endOfMonth(today) };
+      case "ano":
+        return { start: startOfYear(today), end: endOfYear(today) };
+      case "personalizado":
+        return { start: customStartDate, end: customEndDate };
+      default:
+        return { start: today, end: today };
+    }
+  };
 
   // Mock de dados - depois virá do banco de dados
   const stats = {
@@ -37,9 +64,60 @@ const Reports = () => {
     { method: "Pix", count: 5, amount: 100.00, percentage: 8 },
   ];
 
-  const handleExport = (type: string) => {
-    // Implementar exportação futura
-    console.log(`Exportando relatório: ${type}`);
+  const handleExportTopProducts = () => {
+    const data = topProducts.map((p) => ({
+      Produto: p.name,
+      Quantidade: p.quantity,
+      "Receita Total": p.revenue,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Top Produtos");
+    XLSX.writeFile(wb, `top-produtos-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+    
+    toast({
+      title: "Sucesso",
+      description: "Relatório de produtos exportado",
+    });
+  };
+
+  const handleExportPaymentMethods = () => {
+    const data = paymentMethods.map((p) => ({
+      "Forma de Pagamento": p.method,
+      Total: p.amount,
+      Transações: p.count,
+      Percentual: `${p.percentage}%`,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Formas de Pagamento");
+    XLSX.writeFile(wb, `formas-pagamento-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+    
+    toast({
+      title: "Sucesso",
+      description: "Relatório de formas de pagamento exportado",
+    });
+  };
+
+  const handleExportSummary = () => {
+    const data = [
+      { Métrica: "Total de Vendas", Valor: stats.totalVendas },
+      { Métrica: "Total de Pedidos", Valor: stats.totalPedidos },
+      { Métrica: "Ticket Médio", Valor: stats.ticketMedio },
+      { Métrica: "Clientes Atendidos", Valor: stats.clientesAtendidos },
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Resumo");
+    XLSX.writeFile(wb, `resumo-vendas-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+    
+    toast({
+      title: "Sucesso",
+      description: "Resumo exportado",
+    });
   };
 
   return (
@@ -73,12 +151,59 @@ const Reports = () => {
                   <SelectItem value="semana">Esta Semana</SelectItem>
                   <SelectItem value="mes">Este Mês</SelectItem>
                   <SelectItem value="ano">Este Ano</SelectItem>
+                  <SelectItem value="personalizado">Personalizado</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" className="gap-2">
-                <Download className="w-4 h-4" />
-                Exportar
-              </Button>
+              {period === "personalizado" && (
+                <>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-[200px] justify-start text-left font-normal",
+                          !customStartDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {customStartDate ? format(customStartDate, "PPP", { locale: ptBR }) : "Data Inicial"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={customStartDate}
+                        onSelect={setCustomStartDate}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-[200px] justify-start text-left font-normal",
+                          !customEndDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {customEndDate ? format(customEndDate, "PPP", { locale: ptBR }) : "Data Final"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={customEndDate}
+                        onSelect={setCustomEndDate}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -87,9 +212,20 @@ const Reports = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 space-y-6">
         {/* Cards de Resumo */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Resumo de Vendas</CardTitle>
+              <Button variant="outline" size="sm" onClick={handleExportSummary}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Total de Vendas
               </CardTitle>
@@ -151,16 +287,26 @@ const Reports = () => {
               <p className="text-xs text-muted-foreground mt-1">
                 Únicos no período
               </p>
-            </CardContent>
-          </Card>
-        </div>
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Produtos Mais Vendidos */}
           <Card>
             <CardHeader>
-              <CardTitle>Produtos Mais Vendidos</CardTitle>
-              <CardDescription>Top itens do cardápio</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Produtos Mais Vendidos</CardTitle>
+                  <CardDescription>Top itens do cardápio</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleExportTopProducts}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Exportar
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -186,8 +332,16 @@ const Reports = () => {
           {/* Formas de Pagamento */}
           <Card>
             <CardHeader>
-              <CardTitle>Formas de Pagamento</CardTitle>
-              <CardDescription>Distribuição por método</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Formas de Pagamento</CardTitle>
+                  <CardDescription>Distribuição por método</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleExportPaymentMethods}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Exportar
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -216,44 +370,6 @@ const Reports = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Botões de Ação */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Exportar Relatórios</CardTitle>
-            <CardDescription>
-              Gere relatórios detalhados para análise externa
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button
-                variant="outline"
-                className="h-20 flex-col gap-2"
-                onClick={() => handleExport("vendas")}
-              >
-                <Download className="w-5 h-5" />
-                Relatório de Vendas
-              </Button>
-              <Button
-                variant="outline"
-                className="h-20 flex-col gap-2"
-                onClick={() => handleExport("produtos")}
-              >
-                <Download className="w-5 h-5" />
-                Relatório de Produtos
-              </Button>
-              <Button
-                variant="outline"
-                className="h-20 flex-col gap-2"
-                onClick={() => handleExport("financeiro")}
-              >
-                <Download className="w-5 h-5" />
-                Relatório Financeiro
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );
