@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { LogOut, Trash2, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { ComplementsModal, Complement } from "@/components/ComplementsModal";
+import { PaymentModal } from "@/components/PaymentModal";
 
 interface OrderItem {
   id: string;
@@ -19,6 +20,7 @@ const Orders = () => {
   const navigate = useNavigate();
   const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
   const [complementsModalOpen, setComplementsModalOpen] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedMenuItem, setSelectedMenuItem] = useState<{
     name: string;
     price: number;
@@ -109,7 +111,13 @@ const Orders = () => {
       toast.error("Adicione itens ao pedido primeiro");
       return;
     }
-    toast.success("Pedido finalizado! (Demo)");
+    setPaymentModalOpen(true);
+  };
+
+  const handlePaymentConfirm = (paymentMethod: string, destination: "kitchen" | "printer") => {
+    // TODO: Salvar pedido no banco quando Lovable Cloud estiver ativo
+    const destinationText = destination === "kitchen" ? "tela da cozinha" : "impressora";
+    toast.success(`Pedido finalizado! Pagamento: ${paymentMethod} - Enviado para ${destinationText}`);
     setCurrentOrder([]);
   };
 
@@ -249,6 +257,14 @@ const Orders = () => {
             addItemToOrder(selectedMenuItem, complements, totalPrice);
           }
         }}
+      />
+
+      {/* Modal de Pagamento */}
+      <PaymentModal
+        open={paymentModalOpen}
+        onOpenChange={setPaymentModalOpen}
+        totalAmount={getTotalPrice()}
+        onConfirm={handlePaymentConfirm}
       />
     </div>
   );
