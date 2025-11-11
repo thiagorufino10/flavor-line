@@ -39,18 +39,7 @@ export const PaymentModal = ({
 
   const handlePaymentSelect = (method: PaymentMethod) => {
     setSelectedPayment(method);
-    
-    // Calcular taxa se for crédito ou débito
-    const rates = JSON.parse(localStorage.getItem("paymentRates") || '{"credito": 3.5, "debito": 2.0}');
-    let finalValue = totalAmount;
-    
-    if (method === "credito") {
-      finalValue = totalAmount + (totalAmount * rates.credito / 100);
-    } else if (method === "debito") {
-      finalValue = totalAmount + (totalAmount * rates.debito / 100);
-    }
-    
-    setFinalAmount(finalValue);
+    setFinalAmount(totalAmount);
     setStep("destination");
   };
 
@@ -103,28 +92,37 @@ export const PaymentModal = ({
         ) : (
           <div className="space-y-4">
             <div className="bg-muted p-4 rounded-lg space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Subtotal:</span>
-                <span className="font-medium">R$ {totalAmount.toFixed(2)}</span>
-              </div>
-              {(selectedPayment === "credito" || selectedPayment === "debito") && (
-                <>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Taxa {selectedPayment}:</span>
-                    <span className="font-medium text-warning">
-                      + R$ {(finalAmount - totalAmount).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="border-t pt-2 flex justify-between items-center">
-                    <span className="font-semibold">Total com Taxa:</span>
-                    <span className="text-xl font-bold text-primary">R$ {finalAmount.toFixed(2)}</span>
-                  </div>
-                </>
-              )}
+              {(selectedPayment === "credito" || selectedPayment === "debito") && (() => {
+                const rates = JSON.parse(localStorage.getItem("paymentRates") || '{"credito": 3.5, "debito": 2.0}');
+                const rate = selectedPayment === "credito" ? rates.credito : rates.debito;
+                const taxAmount = totalAmount * rate / 100;
+                const amountReceived = totalAmount - taxAmount;
+                
+                return (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Valor do pedido:</span>
+                      <span className="font-medium">R$ {totalAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Taxa maquininha ({rate}%):</span>
+                      <span className="font-medium text-destructive">- R$ {taxAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between items-center">
+                      <span className="font-semibold">Cliente paga:</span>
+                      <span className="text-xl font-bold text-primary">R$ {totalAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-muted-foreground">
+                      <span className="text-sm">Entra no caixa:</span>
+                      <span className="text-sm font-medium">R$ {amountReceived.toFixed(2)}</span>
+                    </div>
+                  </>
+                );
+              })()}
               {(selectedPayment === "pix" || selectedPayment === "dinheiro") && (
                 <div className="border-t pt-2 flex justify-between items-center">
                   <span className="font-semibold">Total:</span>
-                  <span className="text-xl font-bold text-primary">R$ {finalAmount.toFixed(2)}</span>
+                  <span className="text-xl font-bold text-primary">R$ {totalAmount.toFixed(2)}</span>
                 </div>
               )}
             </div>
