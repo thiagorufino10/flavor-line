@@ -13,6 +13,9 @@ import Complements from "./pages/admin/Complements";
 import CashFlow from "./pages/admin/CashFlow";
 import Reports from "./pages/admin/Reports";
 import PaymentRates from "./pages/admin/PaymentRates";
+import Users from "./pages/admin/Users";
+import Menu from "./pages/admin/Menu";
+import Printer from "./pages/admin/Printer";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,8 +30,11 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/users" element={<Users />} />
           <Route path="/admin/payment-rates" element={<PaymentRates />} />
+          <Route path="/admin/menu" element={<Menu />} />
           <Route path="/admin/complements" element={<Complements />} />
+          <Route path="/admin/printer" element={<Printer />} />
           <Route path="/admin/cash-flow" element={<CashFlow />} />
           <Route path="/admin/reports" element={<Reports />} />
           <Route path="/orders" element={<Orders />} />
