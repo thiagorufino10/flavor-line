@@ -10,7 +10,8 @@ import {
   Printer,
   Settings,
   DollarSign,
-  TrendingUp
+  TrendingUp,
+  Monitor
 } from "lucide-react";
 
 const Admin = () => {
@@ -51,6 +52,13 @@ const Admin = () => {
       description: "Configurar impressora de pedidos",
       color: "bg-secondary",
       path: "/admin/printer"
+    },
+    {
+      icon: Monitor,
+      title: "Modo de Operação",
+      description: "Impressão ou Display Digital",
+      color: "bg-info",
+      path: "/admin/operation-mode"
     }
   ];
 

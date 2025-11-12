@@ -5,8 +5,12 @@ import { LogOut, UtensilsCrossed } from "lucide-react";
 const CustomerDisplay = () => {
   const navigate = useNavigate();
   
-  // Demo finished orders
-  const finishedOrders = [102, 98, 101];
+  // Demo finished orders with customer names
+  const finishedOrders = [
+    { number: 102, customerName: "Maria Santos" },
+    { number: 98, customerName: "Carlos Souza" },
+    { number: 101, customerName: "João Silva" }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
@@ -44,17 +48,20 @@ const CustomerDisplay = () => {
 
         {/* Orders Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-          {finishedOrders.map((orderNumber) => (
+          {finishedOrders.map((order) => (
             <div
-              key={orderNumber}
+              key={order.number}
               className="aspect-square bg-gradient-to-br from-primary to-primary/80 rounded-3xl shadow-2xl flex items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-500"
             >
-              <div className="text-center">
-                <p className="text-white/80 text-lg md:text-xl font-semibold mb-2">
+              <div className="text-center px-4">
+                <p className="text-white/80 text-base md:text-lg font-semibold mb-1">
                   Pedido
                 </p>
-                <p className="text-white text-6xl md:text-8xl font-bold">
-                  {orderNumber}
+                <p className="text-white text-5xl md:text-7xl font-bold mb-2">
+                  {order.number}
+                </p>
+                <p className="text-white/90 text-sm md:text-base font-medium truncate">
+                  {order.customerName}
                 </p>
               </div>
             </div>

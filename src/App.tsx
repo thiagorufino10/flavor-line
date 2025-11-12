@@ -16,6 +16,7 @@ import PaymentRates from "./pages/admin/PaymentRates";
 import Users from "./pages/admin/Users";
 import Menu from "./pages/admin/Menu";
 import Printer from "./pages/admin/Printer";
+import OperationMode from "./pages/admin/OperationMode";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/admin/menu" element={<Menu />} />
           <Route path="/admin/complements" element={<Complements />} />
           <Route path="/admin/printer" element={<Printer />} />
+          <Route path="/admin/operation-mode" element={<OperationMode />} />
           <Route path="/admin/cash-flow" element={<CashFlow />} />
           <Route path="/admin/reports" element={<Reports />} />
           <Route path="/orders" element={<Orders />} />

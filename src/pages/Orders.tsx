@@ -114,10 +114,12 @@ const Orders = () => {
     setPaymentModalOpen(true);
   };
 
-  const handlePaymentConfirm = (paymentMethod: string, destination: "kitchen" | "printer") => {
+  const handlePaymentConfirm = (paymentMethod: string, customerName: string) => {
+    const operationMode = localStorage.getItem("operationMode") || "display";
+    const destinationText = operationMode === "printer" ? "impressora" : "tela da cozinha";
+    
     // TODO: Salvar pedido no banco quando Lovable Cloud estiver ativo
-    const destinationText = destination === "kitchen" ? "tela da cozinha" : "impressora";
-    toast.success(`Pedido finalizado! Pagamento: ${paymentMethod} - Enviado para ${destinationText}`);
+    toast.success(`Pedido de ${customerName} finalizado! Pagamento: ${paymentMethod} - Enviado para ${destinationText}`);
     setCurrentOrder([]);
   };
 

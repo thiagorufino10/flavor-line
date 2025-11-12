@@ -7,18 +7,18 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Banknote, QrCode, Printer, Monitor } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CreditCard, Banknote, QrCode } from "lucide-react";
 
 interface PaymentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   totalAmount: number;
-  onConfirm: (paymentMethod: string, destination: "kitchen" | "printer") => void;
+  onConfirm: (paymentMethod: string, customerName: string) => void;
 }
 
 type PaymentMethod = "pix" | "credito" | "debito" | "dinheiro" | null;
-type Destination = "kitchen" | "printer" | null;
 
 export const PaymentModal = ({
   open,
@@ -26,8 +26,9 @@ export const PaymentModal = ({
   totalAmount,
   onConfirm,
 }: PaymentModalProps) => {
-  const [step, setStep] = useState<"payment" | "destination">("payment");
+  const [step, setStep] = useState<"payment" | "name">("payment");
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(null);
+  const [customerName, setCustomerName] = useState("");
   const [finalAmount, setFinalAmount] = useState(totalAmount);
 
   const paymentMethods = [
@@ -40,12 +41,12 @@ export const PaymentModal = ({
   const handlePaymentSelect = (method: PaymentMethod) => {
     setSelectedPayment(method);
     setFinalAmount(totalAmount);
-    setStep("destination");
+    setStep("name");
   };
 
-  const handleDestinationSelect = (destination: Destination) => {
-    if (selectedPayment && destination) {
-      onConfirm(selectedPayment, destination);
+  const handleConfirm = () => {
+    if (selectedPayment && customerName.trim()) {
+      onConfirm(selectedPayment, customerName.trim());
       handleClose();
     }
   };
@@ -53,6 +54,7 @@ export const PaymentModal = ({
   const handleClose = () => {
     setStep("payment");
     setSelectedPayment(null);
+    setCustomerName("");
     setFinalAmount(totalAmount);
     onOpenChange(false);
   };
@@ -62,7 +64,7 @@ export const PaymentModal = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {step === "payment" ? "Selecione a Forma de Pagamento" : "Destino do Pedido"}
+            {step === "payment" ? "Selecione a Forma de Pagamento" : "Nome do Cliente"}
           </DialogTitle>
         </DialogHeader>
 
@@ -120,40 +122,45 @@ export const PaymentModal = ({
                 );
               })()}
               {(selectedPayment === "pix" || selectedPayment === "dinheiro") && (
-                <div className="border-t pt-2 flex justify-between items-center">
+                <div className="flex justify-between items-center">
                   <span className="font-semibold">Total:</span>
                   <span className="text-xl font-bold text-primary">R$ {totalAmount.toFixed(2)}</span>
                 </div>
               )}
             </div>
 
-            <div className="space-y-3">
-              <p className="text-sm font-medium text-center">Enviar pedido para:</p>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-24 flex flex-col gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
-                  onClick={() => handleDestinationSelect("kitchen")}
-                >
-                  <Monitor className="w-8 h-8" />
-                  <span className="font-semibold">Tela da Cozinha</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-24 flex flex-col gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
-                  onClick={() => handleDestinationSelect("printer")}
-                >
-                  <Printer className="w-8 h-8" />
-                  <span className="font-semibold">Imprimir</span>
-                </Button>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="customerName">Nome do Cliente</Label>
+              <Input
+                id="customerName"
+                placeholder="Ex: João Silva"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && customerName.trim()) {
+                    handleConfirm();
+                  }
+                }}
+                autoFocus
+              />
             </div>
+
+            <Button 
+              className="w-full h-12 text-lg"
+              onClick={handleConfirm}
+              disabled={!customerName.trim()}
+            >
+              Finalizar Pedido
+            </Button>
           </div>
         )}
 
         <DialogFooter>
-          {step === "destination" && (
-            <Button variant="outline" onClick={() => setStep("payment")}>
+          {step === "name" && (
+            <Button variant="outline" onClick={() => {
+              setStep("payment");
+              setCustomerName("");
+            }}>
               Voltar
             </Button>
           )}

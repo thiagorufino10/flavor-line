@@ -8,6 +8,7 @@ import { LogOut, ChefHat, Clock } from "lucide-react";
 interface Order {
   id: string;
   number: number;
+  customerName: string;
   items: string[];
   status: "novo" | "preparando" | "finalizado";
   time: string;
@@ -21,6 +22,7 @@ const Kitchen = () => {
     {
       id: "1",
       number: 101,
+      customerName: "João Silva",
       items: ["2x Pastel de Carne", "1x Refrigerante"],
       status: "novo",
       time: "10:30"
@@ -28,6 +30,7 @@ const Kitchen = () => {
     {
       id: "2",
       number: 102,
+      customerName: "Maria Santos",
       items: ["1x Açaí 500ml", "1x Pastel Disco"],
       status: "preparando",
       time: "10:32"
@@ -35,6 +38,7 @@ const Kitchen = () => {
     {
       id: "3",
       number: 103,
+      customerName: "Pedro Costa",
       items: ["3x Coxinha", "2x Suco Natural"],
       status: "novo",
       time: "10:35"
@@ -110,6 +114,9 @@ const Kitchen = () => {
                     <Clock className="w-4 h-4" />
                     {order.time}
                   </div>
+                  <div className="mt-2 p-2 bg-primary/10 rounded-md">
+                    <p className="text-sm font-semibold text-primary">Cliente: {order.customerName}</p>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-2">
@@ -149,6 +156,9 @@ const Kitchen = () => {
                     <Clock className="w-4 h-4" />
                     {order.time}
                   </div>
+                  <div className="mt-2 p-2 bg-warning/10 rounded-md">
+                    <p className="text-sm font-semibold text-warning">Cliente: {order.customerName}</p>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-2">
@@ -187,6 +197,9 @@ const Kitchen = () => {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="w-4 h-4" />
                     {order.time}
+                  </div>
+                  <div className="mt-2 p-2 bg-success/10 rounded-md">
+                    <p className="text-sm font-semibold text-success">Cliente: {order.customerName}</p>
                   </div>
                 </CardHeader>
                 <CardContent>
