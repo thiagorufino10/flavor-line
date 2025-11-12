@@ -97,10 +97,7 @@ const Admin = () => {
           </div>
           <Button 
             variant="outline" 
-            onClick={() => {
-              signOut();
-              navigate("/");
-            }}
+            onClick={() => navigate("/")}
             className="gap-2"
           >
             <LogOut className="w-4 h-4" />
