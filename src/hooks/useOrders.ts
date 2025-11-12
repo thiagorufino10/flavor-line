@@ -33,7 +33,14 @@ export const useOrders = (status?: string) => {
         .from("orders")
         .select(`
           *,
-          order_items (*)
+          order_items (
+            id,
+            product_name,
+            quantity,
+            unit_price,
+            total_price,
+            complements
+          )
         `)
         .order("created_at", { ascending: false });
 
@@ -45,7 +52,13 @@ export const useOrders = (status?: string) => {
 
       if (error) throw error;
 
-      setOrders(data || []);
+      // Mapear os dados para incluir os itens como "items"
+      const formattedOrders = data?.map((order: any) => ({
+        ...order,
+        items: order.order_items || [],
+      })) || [];
+
+      setOrders(formattedOrders);
     } catch (error) {
       console.error("Erro ao buscar pedidos:", error);
       toast.error("Erro ao carregar pedidos");

@@ -87,26 +87,30 @@ const Kitchen = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-3">
-                    {order.items?.map((item, idx) => (
-                      <div key={idx} className="p-3 bg-muted/50 rounded-lg border">
-                        <p className="font-bold text-base mb-1">
-                          {item.quantity}x {item.product_name}
-                        </p>
-                        {item.complements && Array.isArray(item.complements) && item.complements.length > 0 && (
-                          <div className="mt-2 pl-4 border-l-2 border-primary/30">
-                            <p className="text-xs font-semibold text-muted-foreground mb-1">Complementos:</p>
-                            <ul className="space-y-0.5">
-                              {item.complements.map((comp: any, cIdx: number) => (
-                                <li key={cIdx} className="text-sm text-muted-foreground">
-                                  • {comp.name}
-                                  {comp.price > 0 && ` (+R$ ${comp.price.toFixed(2)})`}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {order.items && order.items.length > 0 ? (
+                      order.items.map((item, idx) => (
+                        <div key={idx} className="p-3 bg-muted/50 rounded-lg border">
+                          <p className="font-bold text-base mb-1">
+                            {item.quantity}x {item.product_name}
+                          </p>
+                          {item.complements && Array.isArray(item.complements) && item.complements.length > 0 && (
+                            <div className="mt-2 pl-4 border-l-2 border-primary/30">
+                              <p className="text-xs font-semibold text-muted-foreground mb-1">Complementos:</p>
+                              <ul className="space-y-0.5">
+                                {item.complements.map((comp: any, cIdx: number) => (
+                                  <li key={cIdx} className="text-sm text-muted-foreground">
+                                    • {comp.name}
+                                    {comp.price > 0 && ` (+R$ ${comp.price.toFixed(2)})`}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Sem itens</p>
+                    )}
                   </div>
                   <Button 
                     className="w-full"
@@ -146,26 +150,30 @@ const Kitchen = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-3">
-                    {order.items?.map((item, idx) => (
-                      <div key={idx} className="p-3 bg-muted/50 rounded-lg border border-warning/20">
-                        <p className="font-bold text-base mb-1">
-                          {item.quantity}x {item.product_name}
-                        </p>
-                        {item.complements && Array.isArray(item.complements) && item.complements.length > 0 && (
-                          <div className="mt-2 pl-4 border-l-2 border-warning/50">
-                            <p className="text-xs font-semibold text-muted-foreground mb-1">Complementos:</p>
-                            <ul className="space-y-0.5">
-                              {item.complements.map((comp: any, cIdx: number) => (
-                                <li key={cIdx} className="text-sm text-muted-foreground">
-                                  • {comp.name}
-                                  {comp.price > 0 && ` (+R$ ${comp.price.toFixed(2)})`}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {order.items && order.items.length > 0 ? (
+                      order.items.map((item, idx) => (
+                        <div key={idx} className="p-3 bg-muted/50 rounded-lg border border-warning/20">
+                          <p className="font-bold text-base mb-1">
+                            {item.quantity}x {item.product_name}
+                          </p>
+                          {item.complements && Array.isArray(item.complements) && item.complements.length > 0 && (
+                            <div className="mt-2 pl-4 border-l-2 border-warning/50">
+                              <p className="text-xs font-semibold text-muted-foreground mb-1">Complementos:</p>
+                              <ul className="space-y-0.5">
+                                {item.complements.map((comp: any, cIdx: number) => (
+                                  <li key={cIdx} className="text-sm text-muted-foreground">
+                                    • {comp.name}
+                                    {comp.price > 0 && ` (+R$ ${comp.price.toFixed(2)})`}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Sem itens</p>
+                    )}
                   </div>
                   <Button 
                     className="w-full bg-success hover:bg-success/90"
@@ -205,26 +213,30 @@ const Kitchen = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {order.items?.map((item, idx) => (
-                      <div key={idx} className="p-3 bg-muted/30 rounded-lg border border-success/20 opacity-75">
-                        <p className="font-bold text-base mb-1 line-through">
-                          {item.quantity}x {item.product_name}
-                        </p>
-                        {item.complements && Array.isArray(item.complements) && item.complements.length > 0 && (
-                          <div className="mt-2 pl-4 border-l-2 border-success/30">
-                            <p className="text-xs font-semibold text-muted-foreground mb-1">Complementos:</p>
-                            <ul className="space-y-0.5">
-                              {item.complements.map((comp: any, cIdx: number) => (
-                                <li key={cIdx} className="text-sm text-muted-foreground line-through">
-                                  • {comp.name}
-                                  {comp.price > 0 && ` (+R$ ${comp.price.toFixed(2)})`}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {order.items && order.items.length > 0 ? (
+                      order.items.map((item, idx) => (
+                        <div key={idx} className="p-3 bg-muted/30 rounded-lg border border-success/20 opacity-75">
+                          <p className="font-bold text-base mb-1 line-through">
+                            {item.quantity}x {item.product_name}
+                          </p>
+                          {item.complements && Array.isArray(item.complements) && item.complements.length > 0 && (
+                            <div className="mt-2 pl-4 border-l-2 border-success/30">
+                              <p className="text-xs font-semibold text-muted-foreground mb-1">Complementos:</p>
+                              <ul className="space-y-0.5">
+                                {item.complements.map((comp: any, cIdx: number) => (
+                                  <li key={cIdx} className="text-sm text-muted-foreground line-through">
+                                    • {comp.name}
+                                    {comp.price > 0 && ` (+R$ ${comp.price.toFixed(2)})`}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Sem itens</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
