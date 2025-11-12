@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,12 @@ interface OrderItem {
   complements?: Complement[];
 }
 
+interface MenuCategory {
+  name: string;
+  category: "pasteis" | "salgados" | "acai" | "bebidas";
+  items: { name: string; price: number }[];
+}
+
 const Orders = () => {
   const navigate = useNavigate();
   const { createOrder } = useOrders();
@@ -28,45 +35,54 @@ const Orders = () => {
     price: number;
     category: "pasteis" | "salgados" | "acai";
   } | null>(null);
+  const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const menuCategories = [
-    {
-      name: "Pastéis",
-      category: "pasteis" as const,
-      items: [
-        { name: "Pastel de Carne", price: 8.00 },
-        { name: "Pastel de Queijo", price: 7.00 },
-        { name: "Pastel Disco", price: 12.00 },
-        { name: "Pastel de Frango", price: 8.00 }
-      ]
-    },
-    {
-      name: "Salgados",
-      category: "salgados" as const,
-      items: [
-        { name: "Coxinha", price: 6.00 },
-        { name: "Kibe", price: 6.00 },
-        { name: "Risole", price: 6.00 }
-      ]
-    },
-    {
-      name: "Açaí",
-      category: "acai" as const,
-      items: [
-        { name: "Açaí 300ml", price: 12.00 },
-        { name: "Açaí 500ml", price: 18.00 }
-      ]
-    },
-    {
-      name: "Bebidas",
-      category: "bebidas" as const,
-      items: [
-        { name: "Refrigerante", price: 5.00 },
-        { name: "Suco Natural", price: 8.00 },
-        { name: "Água", price: 3.00 }
-      ]
+  useEffect(() => {
+    fetchMenuItems();
+  }, []);
+
+  const fetchMenuItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("menu_items")
+        .select("*")
+        .eq("active", true)
+        .order("category", { ascending: true });
+
+      if (error) throw error;
+
+      const categoryMap: Record<string, string> = {
+        pasteis: "Pastéis",
+        salgados: "Salgados",
+        acai: "Açaí",
+        bebidas: "Bebidas",
+      };
+
+      const groupedItems = data?.reduce((acc, item) => {
+        const categoryKey = item.category;
+        if (!acc[categoryKey]) {
+          acc[categoryKey] = {
+            name: categoryMap[categoryKey] || categoryKey,
+            category: categoryKey as "pasteis" | "salgados" | "acai" | "bebidas",
+            items: [],
+          };
+        }
+        acc[categoryKey].items.push({
+          name: item.name,
+          price: parseFloat(String(item.price)),
+        });
+        return acc;
+      }, {} as Record<string, MenuCategory>);
+
+      setMenuCategories(Object.values(groupedItems || {}));
+    } catch (error) {
+      console.error("Erro ao buscar itens do menu:", error);
+      toast.error("Erro ao carregar cardápio");
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const handleItemClick = (
     item: { name: string; price: number },
@@ -173,7 +189,20 @@ const Orders = () => {
       <div className="flex-1 container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Menu */}
         <div className="lg:col-span-2 space-y-6">
-          {menuCategories.map((category) => (
+          {loading ? (
+            <Card>
+              <CardContent className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </CardContent>
+            </Card>
+          ) : menuCategories.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12 text-muted-foreground">
+                Nenhum item no cardápio. Configure o cardápio em Administração → Cardápio.
+              </CardContent>
+            </Card>
+          ) : (
+            menuCategories.map((category) => (
             <Card key={category.name}>
               <CardHeader>
                 <CardTitle className="text-xl">{category.name}</CardTitle>
@@ -196,7 +225,8 @@ const Orders = () => {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Order Summary */}

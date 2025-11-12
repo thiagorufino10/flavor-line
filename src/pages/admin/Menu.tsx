@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,16 +34,8 @@ interface MenuItem {
 
 const Menu = () => {
   const navigate = useNavigate();
-  const [items, setItems] = useState<MenuItem[]>(() => {
-    const saved = localStorage.getItem("menuItems");
-    return saved ? JSON.parse(saved) : [
-      { id: "1", name: "Pastel de Carne", price: 8.00, category: "pasteis", description: "Carne moída temperada" },
-      { id: "2", name: "Pastel de Queijo", price: 7.00, category: "pasteis", description: "Queijo mussarela" },
-      { id: "3", name: "Coxinha", price: 6.00, category: "salgados", description: "Frango desfiado" },
-      { id: "4", name: "Açaí 300ml", price: 12.00, category: "acai" },
-      { id: "5", name: "Refrigerante", price: 5.00, category: "bebidas" },
-    ];
-  });
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     id: "",
@@ -54,7 +47,38 @@ const Menu = () => {
 
   const [isEditing, setIsEditing] = useState(false);
 
-  const handleSave = () => {
+  useEffect(() => {
+    fetchMenuItems();
+  }, []);
+
+  const fetchMenuItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("menu_items")
+        .select("*")
+        .eq("active", true)
+        .order("category", { ascending: true });
+
+      if (error) throw error;
+
+      const formattedItems = data?.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: parseFloat(String(item.price)),
+        category: item.category as "pasteis" | "salgados" | "acai" | "bebidas",
+        description: item.description || undefined,
+      })) || [];
+
+      setItems(formattedItems);
+    } catch (error) {
+      console.error("Erro ao buscar itens:", error);
+      toast.error("Erro ao carregar cardápio");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
     if (!formData.name || !formData.price || !formData.category) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
@@ -66,30 +90,45 @@ const Menu = () => {
       return;
     }
 
-    let updatedItems: MenuItem[];
+    setLoading(true);
 
-    if (isEditing) {
-      updatedItems = items.map(item =>
-        item.id === formData.id
-          ? { ...item, name: formData.name, price, category: formData.category, description: formData.description }
-          : item
-      );
-      toast.success("Item atualizado com sucesso!");
-    } else {
-      const newItem: MenuItem = {
-        id: Math.random().toString(),
-        name: formData.name,
-        price,
-        category: formData.category,
-        description: formData.description,
-      };
-      updatedItems = [...items, newItem];
-      toast.success("Item criado com sucesso!");
+    try {
+      if (isEditing) {
+        const { error } = await supabase
+          .from("menu_items")
+          .update({
+            name: formData.name,
+            price: price,
+            category: formData.category,
+            description: formData.description || null,
+          })
+          .eq("id", formData.id);
+
+        if (error) throw error;
+        toast.success("Item atualizado com sucesso!");
+      } else {
+        const { error } = await supabase
+          .from("menu_items")
+          .insert({
+            name: formData.name,
+            price: price,
+            category: formData.category,
+            description: formData.description || null,
+            active: true,
+          });
+
+        if (error) throw error;
+        toast.success("Item criado com sucesso!");
+      }
+
+      await fetchMenuItems();
+      handleReset();
+    } catch (error) {
+      console.error("Erro ao salvar item:", error);
+      toast.error("Erro ao salvar item");
+    } finally {
+      setLoading(false);
     }
-
-    localStorage.setItem("menuItems", JSON.stringify(updatedItems));
-    setItems(updatedItems);
-    handleReset();
   };
 
   const handleEdit = (item: MenuItem) => {
@@ -103,11 +142,21 @@ const Menu = () => {
     setIsEditing(true);
   };
 
-  const handleDelete = (id: string) => {
-    const updatedItems = items.filter(item => item.id !== id);
-    localStorage.setItem("menuItems", JSON.stringify(updatedItems));
-    setItems(updatedItems);
-    toast.success("Item excluído com sucesso!");
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("menu_items")
+        .update({ active: false })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      await fetchMenuItems();
+      toast.success("Item excluído com sucesso!");
+    } catch (error) {
+      console.error("Erro ao excluir item:", error);
+      toast.error("Erro ao excluir item");
+    }
   };
 
   const handleReset = () => {
@@ -206,11 +255,11 @@ const Menu = () => {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleSave} className="flex-1">
+              <Button onClick={handleSave} className="flex-1" disabled={loading}>
                 {isEditing ? "Atualizar" : <><Plus className="w-4 h-4 mr-2" /> Criar</>}
               </Button>
               {isEditing && (
-                <Button variant="outline" onClick={handleReset}>
+                <Button variant="outline" onClick={handleReset} disabled={loading}>
                   Cancelar
                 </Button>
               )}
@@ -224,17 +273,26 @@ const Menu = () => {
             <CardTitle>Itens do Cardápio</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Preço</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((item) => (
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : items.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhum item cadastrado ainda
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Preço</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <div>
@@ -265,9 +323,10 @@ const Menu = () => {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>

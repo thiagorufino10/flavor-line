@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -31,28 +32,6 @@ interface ComplementsModalProps {
   onConfirm: (selectedComplements: Complement[], totalPrice: number) => void;
 }
 
-// Mock de complementos - depois virá do banco de dados
-const mockComplements: Complement[] = [
-  // Pastéis
-  { id: "1", name: "Ketchup", price: 0, category: "pasteis", isSpecial: false },
-  { id: "2", name: "Mostarda", price: 0, category: "pasteis", isSpecial: false },
-  { id: "3", name: "Maionese", price: 0, category: "pasteis", isSpecial: false },
-  { id: "4", name: "Batata Frita", price: 5.00, category: "pasteis", isSpecial: true },
-  { id: "5", name: "Queijo Extra", price: 3.00, category: "pasteis", isSpecial: true },
-  
-  // Salgados
-  { id: "6", name: "Ketchup", price: 0, category: "salgados", isSpecial: false },
-  { id: "7", name: "Mostarda", price: 0, category: "salgados", isSpecial: false },
-  { id: "8", name: "Maionese", price: 0, category: "salgados", isSpecial: false },
-  
-  // Açaí
-  { id: "9", name: "Leite em Pó", price: 2.00, category: "acai", isSpecial: true },
-  { id: "10", name: "Granola", price: 2.00, category: "acai", isSpecial: true },
-  { id: "11", name: "Paçoca", price: 2.50, category: "acai", isSpecial: true },
-  { id: "12", name: "Morango", price: 3.00, category: "acai", isSpecial: true },
-  { id: "13", name: "Banana", price: 1.50, category: "acai", isSpecial: true },
-];
-
 export const ComplementsModal = ({
   open,
   onOpenChange,
@@ -61,12 +40,45 @@ export const ComplementsModal = ({
 }: ComplementsModalProps) => {
   const [selectedComplements, setSelectedComplements] = useState<Set<string>>(new Set());
   const [totalPrice, setTotalPrice] = useState(0);
+  const [availableComplements, setAvailableComplements] = useState<Complement[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (item && open) {
+      fetchComplements();
+    }
+  }, [item, open]);
+
+  const fetchComplements = async () => {
+    if (!item) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("complements")
+        .select("*")
+        .eq("active", true)
+        .eq("category", item.category);
+
+      if (error) throw error;
+
+      const formatted = data?.map(comp => ({
+        id: comp.id,
+        name: comp.name,
+        price: parseFloat(String(comp.price)),
+        category: comp.category as "pasteis" | "salgados" | "acai",
+        isSpecial: parseFloat(String(comp.price)) > 0,
+      })) || [];
+
+      setAvailableComplements(formatted);
+    } catch (error) {
+      console.error("Erro ao buscar complementos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filtrar complementos pela categoria do item
-  const availableComplements = item
-    ? mockComplements.filter((c) => c.category === item.category)
-    : [];
-
   const freeComplements = availableComplements.filter((c) => !c.isSpecial);
   const specialComplements = availableComplements.filter((c) => c.isSpecial);
 
@@ -119,11 +131,24 @@ export const ComplementsModal = ({
         <DialogHeader>
           <DialogTitle className="text-2xl">Complementos - {item.name}</DialogTitle>
           <DialogDescription>
-            Selecione os complementos desejados. Complementos especiais têm custo adicional.
+            {loading 
+              ? "Carregando complementos..." 
+              : "Selecione os complementos desejados. Complementos especiais têm custo adicional."
+            }
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : availableComplements.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            Nenhum complemento disponível para esta categoria.
+          </div>
+        ) : (
+          <>
+            <div className="space-y-6 py-4">
           {/* Complementos Grátis */}
           {freeComplements.length > 0 && (
             <div>
@@ -208,10 +233,12 @@ export const ComplementsModal = ({
           <Button variant="outline" onClick={handleCancel}>
             Cancelar
           </Button>
-          <Button onClick={handleConfirm} className="min-w-32">
+          <Button onClick={handleConfirm} className="min-w-32" disabled={loading}>
             Adicionar ao Pedido
           </Button>
         </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

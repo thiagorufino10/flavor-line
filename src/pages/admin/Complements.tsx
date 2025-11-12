@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,13 +35,8 @@ interface Complement {
 
 const Complements = () => {
   const navigate = useNavigate();
-  const [complements, setComplements] = useState<Complement[]>([
-    { id: "1", name: "Ketchup", price: 0, category: "pasteis", isSpecial: false },
-    { id: "2", name: "Mostarda", price: 0, category: "pasteis", isSpecial: false },
-    { id: "3", name: "Batata Frita", price: 5.00, category: "pasteis", isSpecial: true },
-    { id: "4", name: "Queijo Extra", price: 3.00, category: "pasteis", isSpecial: true },
-  ]);
-
+  const [complements, setComplements] = useState<Complement[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingComplement, setEditingComplement] = useState<Complement | null>(null);
   const [formData, setFormData] = useState({
@@ -49,6 +45,37 @@ const Complements = () => {
     category: "pasteis" as "pasteis" | "salgados" | "acai",
     isSpecial: false,
   });
+
+  useEffect(() => {
+    fetchComplements();
+  }, []);
+
+  const fetchComplements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("complements")
+        .select("*")
+        .eq("active", true)
+        .order("category", { ascending: true });
+
+      if (error) throw error;
+
+      const formattedComplements = data?.map(comp => ({
+        id: comp.id,
+        name: comp.name,
+        price: parseFloat(String(comp.price)),
+        category: comp.category as "pasteis" | "salgados" | "acai",
+        isSpecial: parseFloat(String(comp.price)) > 0,
+      })) || [];
+
+      setComplements(formattedComplements);
+    } catch (error) {
+      console.error("Erro ao buscar complementos:", error);
+      toast.error("Erro ao carregar complementos");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenDialog = (complement?: Complement) => {
     if (complement) {
@@ -71,39 +98,67 @@ const Complements = () => {
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim()) {
       toast.error("Nome do complemento é obrigatório");
       return;
     }
 
     const price = parseFloat(formData.price) || 0;
+    setLoading(true);
 
-    if (editingComplement) {
-      setComplements(complements.map(c => 
-        c.id === editingComplement.id
-          ? { ...c, ...formData, price }
-          : c
-      ));
-      toast.success("Complemento atualizado com sucesso");
-    } else {
-      const newComplement: Complement = {
-        id: Math.random().toString(),
-        name: formData.name,
-        price,
-        category: formData.category,
-        isSpecial: formData.isSpecial,
-      };
-      setComplements([...complements, newComplement]);
-      toast.success("Complemento cadastrado com sucesso");
+    try {
+      if (editingComplement) {
+        const { error } = await supabase
+          .from("complements")
+          .update({
+            name: formData.name,
+            price: price,
+            category: formData.category,
+          })
+          .eq("id", editingComplement.id);
+
+        if (error) throw error;
+        toast.success("Complemento atualizado com sucesso");
+      } else {
+        const { error } = await supabase
+          .from("complements")
+          .insert({
+            name: formData.name,
+            price: price,
+            category: formData.category,
+            active: true,
+          });
+
+        if (error) throw error;
+        toast.success("Complemento cadastrado com sucesso");
+      }
+
+      await fetchComplements();
+      setDialogOpen(false);
+    } catch (error) {
+      console.error("Erro ao salvar complemento:", error);
+      toast.error("Erro ao salvar complemento");
+    } finally {
+      setLoading(false);
     }
-
-    setDialogOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setComplements(complements.filter(c => c.id !== id));
-    toast.success("Complemento removido");
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("complements")
+        .update({ active: false })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      await fetchComplements();
+      toast.success("Complemento removido");
+    } catch (error) {
+      console.error("Erro ao remover complemento:", error);
+      toast.error("Erro ao remover complemento");
+    }
   };
 
   const getCategoryBadge = (category: string) => {
@@ -163,7 +218,11 @@ const Complements = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {complements.length === 0 ? (
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : complements.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 Nenhum complemento cadastrado ainda
               </div>
@@ -289,10 +348,10 @@ const Complements = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={loading}>
               Cancelar
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={loading}>
               {editingComplement ? "Salvar" : "Cadastrar"}
             </Button>
           </DialogFooter>
