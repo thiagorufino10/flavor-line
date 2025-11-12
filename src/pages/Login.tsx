@@ -13,8 +13,10 @@ const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Criar usuário admin padrão se não existir
+    // Sempre garantir que o usuário admin existe
     const users = localStorage.getItem("users");
+    console.log("Users in localStorage:", users);
+    
     if (!users) {
       const defaultUsers = [
         { 
@@ -26,14 +28,50 @@ const Login = () => {
         }
       ];
       localStorage.setItem("users", JSON.stringify(defaultUsers));
+      console.log("Created default admin user");
+    } else {
+      // Verificar se admin existe, se não, adicionar
+      const parsedUsers = JSON.parse(users);
+      const adminExists = parsedUsers.some((u: any) => u.username === "admin");
+      
+      if (!adminExists) {
+        parsedUsers.push({
+          id: "1", 
+          username: "admin", 
+          password: "admin",
+          name: "Administrador", 
+          role: "admin" 
+        });
+        localStorage.setItem("users", JSON.stringify(parsedUsers));
+        console.log("Added admin user to existing users");
+      }
     }
   }, []);
+
+  const resetAndCreateAdmin = () => {
+    const defaultUsers = [
+      { 
+        id: "1", 
+        username: "admin", 
+        password: "admin",
+        name: "Administrador", 
+        role: "admin" 
+      }
+    ];
+    localStorage.setItem("users", JSON.stringify(defaultUsers));
+    toast.success("Usuário admin criado! Use: admin / admin");
+    console.log("Force created admin user");
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     
     const users = JSON.parse(localStorage.getItem("users") || "[]");
+    console.log("All users:", users);
+    console.log("Trying to login with:", username, password);
+    
     const user = users.find((u: any) => u.username === username && u.password === password);
+    console.log("Found user:", user);
     
     if (user) {
       localStorage.setItem("currentUser", JSON.stringify(user));
@@ -102,6 +140,14 @@ const Login = () => {
             <div className="space-y-1 text-xs text-muted-foreground text-center">
               <p>👤 <strong>admin</strong> / admin</p>
             </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={resetAndCreateAdmin}
+              className="w-full mt-3"
+            >
+              Recriar Usuário Admin
+            </Button>
           </div>
         </CardContent>
       </Card>
