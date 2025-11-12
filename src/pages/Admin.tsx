@@ -159,17 +159,6 @@ const Admin = () => {
             ))}
           </div>
         </div>
-
-        {/* Info Card */}
-        <Card className="mt-8 bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-lg">🚀 Próximos Passos</CardTitle>
-            <CardDescription className="text-base">
-              Para habilitar todas as funcionalidades do sistema (banco de dados, autenticação real, etc.), 
-              precisamos ativar o <strong>Lovable Cloud</strong>.
-            </CardDescription>
-          </CardHeader>
-        </Card>
       </main>
     </div>
   );
