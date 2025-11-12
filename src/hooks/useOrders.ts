@@ -104,7 +104,7 @@ export const useOrders = (status?: string) => {
     }>
   ) => {
     try {
-      // Calcular valor líquido antes de inserir
+      // Calcular valor líquido para armazenar no pedido
       let amountReceived = totalAmount;
       
       if (paymentMethod === "credito" || paymentMethod === "debito") {
@@ -122,15 +122,15 @@ export const useOrders = (status?: string) => {
         }
       }
 
-      // Inserir pedido (order_number será gerado pelo trigger)
+      // Inserir pedido com o valor líquido (descontada a taxa)
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert([{
           customer_name: customerName,
           payment_method: paymentMethod,
-          total_amount: totalAmount,
+          total_amount: amountReceived, // Valor líquido que entra no caixa
           status: "novo",
-          order_number: 0, // Será sobrescrito pelo trigger
+          order_number: 0, // Será gerado pelo trigger
         }])
         .select()
         .single();
@@ -152,21 +152,6 @@ export const useOrders = (status?: string) => {
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
-
-      // Criar entrada no fluxo de caixa
-      const { error: cashFlowError } = await supabase
-        .from("cash_flow_transactions")
-        .insert({
-          transaction_type: "entrada",
-          amount: amountReceived,
-          description: `Pedido #${order.order_number} - ${customerName}`,
-          transaction_date: new Date().toISOString(),
-        });
-
-      if (cashFlowError) {
-        console.error("Erro ao criar entrada no fluxo de caixa:", cashFlowError);
-        // Não bloqueia o pedido se falhar o registro no fluxo de caixa
-      }
 
       toast.success(`Pedido #${order.order_number} criado com sucesso!`);
       return order;

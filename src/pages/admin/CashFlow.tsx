@@ -100,27 +100,36 @@ const CashFlow = () => {
         }),
         type: t.transaction_type as "entrada" | "saida",
         description: t.description,
-        category: t.transaction_type === "entrada" ? "Outros" : "Despesas",
+        category: t.transaction_type === "entrada" ? "Entradas Manuais" : "Despesas",
         amount: parseFloat(String(t.amount)),
         paymentMethod: undefined,
       })) || [];
 
-      // Formatar vendas (pedidos) como entradas
-      const formattedOrders = orders?.map((order) => ({
-        id: `order-${order.id}`,
-        date: new Date(order.created_at).toLocaleString('pt-BR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        type: "entrada" as const,
-        description: `Pedido #${order.order_number} - ${order.customer_name}`,
-        category: "Vendas",
-        amount: parseFloat(String(order.total_amount)),
-        paymentMethod: order.payment_method,
-      })) || [];
+      // Formatar vendas (pedidos) como entradas com forma de pagamento
+      const formattedOrders = orders?.map((order) => {
+        const paymentMethodMap: Record<string, string> = {
+          credito: "Crédito",
+          debito: "Débito",
+          pix: "Pix",
+          dinheiro: "Dinheiro",
+        };
+        
+        return {
+          id: `order-${order.id}`,
+          date: new Date(order.created_at).toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          type: "entrada" as const,
+          description: `Pedido #${order.order_number} - ${order.customer_name}`,
+          category: "Vendas",
+          amount: parseFloat(String(order.total_amount)),
+          paymentMethod: paymentMethodMap[order.payment_method] || order.payment_method,
+        };
+      }) || [];
 
       // Combinar e ordenar todas as transações
       const allTransactions = [...formattedManual, ...formattedOrders].sort((a, b) => {
