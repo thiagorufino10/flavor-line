@@ -32,7 +32,9 @@ const Login = () => {
     setLoading(true);
     
     try {
-      const { error } = await signIn(username, password);
+      // Converte username para email interno
+      const email = `${username.toLowerCase()}@pastelfavorite.local`;
+      const { error } = await signIn(email, password);
       
       if (error) {
         toast.error("Usuário ou senha inválidos");
