@@ -1,10 +1,26 @@
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UtensilsCrossed, Settings, ShoppingCart, ChefHat, Tv } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user, userRole } = useAuth();
+
+  useEffect(() => {
+    if (user && userRole) {
+      // Redirect authenticated users to their appropriate page
+      if (userRole === "admin") {
+        navigate("/admin");
+      } else if (userRole === "atendente") {
+        navigate("/orders");
+      } else if (userRole === "cozinha") {
+        navigate("/kitchen");
+      }
+    }
+  }, [user, userRole, navigate]);
 
   const modules = [
     {
@@ -13,7 +29,7 @@ const Index = () => {
       description: "Configurações e cadastros do sistema",
       path: "/login",
       color: "bg-primary",
-      demo: "admin / admin"
+      demo: "Admin"
     },
     {
       icon: ShoppingCart,
@@ -21,7 +37,7 @@ const Index = () => {
       description: "Tela de atendimento e vendas",
       path: "/login",
       color: "bg-warning",
-      demo: "atendente / atendente"
+      demo: "Atendente"
     },
     {
       icon: ChefHat,
@@ -29,7 +45,7 @@ const Index = () => {
       description: "Visualização de pedidos para produção",
       path: "/login",
       color: "bg-accent",
-      demo: "cozinha / cozinha"
+      demo: "Cozinha"
     },
     {
       icon: Tv,

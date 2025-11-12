@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   LogOut, 
   Users, 
@@ -16,6 +17,7 @@ import {
 
 const Admin = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
   const adminSections = [
     {
@@ -95,7 +97,10 @@ const Admin = () => {
           </div>
           <Button 
             variant="outline" 
-            onClick={() => navigate("/")}
+            onClick={() => {
+              signOut();
+              navigate("/");
+            }}
             className="gap-2"
           >
             <LogOut className="w-4 h-4" />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,27 +6,45 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { signIn, user, userRole } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user && userRole) {
+      // Redirect based on role
+      if (userRole === "admin") {
+        navigate("/admin");
+      } else if (userRole === "atendente") {
+        navigate("/orders");
+      } else if (userRole === "cozinha") {
+        navigate("/kitchen");
+      }
+    }
+  }, [user, userRole, navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
-    // Demo login - will be replaced with real auth
-    if (username === "admin" && password === "admin") {
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        toast.error("Email ou senha inválidos");
+        return;
+      }
+      
       toast.success("Login realizado com sucesso!");
-      navigate("/admin");
-    } else if (username === "atendente" && password === "atendente") {
-      toast.success("Bem-vindo, Atendente!");
-      navigate("/orders");
-    } else if (username === "cozinha" && password === "cozinha") {
-      toast.success("Acesso à Cozinha liberado!");
-      navigate("/kitchen");
-    } else {
-      toast.error("Usuário ou senha inválidos");
+    } catch (error) {
+      toast.error("Erro ao fazer login");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -47,15 +65,16 @@ const Login = () => {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Usuário</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                type="text"
-                placeholder="Digite seu usuário"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 className="h-12"
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -68,21 +87,13 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="h-12"
+                disabled={loading}
               />
             </div>
-            <Button type="submit" className="w-full h-12 text-lg font-semibold">
-              Entrar
+            <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={loading}>
+              {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
-          
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <p className="text-xs text-muted-foreground text-center mb-2">Usuários de Demonstração:</p>
-            <div className="space-y-1 text-xs text-muted-foreground">
-              <p>👤 <strong>admin</strong> / admin</p>
-              <p>👤 <strong>atendente</strong> / atendente</p>
-              <p>👤 <strong>cozinha</strong> / cozinha</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
