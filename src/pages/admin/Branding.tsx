@@ -4,15 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, LogOut, Image, Type } from "lucide-react";
+import { ArrowLeft, LogOut, Image, Type, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Branding = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [systemName, setSystemName] = useState("Pastel Favorite");
   const [logoUrl, setLogoUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     const savedName = localStorage.getItem("systemName");
@@ -22,15 +25,122 @@ const Branding = () => {
     if (savedLogo) setLogoUrl(savedLogo);
   }, []);
 
-  const handleSave = () => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validar tipo de arquivo
+      if (!file.type.startsWith('image/')) {
+        toast.error("Por favor, selecione um arquivo de imagem");
+        return;
+      }
+      
+      // Validar tamanho (máximo 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("A imagem deve ter no máximo 2MB");
+        return;
+      }
+      
+      setSelectedFile(file);
+      
+      // Preview da imagem
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoUrl(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      toast.error("Selecione uma imagem primeiro");
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Criar nome único para o arquivo
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `logo-${Date.now()}.${fileExt}`;
+      const filePath = fileName;
+
+      // Upload do arquivo
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('system-logos')
+        .upload(filePath, selectedFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Obter URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('system-logos')
+        .getPublicUrl(filePath);
+
+      setLogoUrl(publicUrl);
+      toast.success("Logo enviada com sucesso!");
+    } catch (error: any) {
+      console.error("Erro ao fazer upload:", error);
+      toast.error(error.message || "Erro ao fazer upload da imagem");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (logoUrl && logoUrl.includes('system-logos')) {
+      try {
+        // Extrair o nome do arquivo da URL
+        const fileName = logoUrl.split('/').pop();
+        if (fileName) {
+          await supabase.storage
+            .from('system-logos')
+            .remove([fileName]);
+        }
+      } catch (error) {
+        console.error("Erro ao remover logo:", error);
+      }
+    }
+    
+    setLogoUrl("");
+    setSelectedFile(null);
+    localStorage.removeItem("systemLogo");
+    toast.success("Logo removida");
+  };
+
+  const handleSave = async () => {
+    // Se há arquivo selecionado mas não foi feito upload
+    if (selectedFile && !logoUrl.includes('system-logos')) {
+      await handleUpload();
+    }
+    
     localStorage.setItem("systemName", systemName);
-    localStorage.setItem("systemLogo", logoUrl);
+    if (logoUrl) {
+      localStorage.setItem("systemLogo", logoUrl);
+    }
     toast.success("Configurações de marca salvas com sucesso!");
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    if (logoUrl && logoUrl.includes('system-logos')) {
+      try {
+        const fileName = logoUrl.split('/').pop();
+        if (fileName) {
+          await supabase.storage
+            .from('system-logos')
+            .remove([fileName]);
+        }
+      } catch (error) {
+        console.error("Erro ao remover logo:", error);
+      }
+    }
+    
     setSystemName("Pastel Favorite");
     setLogoUrl("");
+    setSelectedFile(null);
     localStorage.removeItem("systemName");
     localStorage.removeItem("systemLogo");
     toast.success("Configurações resetadas para o padrão");
@@ -137,31 +247,56 @@ const Branding = () => {
                 Logo do Sistema
               </CardTitle>
               <CardDescription>
-                Adicione a URL da imagem que será usada como logo
+                Faça upload da imagem que será usada como logo
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="logoUrl">URL da Logo</Label>
-                <Input
-                  id="logoUrl"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  placeholder="https://exemplo.com/logo.png"
-                  type="url"
-                />
+                <Label htmlFor="logoFile">Arquivo da Logo</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="logoFile"
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp"
+                    onChange={handleFileSelect}
+                    disabled={uploading}
+                    className="cursor-pointer"
+                  />
+                  {logoUrl && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleRemoveLogo}
+                      disabled={uploading}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">
-                  Cole a URL completa de uma imagem hospedada online (PNG, JPG ou SVG)
+                  Selecione uma imagem (PNG, JPG, SVG ou WEBP - máximo 2MB)
                 </p>
               </div>
+
+              {selectedFile && !logoUrl.includes('system-logos') && (
+                <Button 
+                  onClick={handleUpload} 
+                  disabled={uploading}
+                  className="w-full"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {uploading ? "Enviando..." : "Fazer Upload"}
+                </Button>
+              )}
 
               <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <p className="text-sm font-medium">Dicas para melhor resultado:</p>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                   <li>Use imagens com fundo transparente (PNG)</li>
-                  <li>Tamanho recomendado: 200x200 pixels</li>
+                  <li>Tamanho recomendado: 200x200 pixels ou maior</li>
                   <li>Formato recomendado: PNG ou SVG</li>
                   <li>A imagem será redimensionada automaticamente</li>
+                  <li>Tamanho máximo: 2MB</li>
                 </ul>
               </div>
             </CardContent>
@@ -169,10 +304,10 @@ const Branding = () => {
 
           {/* Action Buttons */}
           <div className="flex gap-3">
-            <Button onClick={handleSave} className="flex-1">
+            <Button onClick={handleSave} className="flex-1" disabled={uploading}>
               Salvar Configurações
             </Button>
-            <Button onClick={handleReset} variant="outline">
+            <Button onClick={handleReset} variant="outline" disabled={uploading}>
               Restaurar Padrão
             </Button>
           </div>
