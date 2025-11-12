@@ -18,124 +18,159 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users as UsersIcon, ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
+import { Users as UsersIcon, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
-interface User {
+interface UserProfile {
   id: string;
+  full_name: string;
   username: string;
-  password: string;
-  name: string;
   role: "admin" | "atendente" | "cozinha";
 }
 
 const Users = () => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [formData, setFormData] = useState({
-    id: "",
     username: "",
-    name: "",
+    full_name: "",
     role: "atendente" as "admin" | "atendente" | "cozinha",
     password: "",
   });
-  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    loadUsers();
+    fetchUsers();
   }, []);
 
-  const loadUsers = () => {
-    const saved = localStorage.getItem("users");
-    if (saved) {
-      setUsers(JSON.parse(saved));
+  const fetchUsers = async () => {
+    try {
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          full_name,
+          user_roles (role)
+        `);
+
+      if (profilesError) throw profilesError;
+
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+
+      if (authError) {
+        console.error("Error fetching auth users:", authError);
+      }
+
+      const authUsers = authData?.users || [];
+
+      const usersWithData = profiles?.map((profile: any) => {
+        const authUser = authUsers.find((u: any) => u.id === profile.id);
+        const email = authUser?.email || "";
+        const username = email.includes('@') ? email.split('@')[0] : email;
+        const role = profile.user_roles?.[0]?.role || "atendente";
+        
+        return {
+          id: profile.id,
+          full_name: profile.full_name,
+          username: username,
+          role: role
+        };
+      }) || [];
+
+      setUsers(usersWithData);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast.error("Erro ao carregar usuários");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSave = () => {
-    if (!formData.username || !formData.name || !formData.role) {
+  const handleSave = async () => {
+    if (!formData.username || !formData.full_name || !formData.role || !formData.password) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
 
-    if (!isEditing && !formData.password) {
-      toast.error("Senha é obrigatória para novos usuários");
+    if (formData.password.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
       return;
     }
 
-    let updatedUsers: User[];
+    setLoading(true);
 
-    if (isEditing) {
-      updatedUsers = users.map(user =>
-        user.id === formData.id
-          ? { 
-              ...user,
-              username: formData.username, 
-              name: formData.name, 
-              role: formData.role,
-              password: formData.password || user.password
-            }
-          : user
-      );
-      toast.success("Usuário atualizado com sucesso!");
-    } else {
-      // Check if username already exists
-      if (users.some(u => u.username === formData.username)) {
-        toast.error("Nome de usuário já existe");
-        return;
+    try {
+      const email = `${formData.username}@pastelfavorite.local`;
+      
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password: formData.password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: formData.full_name
+        }
+      });
+
+      if (authError) throw authError;
+
+      if (!authData.user) {
+        throw new Error("Usuário não foi criado");
       }
 
-      const newUser: User = {
-        id: Math.random().toString(),
-        username: formData.username,
-        name: formData.name,
-        role: formData.role,
-        password: formData.password,
-      };
-      updatedUsers = [...users, newUser];
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: authData.user.id,
+          role: formData.role
+        });
+
+      if (roleError) throw roleError;
+
       toast.success("Usuário criado com sucesso!");
+      handleReset();
+      fetchUsers();
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      if (error.message?.includes("already") || error.message?.includes("duplicate")) {
+        toast.error("Este usuário já está cadastrado");
+      } else {
+        toast.error("Erro ao criar usuário: " + (error.message || "Erro desconhecido"));
+      }
+    } finally {
+      setLoading(false);
     }
-
-    localStorage.setItem("users", JSON.stringify(updatedUsers));
-    setUsers(updatedUsers);
-    handleReset();
   };
 
-  const handleEdit = (user: User) => {
-    setFormData({
-      id: user.id,
-      username: user.username,
-      name: user.name,
-      role: user.role,
-      password: "",
-    });
-    setIsEditing(true);
-  };
-
-  const handleDelete = (id: string) => {
-    const user = users.find(u => u.id === id);
-    if (user?.username === "admin") {
+  const handleDelete = async (id: string, username: string) => {
+    if (username === "admin") {
       toast.error("Não é possível excluir o usuário administrador principal");
       return;
     }
 
-    const updatedUsers = users.filter(user => user.id !== id);
-    localStorage.setItem("users", JSON.stringify(updatedUsers));
-    setUsers(updatedUsers);
-    toast.success("Usuário excluído com sucesso!");
+    try {
+      const { error } = await supabase.auth.admin.deleteUser(id);
+
+      if (error) throw error;
+
+      toast.success("Usuário excluído com sucesso!");
+      fetchUsers();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("Erro ao excluir usuário");
+    }
   };
 
   const handleReset = () => {
     setFormData({
-      id: "",
       username: "",
-      name: "",
+      full_name: "",
       role: "atendente",
       password: "",
     });
-    setIsEditing(false);
   };
 
   const getRoleBadge = (role: string) => {
@@ -170,7 +205,7 @@ const Users = () => {
         {/* Form */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle>{isEditing ? "Editar Usuário" : "Novo Usuário"}</CardTitle>
+            <CardTitle>Novo Usuário</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -178,25 +213,27 @@ const Users = () => {
               <Input
                 id="username"
                 value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                placeholder="usuario123"
-                disabled={isEditing && formData.username === "admin"}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') })}
+                placeholder="admin"
+                disabled={loading}
               />
+              <p className="text-xs text-muted-foreground">Apenas letras minúsculas e números</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo *</Label>
+              <Label htmlFor="full_name">Nome Completo *</Label>
               <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="João da Silva"
+                id="full_name"
+                value={formData.full_name}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                placeholder="Administrador"
+                disabled={loading}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="role">Perfil *</Label>
-              <Select value={formData.role} onValueChange={(value: any) => setFormData({ ...formData, role: value })}>
+              <Select value={formData.role} onValueChange={(value: any) => setFormData({ ...formData, role: value })} disabled={loading}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -209,28 +246,21 @@ const Users = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">
-                Senha {!isEditing && "*"}
-              </Label>
+              <Label htmlFor="password">Senha *</Label>
               <Input
                 id="password"
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder={isEditing ? "Deixe em branco para manter" : "Digite a senha"}
+                placeholder="Mínimo 6 caracteres"
+                disabled={loading}
               />
             </div>
 
-            <div className="flex gap-2">
-              <Button onClick={handleSave} className="flex-1">
-                {isEditing ? "Atualizar" : <><Plus className="w-4 h-4 mr-2" /> Criar</>}
-              </Button>
-              {isEditing && (
-                <Button variant="outline" onClick={handleReset}>
-                  Cancelar
-                </Button>
-              )}
-            </div>
+            <Button onClick={handleSave} className="w-full" disabled={loading}>
+              <Plus className="w-4 h-4 mr-2" />
+              {loading ? "Criando..." : "Criar Usuário"}
+            </Button>
           </CardContent>
         </Card>
 
@@ -240,44 +270,41 @@ const Users = () => {
             <CardTitle>Usuários Cadastrados</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Perfil</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.username}</TableCell>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{getRoleBadge(user.role)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+            {loading && users.length === 0 ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Perfil</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.username}</TableCell>
+                      <TableCell>{user.full_name}</TableCell>
+                      <TableCell>{getRoleBadge(user.role)}</TableCell>
+                      <TableCell className="text-right">
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleEdit(user)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDelete(user.id)}
+                          onClick={() => handleDelete(user.id, user.username)}
                           disabled={user.username === "admin"}
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
