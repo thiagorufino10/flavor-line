@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,13 @@ const PaymentRates = () => {
     credito: 3.5,
     debito: 2.0,
   });
+
+  useEffect(() => {
+    const savedRates = localStorage.getItem("paymentRates");
+    if (savedRates) {
+      setRates(JSON.parse(savedRates));
+    }
+  }, []);
 
   const handleSave = () => {
     // TODO: Salvar no banco quando Lovable Cloud estiver ativo

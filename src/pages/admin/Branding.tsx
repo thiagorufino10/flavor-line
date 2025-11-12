@@ -4,14 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, LogOut, Image, Type, Upload, X } from "lucide-react";
+import { ArrowLeft, Image, Type, Upload, X } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const Branding = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
   const [systemName, setSystemName] = useState("Pastel Favorite");
   const [logoUrl, setLogoUrl] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -165,14 +163,11 @@ const Branding = () => {
           </div>
           <Button 
             variant="outline" 
-            onClick={() => {
-              signOut();
-              navigate("/login");
-            }}
+            onClick={() => navigate("/admin")}
             className="gap-2"
           >
-            <LogOut className="w-4 h-4" />
-            Sair
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
           </Button>
         </div>
       </header>
