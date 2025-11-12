@@ -1,32 +1,17 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UtensilsCrossed, Settings, ShoppingCart, ChefHat, Tv } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, userRole } = useAuth();
-
-  useEffect(() => {
-    if (user && userRole) {
-      if (userRole === "admin") {
-        navigate("/admin");
-      } else if (userRole === "atendente") {
-        navigate("/orders");
-      } else if (userRole === "cozinha") {
-        navigate("/kitchen");
-      }
-    }
-  }, [user, userRole, navigate]);
 
   const modules = [
     {
       icon: Settings,
       title: "Administração",
       description: "Configurações e cadastros do sistema",
-      path: "/login",
+      path: "/admin",
       color: "bg-primary",
       demo: "Admin"
     },
@@ -34,7 +19,7 @@ const Index = () => {
       icon: ShoppingCart,
       title: "Lançamento de Pedidos",
       description: "Tela de atendimento e vendas",
-      path: "/login",
+      path: "/orders",
       color: "bg-warning",
       demo: "Atendente"
     },
@@ -42,7 +27,7 @@ const Index = () => {
       icon: ChefHat,
       title: "Cozinha (KDS)",
       description: "Visualização de pedidos para produção",
-      path: "/login",
+      path: "/kitchen",
       color: "bg-accent",
       demo: "Cozinha"
     },
