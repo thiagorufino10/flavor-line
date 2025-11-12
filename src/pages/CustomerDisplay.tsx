@@ -34,58 +34,62 @@ const CustomerDisplay = () => {
       </header>
 
       {/* Main Display */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-6 py-6 h-[calc(100vh-88px)]">
         {loading ? (
-          <div className="text-center py-20">
-            <p className="text-2xl text-muted-foreground">
+          <div className="flex items-center justify-center h-full">
+            <p className="text-3xl text-muted-foreground">
               Carregando...
             </p>
           </div>
         ) : (
-          <div className="space-y-12">
-            {/* Em Preparação */}
-            <div>
-              <div className="text-center mb-8">
-                <h2 className="text-3xl md:text-5xl font-bold mb-2 text-warning">
+          <div className="grid grid-cols-2 gap-0 h-full">
+            {/* Em Preparação - Coluna Esquerda */}
+            <div className="flex flex-col pr-6 border-r-4 border-border">
+              <div className="text-center mb-6">
+                <h2 className="text-4xl font-bold mb-2 text-warning">
                   Em Preparação
                 </h2>
-                <p className="text-lg md:text-xl text-muted-foreground">
-                  Seu pedido está sendo preparado
+                <p className="text-xl text-muted-foreground">
+                  Aguarde, estamos preparando
                 </p>
               </div>
 
-              {preparingOrders.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                  {preparingOrders.map((order) => (
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                {preparingOrders.length > 0 ? (
+                  preparingOrders.map((order) => (
                     <div
                       key={order.id}
-                      className="bg-gradient-to-br from-warning/20 to-warning/10 border-2 border-warning rounded-2xl p-6 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-500"
+                      className="bg-gradient-to-br from-warning/20 to-warning/10 border-2 border-warning rounded-2xl p-6 shadow-lg animate-in fade-in slide-in-from-left-4 duration-500"
                     >
-                      <div className="text-center mb-4">
-                        <p className="text-warning text-sm font-semibold mb-1">
-                          Pedido
-                        </p>
-                        <p className="text-warning text-5xl font-bold mb-2">
-                          {order.order_number}
-                        </p>
-                        <p className="text-foreground text-lg font-medium">
-                          {order.customer_name}
-                        </p>
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <p className="text-warning text-xs font-semibold mb-1">
+                            Pedido
+                          </p>
+                          <p className="text-warning text-5xl font-bold">
+                            {order.order_number}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-foreground text-2xl font-bold">
+                            {order.customer_name}
+                          </p>
+                        </div>
                       </div>
                       
                       <div className="space-y-2">
                         {order.items && order.items.length > 0 ? (
                           order.items.map((item, idx) => (
                             <div key={idx} className="bg-card/50 rounded-lg p-3 border border-warning/30">
-                              <p className="font-bold text-sm">
+                              <p className="font-bold text-lg">
                                 {item.quantity}x {item.product_name}
                               </p>
                               {item.complements && Array.isArray(item.complements) && item.complements.length > 0 && (
-                                <div className="mt-1 pl-3 border-l-2 border-warning/50">
-                                  <p className="text-xs text-muted-foreground font-semibold">Complementos:</p>
-                                  <ul className="space-y-0.5">
+                                <div className="mt-2 pl-3 border-l-2 border-warning/50">
+                                  <p className="text-sm text-muted-foreground font-semibold">Complementos:</p>
+                                  <ul className="space-y-1">
                                     {item.complements.map((comp: any, cIdx: number) => (
-                                      <li key={cIdx} className="text-xs text-muted-foreground">
+                                      <li key={cIdx} className="text-sm text-muted-foreground">
                                         • {comp.name}
                                       </li>
                                     ))}
@@ -99,58 +103,64 @@ const CustomerDisplay = () => {
                         )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-center text-xl text-muted-foreground">
-                  Nenhum pedido em preparação
-                </p>
-              )}
+                  ))
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-2xl text-muted-foreground">
+                      Nenhum pedido em preparação
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Finalizados */}
-            <div>
-              <div className="text-center mb-8">
-                <h2 className="text-3xl md:text-5xl font-bold mb-2 text-success">
+            {/* Pedidos Prontos - Coluna Direita */}
+            <div className="flex flex-col pl-6">
+              <div className="text-center mb-6">
+                <h2 className="text-4xl font-bold mb-2 text-success">
                   Pedidos Prontos
                 </h2>
-                <p className="text-lg md:text-xl text-muted-foreground">
+                <p className="text-xl text-muted-foreground">
                   Retire seu pedido no balcão
                 </p>
               </div>
 
-              {finishedOrders.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                  {finishedOrders.map((order) => (
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                {finishedOrders.length > 0 ? (
+                  finishedOrders.map((order) => (
                     <div
                       key={order.id}
-                      className="bg-gradient-to-br from-success to-success/80 rounded-2xl p-6 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-500"
+                      className="bg-gradient-to-br from-success to-success/80 rounded-2xl p-6 shadow-2xl animate-in fade-in slide-in-from-right-4 duration-500"
                     >
-                      <div className="text-center mb-4">
-                        <p className="text-white/80 text-sm font-semibold mb-1">
-                          Pedido
-                        </p>
-                        <p className="text-white text-5xl font-bold mb-2">
-                          {order.order_number}
-                        </p>
-                        <p className="text-white/90 text-lg font-medium">
-                          {order.customer_name}
-                        </p>
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <p className="text-white/80 text-xs font-semibold mb-1">
+                            Pedido
+                          </p>
+                          <p className="text-white text-5xl font-bold">
+                            {order.order_number}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-white text-2xl font-bold">
+                            {order.customer_name}
+                          </p>
+                        </div>
                       </div>
                       
                       <div className="space-y-2">
                         {order.items && order.items.length > 0 ? (
                           order.items.map((item, idx) => (
                             <div key={idx} className="bg-white/20 rounded-lg p-3 border border-white/30">
-                              <p className="font-bold text-sm text-white">
+                              <p className="font-bold text-lg text-white">
                                 {item.quantity}x {item.product_name}
                               </p>
                               {item.complements && Array.isArray(item.complements) && item.complements.length > 0 && (
-                                <div className="mt-1 pl-3 border-l-2 border-white/50">
-                                  <p className="text-xs text-white/80 font-semibold">Complementos:</p>
-                                  <ul className="space-y-0.5">
+                                <div className="mt-2 pl-3 border-l-2 border-white/50">
+                                  <p className="text-sm text-white/80 font-semibold">Complementos:</p>
+                                  <ul className="space-y-1">
                                     {item.complements.map((comp: any, cIdx: number) => (
-                                      <li key={cIdx} className="text-xs text-white/80">
+                                      <li key={cIdx} className="text-sm text-white/80">
                                         • {comp.name}
                                       </li>
                                     ))}
@@ -164,18 +174,18 @@ const CustomerDisplay = () => {
                         )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                    <UtensilsCrossed className="w-10 h-10 text-muted-foreground" />
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
+                      <UtensilsCrossed className="w-12 h-12 text-muted-foreground" />
+                    </div>
+                    <p className="text-2xl text-muted-foreground">
+                      Nenhum pedido pronto
+                    </p>
                   </div>
-                  <p className="text-xl text-muted-foreground">
-                    Nenhum pedido pronto no momento
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
