@@ -163,6 +163,7 @@ const Printer = () => {
               
               <div className="border-t border-b border-gray-400 py-2 my-2">
                 <p><strong>Pedido:</strong> #123</p>
+                <p><strong>Cliente:</strong> JOÃO SILVA</p>
                 <p><strong>Data/Hora:</strong> 11/11/2025 14:30</p>
               </div>
 

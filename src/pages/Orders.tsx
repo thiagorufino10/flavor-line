@@ -129,7 +129,14 @@ const Orders = () => {
         complements: item.complements || null
       }));
 
-      await createOrder(customerName, paymentMethod, getTotalPrice(), items);
+      const order = await createOrder(customerName, paymentMethod, getTotalPrice(), items);
+      
+      // Se o modo for impressora, imprimir o pedido
+      if (operationMode === "printer" && order) {
+        const { printOrder } = await import("@/lib/printOrder");
+        printOrder(order);
+      }
+      
       toast.success(`Pedido de ${customerName} finalizado! Enviado para ${destinationText}`);
       setCurrentOrder([]);
     } catch (error) {
