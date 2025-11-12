@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 import { ptBR } from "date-fns/locale";
+import { useSales, SaleDetail } from "@/hooks/useSales";
 
 interface VendaDetalhada {
   produto: string;
@@ -37,6 +38,7 @@ const Reports = () => {
   const [showFiltered, setShowFiltered] = useState(false);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [vendasDetalhadas, setVendasDetalhadas] = useState<VendaDetalhada[]>([]);
+  const { sales, loading } = useSales(filterStartDate, filterEndDate);
 
   useEffect(() => {
     const stored = localStorage.getItem("menuItems");
@@ -53,22 +55,8 @@ const Reports = () => {
     { value: "credito", label: "Crédito" },
   ];
 
-  // Mock de dados detalhados - depois virá do banco de dados
-  const vendasMock: VendaDetalhada[] = [
-    { produto: "Pastel de Carne", formaPagamento: "Crédito", quantidade: 18, valorUnitario: 8.00, valorTotal: 144.00 },
-    { produto: "Pastel de Carne", formaPagamento: "Dinheiro", quantidade: 4, valorUnitario: 8.00, valorTotal: 32.00 },
-    { produto: "Pastel de Carne", formaPagamento: "Pix", quantidade: 3, valorUnitario: 8.00, valorTotal: 24.00 },
-    { produto: "Açaí 500ml", formaPagamento: "Crédito", quantidade: 8, valorUnitario: 18.00, valorTotal: 144.00 },
-    { produto: "Açaí 500ml", formaPagamento: "Débito", quantidade: 8, valorUnitario: 18.00, valorTotal: 144.00 },
-    { produto: "Açaí 500ml", formaPagamento: "Pix", quantidade: 2, valorUnitario: 18.00, valorTotal: 36.00 },
-    { produto: "Pastel Disco", formaPagamento: "Crédito", quantidade: 8, valorUnitario: 12.00, valorTotal: 96.00 },
-    { produto: "Pastel Disco", formaPagamento: "Débito", quantidade: 4, valorUnitario: 12.00, valorTotal: 48.00 },
-    { produto: "Coxinha", formaPagamento: "Crédito", quantidade: 11, valorUnitario: 6.00, valorTotal: 66.00 },
-    { produto: "Coxinha", formaPagamento: "Dinheiro", quantidade: 4, valorUnitario: 6.00, valorTotal: 24.00 },
-  ];
-
   const aplicarFiltros = () => {
-    let vendas = [...vendasMock];
+    let vendas = [...sales];
 
     // Filtrar por forma de pagamento
     if (filterPaymentMethod !== "todos") {
@@ -250,8 +238,14 @@ const Reports = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 space-y-6">
-        {/* Cards de Resumo */}
-        <Card>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <p className="text-muted-foreground">Carregando relatórios...</p>
+          </div>
+        ) : (
+          <>
+            {/* Cards de Resumo */}
+            <Card>
           <CardHeader>
             <CardTitle>Resumo Geral</CardTitle>
           </CardHeader>
@@ -500,6 +494,8 @@ const Reports = () => {
             )}
           </CardContent>
         </Card>
+          </>
+        )}
       </main>
     </div>
   );

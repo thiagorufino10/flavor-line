@@ -1,69 +1,36 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { LogOut, ChefHat, Clock } from "lucide-react";
-
-interface Order {
-  id: string;
-  number: number;
-  customerName: string;
-  items: string[];
-  status: "novo" | "preparando" | "finalizado";
-  time: string;
-}
+import { useOrders } from "@/hooks/useOrders";
+import { format } from "date-fns";
 
 const Kitchen = () => {
   const navigate = useNavigate();
-  
-  // Demo orders
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: "1",
-      number: 101,
-      customerName: "João Silva",
-      items: ["2x Pastel de Carne", "1x Refrigerante"],
-      status: "novo",
-      time: "10:30"
-    },
-    {
-      id: "2",
-      number: 102,
-      customerName: "Maria Santos",
-      items: ["1x Açaí 500ml", "1x Pastel Disco"],
-      status: "preparando",
-      time: "10:32"
-    },
-    {
-      id: "3",
-      number: 103,
-      customerName: "Pedro Costa",
-      items: ["3x Coxinha", "2x Suco Natural"],
-      status: "novo",
-      time: "10:35"
-    }
-  ]);
+  const { orders, loading, updateOrderStatus } = useOrders();
 
-  const updateOrderStatus = (id: string, newStatus: Order["status"]) => {
-    setOrders(orders.map(order => 
-      order.id === id ? { ...order, status: newStatus } : order
-    ));
-  };
-
-  const getStatusBadge = (status: Order["status"]) => {
-    const statusConfig = {
+  const getStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline"; color: string }> = {
       novo: { label: "Novo", variant: "default" as const, color: "bg-primary" },
       preparando: { label: "Preparando", variant: "secondary" as const, color: "bg-warning" },
       finalizado: { label: "Finalizado", variant: "outline" as const, color: "bg-success" }
     };
     
-    return statusConfig[status];
+    return statusConfig[status] || statusConfig.novo;
   };
 
-  const filterOrders = (status: Order["status"]) => {
+  const filterOrders = (status: string) => {
     return orders.filter(order => order.status === status);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Carregando pedidos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -105,23 +72,25 @@ const Kitchen = () => {
               <Card key={order.id} className="border-primary shadow-lg">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">#{order.number}</span>
+                    <span className="text-2xl font-bold">#{order.order_number}</span>
                     <Badge className={getStatusBadge(order.status).color}>
                       {getStatusBadge(order.status).label}
                     </Badge>
                   </CardTitle>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="w-4 h-4" />
-                    {order.time}
+                    {format(new Date(order.created_at), "HH:mm")}
                   </div>
                   <div className="mt-2 p-2 bg-primary/10 rounded-md">
-                    <p className="text-sm font-semibold text-primary">Cliente: {order.customerName}</p>
+                    <p className="text-sm font-semibold text-primary">Cliente: {order.customer_name}</p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-2">
-                    {order.items.map((item, idx) => (
-                      <p key={idx} className="text-sm font-medium">{item}</p>
+                    {order.items?.map((item, idx) => (
+                      <p key={idx} className="text-sm font-medium">
+                        {item.quantity}x {item.product_name}
+                      </p>
                     ))}
                   </div>
                   <Button 
@@ -147,23 +116,25 @@ const Kitchen = () => {
               <Card key={order.id} className="border-warning shadow-lg">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">#{order.number}</span>
+                    <span className="text-2xl font-bold">#{order.order_number}</span>
                     <Badge className={getStatusBadge(order.status).color}>
                       {getStatusBadge(order.status).label}
                     </Badge>
                   </CardTitle>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="w-4 h-4" />
-                    {order.time}
+                    {format(new Date(order.created_at), "HH:mm")}
                   </div>
                   <div className="mt-2 p-2 bg-warning/10 rounded-md">
-                    <p className="text-sm font-semibold text-warning">Cliente: {order.customerName}</p>
+                    <p className="text-sm font-semibold text-warning">Cliente: {order.customer_name}</p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="space-y-2">
-                    {order.items.map((item, idx) => (
-                      <p key={idx} className="text-sm font-medium">{item}</p>
+                    {order.items?.map((item, idx) => (
+                      <p key={idx} className="text-sm font-medium">
+                        {item.quantity}x {item.product_name}
+                      </p>
                     ))}
                   </div>
                   <Button 
@@ -189,23 +160,25 @@ const Kitchen = () => {
               <Card key={order.id} className="border-success opacity-75">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">#{order.number}</span>
+                    <span className="text-2xl font-bold">#{order.order_number}</span>
                     <Badge className={getStatusBadge(order.status).color}>
                       {getStatusBadge(order.status).label}
                     </Badge>
                   </CardTitle>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="w-4 h-4" />
-                    {order.time}
+                    {format(new Date(order.created_at), "HH:mm")}
                   </div>
                   <div className="mt-2 p-2 bg-success/10 rounded-md">
-                    <p className="text-sm font-semibold text-success">Cliente: {order.customerName}</p>
+                    <p className="text-sm font-semibold text-success">Cliente: {order.customer_name}</p>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {order.items.map((item, idx) => (
-                      <p key={idx} className="text-sm font-medium line-through opacity-50">{item}</p>
+                    {order.items?.map((item, idx) => (
+                      <p key={idx} className="text-sm font-medium line-through opacity-50">
+                        {item.quantity}x {item.product_name}
+                      </p>
                     ))}
                   </div>
                 </CardContent>

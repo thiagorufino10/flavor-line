@@ -7,6 +7,7 @@ import { LogOut, Trash2, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { ComplementsModal, Complement } from "@/components/ComplementsModal";
 import { PaymentModal } from "@/components/PaymentModal";
+import { useOrders } from "@/hooks/useOrders";
 
 interface OrderItem {
   id: string;
@@ -18,6 +19,7 @@ interface OrderItem {
 
 const Orders = () => {
   const navigate = useNavigate();
+  const { createOrder } = useOrders();
   const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
   const [complementsModalOpen, setComplementsModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -114,13 +116,25 @@ const Orders = () => {
     setPaymentModalOpen(true);
   };
 
-  const handlePaymentConfirm = (paymentMethod: string, customerName: string) => {
+  const handlePaymentConfirm = async (paymentMethod: string, customerName: string) => {
     const operationMode = localStorage.getItem("operationMode") || "display";
     const destinationText = operationMode === "printer" ? "impressora" : "tela da cozinha";
     
-    // TODO: Salvar pedido no banco quando Lovable Cloud estiver ativo
-    toast.success(`Pedido de ${customerName} finalizado! Pagamento: ${paymentMethod} - Enviado para ${destinationText}`);
-    setCurrentOrder([]);
+    try {
+      const items = currentOrder.map(item => ({
+        product_name: item.name,
+        quantity: item.quantity,
+        unit_price: item.price / item.quantity,
+        total_price: item.price,
+        complements: item.complements || null
+      }));
+
+      await createOrder(customerName, paymentMethod, getTotalPrice(), items);
+      toast.success(`Pedido de ${customerName} finalizado! Enviado para ${destinationText}`);
+      setCurrentOrder([]);
+    } catch (error) {
+      console.error("Erro ao criar pedido:", error);
+    }
   };
 
   return (
