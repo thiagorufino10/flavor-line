@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UtensilsCrossed } from "lucide-react";
+import { UtensilsCrossed, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -12,8 +12,19 @@ const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [systemName, setSystemName] = useState("Pastel Favorite");
+  const [logoUrl, setLogoUrl] = useState("");
   const navigate = useNavigate();
   const { signIn, user, userRole } = useAuth();
+
+  useEffect(() => {
+    // Carregar configurações de branding
+    const savedName = localStorage.getItem("systemName");
+    const savedLogo = localStorage.getItem("systemLogo");
+    
+    if (savedName) setSystemName(savedName);
+    if (savedLogo) setLogoUrl(savedLogo);
+  }, []);
 
   useEffect(() => {
     if (user && userRole) {
@@ -53,11 +64,21 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto w-16 h-16 bg-primary rounded-2xl flex items-center justify-center">
-            <UtensilsCrossed className="w-8 h-8 text-primary-foreground" />
+          <div className="mx-auto flex items-center justify-center">
+            {logoUrl ? (
+              <img 
+                src={logoUrl} 
+                alt="Logo do sistema" 
+                className="max-h-20 max-w-[160px] object-contain"
+              />
+            ) : (
+              <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center">
+                <UtensilsCrossed className="w-8 h-8 text-primary-foreground" />
+              </div>
+            )}
           </div>
           <div>
-            <CardTitle className="text-3xl font-bold">Pastel Favorite</CardTitle>
+            <CardTitle className="text-3xl font-bold">{systemName}</CardTitle>
             <CardDescription className="text-base mt-2">
               Sistema de Pedidos
             </CardDescription>
