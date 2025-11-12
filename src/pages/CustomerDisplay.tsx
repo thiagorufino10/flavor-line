@@ -1,11 +1,19 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, UtensilsCrossed } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LogOut, UtensilsCrossed, Printer } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
+import { useState, useEffect } from "react";
 
 const CustomerDisplay = () => {
   const navigate = useNavigate();
   const { orders, loading } = useOrders();
+  const [operationMode, setOperationMode] = useState<string>("");
+
+  useEffect(() => {
+    const mode = localStorage.getItem("operationMode") || "display";
+    setOperationMode(mode);
+  }, []);
   
   const preparingOrders = orders.filter(order => order.status === "preparando");
   const finishedOrders = orders.filter(order => order.status === "finalizado");
@@ -35,11 +43,31 @@ const CustomerDisplay = () => {
 
       {/* Main Display */}
       <main className="container mx-auto px-6 py-6 h-[calc(100vh-88px)]">
-        {loading ? (
+        {loading || !operationMode ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-3xl text-muted-foreground">
               Carregando...
             </p>
+          </div>
+        ) : operationMode === "printer" ? (
+          <div className="flex items-center justify-center h-full">
+            <Card className="max-w-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-center justify-center">
+                  <Printer className="w-6 h-6" />
+                  Modo Impressora Ativo
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center space-y-4">
+                <p className="text-muted-foreground">
+                  O sistema está configurado para usar impressora térmica.
+                  Os pedidos são enviados diretamente para impressão.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Para usar esta tela, configure o modo de operação para "Display" em Administração → Modo de Operação.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-0 h-full">
