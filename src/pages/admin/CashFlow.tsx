@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,45 +51,8 @@ interface Transaction {
 const CashFlow = () => {
   const navigate = useNavigate();
   
-  // Mock de transações - depois virá do banco de dados
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: "1",
-      date: "2025-11-10 14:30",
-      type: "entrada",
-      description: "Pedido #001",
-      category: "Vendas",
-      amount: 45.50,
-      paymentMethod: "Crédito"
-    },
-    {
-      id: "2",
-      date: "2025-11-10 14:45",
-      type: "entrada",
-      description: "Pedido #002",
-      category: "Vendas",
-      amount: 28.00,
-      paymentMethod: "Dinheiro"
-    },
-    {
-      id: "3",
-      date: "2025-11-10 15:00",
-      type: "saida",
-      description: "Compra de ingredientes",
-      category: "Fornecedores",
-      amount: 350.00,
-    },
-    {
-      id: "4",
-      date: "2025-11-10 15:30",
-      type: "entrada",
-      description: "Pedido #003",
-      category: "Vendas",
-      amount: 67.00,
-      paymentMethod: "Débito"
-    },
-  ]);
-
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
@@ -99,6 +63,82 @@ const CashFlow = () => {
     amount: "",
     paymentMethod: "",
   });
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      
+      // Buscar transações manuais do banco
+      const { data: manualTransactions, error: manualError } = await supabase
+        .from("cash_flow_transactions")
+        .select("*")
+        .order("transaction_date", { ascending: false });
+
+      if (manualError) throw manualError;
+
+      // Buscar pedidos (vendas automáticas)
+      const { data: orders, error: ordersError } = await supabase
+        .from("orders")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (ordersError) throw ordersError;
+
+      // Formatar transações manuais
+      const formattedManual = manualTransactions?.map((t) => ({
+        id: t.id,
+        date: new Date(t.transaction_date).toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        type: t.transaction_type as "entrada" | "saida",
+        description: t.description,
+        category: t.transaction_type === "entrada" ? "Outros" : "Despesas",
+        amount: parseFloat(String(t.amount)),
+        paymentMethod: undefined,
+      })) || [];
+
+      // Formatar vendas (pedidos) como entradas
+      const formattedOrders = orders?.map((order) => ({
+        id: `order-${order.id}`,
+        date: new Date(order.created_at).toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        type: "entrada" as const,
+        description: `Pedido #${order.order_number} - ${order.customer_name}`,
+        category: "Vendas",
+        amount: parseFloat(String(order.total_amount)),
+        paymentMethod: order.payment_method,
+      })) || [];
+
+      // Combinar e ordenar todas as transações
+      const allTransactions = [...formattedManual, ...formattedOrders].sort((a, b) => {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      });
+
+      setTransactions(allTransactions);
+    } catch (error) {
+      console.error("Erro ao buscar transações:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar transações",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredTransactions = transactions.filter((t) => {
     if (!startDate && !endDate) return true;
@@ -125,7 +165,7 @@ const CashFlow = () => {
 
   const saldo = totalEntradas - totalSaidas;
 
-  const handleAddTransaction = () => {
+  const handleAddTransaction = async () => {
     if (!newTransaction.description || !newTransaction.amount) {
       toast({
         title: "Erro",
@@ -135,29 +175,41 @@ const CashFlow = () => {
       return;
     }
 
-    const transaction: Transaction = {
-      id: `${Date.now()}`,
-      date: new Date().toISOString().split("T")[0] + " " + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      type: newTransaction.type,
-      description: newTransaction.description,
-      category: newTransaction.category || "Outros",
-      amount: parseFloat(newTransaction.amount),
-      paymentMethod: newTransaction.paymentMethod,
-    };
+    try {
+      const { error } = await supabase
+        .from("cash_flow_transactions")
+        .insert({
+          transaction_type: newTransaction.type,
+          description: newTransaction.description,
+          amount: parseFloat(newTransaction.amount),
+          transaction_date: new Date().toISOString(),
+        });
 
-    setTransactions([transaction, ...transactions]);
-    setNewTransaction({
-      type: "entrada",
-      description: "",
-      category: "",
-      amount: "",
-      paymentMethod: "",
-    });
-    setIsDialogOpen(false);
-    toast({
-      title: "Sucesso",
-      description: "Transação adicionada com sucesso",
-    });
+      if (error) throw error;
+
+      await fetchTransactions();
+      
+      setNewTransaction({
+        type: "entrada",
+        description: "",
+        category: "",
+        amount: "",
+        paymentMethod: "",
+      });
+      setIsDialogOpen(false);
+      
+      toast({
+        title: "Sucesso",
+        description: "Transação adicionada com sucesso",
+      });
+    } catch (error) {
+      console.error("Erro ao adicionar transação:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao adicionar transação",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleExportToExcel = () => {
@@ -432,7 +484,16 @@ const CashFlow = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="todas">
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma transação encontrada. As vendas aparecerão automaticamente aqui.
+              </div>
+            ) : (
+              <Tabs defaultValue="todas">
               <TabsList className="mb-4">
                 <TabsTrigger value="todas">Todas</TabsTrigger>
                 <TabsTrigger value="entradas">Entradas</TabsTrigger>
@@ -537,6 +598,7 @@ const CashFlow = () => {
                 </Table>
               </TabsContent>
             </Tabs>
+            )}
           </CardContent>
         </Card>
       </main>
