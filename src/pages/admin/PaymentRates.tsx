@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CreditCard, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const PaymentRates = () => {
   const navigate = useNavigate();
@@ -13,18 +14,72 @@ const PaymentRates = () => {
     credito: 3.5,
     debito: 2.0,
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedRates = localStorage.getItem("paymentRates");
-    if (savedRates) {
-      setRates(JSON.parse(savedRates));
-    }
+    fetchRates();
   }, []);
 
-  const handleSave = () => {
-    // TODO: Salvar no banco quando Lovable Cloud estiver ativo
-    localStorage.setItem("paymentRates", JSON.stringify(rates));
-    toast.success("Taxas de pagamento atualizadas com sucesso!");
+  const fetchRates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("payment_rates")
+        .select("*")
+        .in("payment_method", ["credito", "debito"]);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const ratesMap: any = {};
+        data.forEach(rate => {
+          ratesMap[rate.payment_method] = parseFloat(String(rate.rate_percentage));
+        });
+        setRates({
+          credito: ratesMap.credito || 3.5,
+          debito: ratesMap.debito || 2.0,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao carregar taxas:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      // Atualizar ou inserir taxa de crédito
+      const { error: creditoError } = await supabase
+        .from("payment_rates")
+        .upsert({
+          payment_method: "credito",
+          rate_percentage: rates.credito,
+        }, {
+          onConflict: "payment_method"
+        });
+
+      if (creditoError) throw creditoError;
+
+      // Atualizar ou inserir taxa de débito
+      const { error: debitoError } = await supabase
+        .from("payment_rates")
+        .upsert({
+          payment_method: "debito",
+          rate_percentage: rates.debito,
+        }, {
+          onConflict: "payment_method"
+        });
+
+      if (debitoError) throw debitoError;
+
+      // Manter no localStorage para compatibilidade
+      localStorage.setItem("paymentRates", JSON.stringify(rates));
+      
+      toast.success("Taxas de pagamento atualizadas com sucesso!");
+    } catch (error) {
+      console.error("Erro ao salvar taxas:", error);
+      toast.error("Erro ao salvar taxas de pagamento");
+    }
   };
 
   return (
@@ -50,6 +105,12 @@ const PaymentRates = () => {
           <CardTitle>Configuração de Taxas (%)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="credito">Taxa Cartão de Crédito (%)</Label>
@@ -96,9 +157,11 @@ const PaymentRates = () => {
             </div>
           </div>
 
-          <Button onClick={handleSave} className="w-full md:w-auto">
+          <Button onClick={handleSave} className="w-full md:w-auto" disabled={loading}>
             Salvar Taxas
           </Button>
+          </>
+          )}
         </CardContent>
       </Card>
     </div>
