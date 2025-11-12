@@ -49,39 +49,31 @@ const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select(`
-          id,
-          full_name,
-          user_roles (role)
-        `);
-
-      if (profilesError) throw profilesError;
-
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-
-      if (authError) {
-        console.error("Error fetching auth users:", authError);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Sessão expirada");
+        return;
       }
 
-      const authUsers = authData?.users || [];
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-users`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: "list" }),
+        }
+      );
 
-      const usersWithData = profiles?.map((profile: any) => {
-        const authUser = authUsers.find((u: any) => u.id === profile.id);
-        const email = authUser?.email || "";
-        const username = email.includes('@') ? email.split('@')[0] : email;
-        const role = profile.user_roles?.[0]?.role || "atendente";
-        
-        return {
-          id: profile.id,
-          full_name: profile.full_name,
-          username: username,
-          role: role
-        };
-      }) || [];
+      const result = await response.json();
 
-      setUsers(usersWithData);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      setUsers(result.users);
     } catch (error) {
       console.error("Error fetching users:", error);
       toast.error("Erro ao carregar usuários");
@@ -104,31 +96,39 @@ const Users = () => {
     setLoading(true);
 
     try {
-      const email = `${formData.username}@pastelfavorite.local`;
-      
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password: formData.password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: formData.full_name
-        }
-      });
-
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error("Usuário não foi criado");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Sessão expirada");
+        return;
       }
 
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: authData.user.id,
-          role: formData.role
-        });
+      const email = `${formData.username}@pastelfavorite.local`;
 
-      if (roleError) throw roleError;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-users`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "create",
+            userData: {
+              email,
+              password: formData.password,
+              full_name: formData.full_name,
+              role: formData.role,
+            },
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
 
       toast.success("Usuário criado com sucesso!");
       handleReset();
@@ -152,9 +152,32 @@ const Users = () => {
     }
 
     try {
-      const { error } = await supabase.auth.admin.deleteUser(id);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Sessão expirada");
+        return;
+      }
 
-      if (error) throw error;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-users`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "delete",
+            userData: { userId: id },
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
 
       toast.success("Usuário excluído com sucesso!");
       fetchUsers();
