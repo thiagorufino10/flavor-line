@@ -3,10 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UtensilsCrossed, Settings, ShoppingCart, ChefHat, Tv, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
+import Footer from "@/components/Footer";
 
 const Index = () => {
   const navigate = useNavigate();
   const { userRole, signOut } = useAuth();
+  const [systemName, setSystemName] = useState("Pastel Favorite");
+  const [logoUrl, setLogoUrl] = useState("");
+
+  useEffect(() => {
+    const savedName = localStorage.getItem("systemName");
+    const savedLogo = localStorage.getItem("systemLogo");
+    
+    if (savedName) setSystemName(savedName);
+    if (savedLogo) setLogoUrl(savedLogo);
+  }, []);
 
   const handleLogout = async () => {
     await signOut();
@@ -64,11 +76,19 @@ const Index = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
-                <UtensilsCrossed className="w-7 h-7 text-primary-foreground" />
-              </div>
+              {logoUrl ? (
+                <img 
+                  src={logoUrl} 
+                  alt="Logo" 
+                  className="h-12 w-auto object-contain"
+                />
+              ) : (
+                <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
+                  <UtensilsCrossed className="w-7 h-7 text-primary-foreground" />
+                </div>
+              )}
               <div>
-                <h1 className="text-3xl font-bold">Pastel Favorite</h1>
+                <h1 className="text-3xl font-bold">{systemName}</h1>
                 <p className="text-sm text-muted-foreground">Sistema de Pedidos v1.0</p>
               </div>
             </div>
@@ -119,6 +139,8 @@ const Index = () => {
           </div>
         </div>
       </main>
+      
+      <Footer />
     </div>
   );
 };

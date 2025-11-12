@@ -6,15 +6,20 @@ import { LogOut, ChefHat, Clock, Printer } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
+import Footer from "@/components/Footer";
 
 const Kitchen = () => {
   const navigate = useNavigate();
   const { orders, loading, updateOrderStatus } = useOrders();
   const [operationMode, setOperationMode] = useState<string>("");
+  const [systemName, setSystemName] = useState("Pastel Favorite");
 
   useEffect(() => {
     const mode = localStorage.getItem("operationMode") || "display";
     setOperationMode(mode);
+    
+    const savedName = localStorage.getItem("systemName");
+    if (savedName) setSystemName(savedName);
   }, []);
 
   const getStatusBadge = (status: string) => {
@@ -48,10 +53,10 @@ const Kitchen = () => {
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <ChefHat className="w-6 h-6 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold">Tela da Cozinha</h1>
-                <p className="text-sm text-muted-foreground">Kitchen Display System</p>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold">Tela da Cozinha</h1>
+              <p className="text-sm text-muted-foreground">{systemName}</p>
+            </div>
             </div>
             <Button 
               variant="outline" 
@@ -298,6 +303,8 @@ const Kitchen = () => {
           </div>
         </div>
       </main>
+      
+      <Footer />
     </div>
   );
 };

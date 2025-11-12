@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ComplementsModal, Complement } from "@/components/ComplementsModal";
 import { PaymentModal } from "@/components/PaymentModal";
 import { useOrders } from "@/hooks/useOrders";
+import Footer from "@/components/Footer";
 
 interface OrderItem {
   id: string;
@@ -37,6 +38,12 @@ const Orders = () => {
   } | null>(null);
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [systemName, setSystemName] = useState("Pastel Favorite");
+
+  useEffect(() => {
+    const savedName = localStorage.getItem("systemName");
+    if (savedName) setSystemName(savedName);
+  }, []);
 
   useEffect(() => {
     fetchMenuItems();
@@ -171,7 +178,7 @@ const Orders = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold">Novo Pedido</h1>
-              <p className="text-sm text-muted-foreground">Atendente</p>
+              <p className="text-sm text-muted-foreground">{systemName}</p>
             </div>
           </div>
           <Button 
@@ -319,6 +326,8 @@ const Orders = () => {
         totalAmount={getTotalPrice()}
         onConfirm={handlePaymentConfirm}
       />
+      
+      <Footer />
     </div>
   );
 };

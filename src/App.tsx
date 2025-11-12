@@ -17,6 +17,7 @@ import Users from "./pages/admin/Users";
 import Menu from "./pages/admin/Menu";
 import Printer from "./pages/admin/Printer";
 import OperationMode from "./pages/admin/OperationMode";
+import Branding from "./pages/admin/Branding";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -35,6 +36,7 @@ const App = () => (
       <Route path="/admin/complements" element={<ProtectedRoute requiredRole={["admin"]}><Complements /></ProtectedRoute>} />
       <Route path="/admin/printer" element={<ProtectedRoute requiredRole={["admin"]}><Printer /></ProtectedRoute>} />
       <Route path="/admin/operation-mode" element={<ProtectedRoute requiredRole={["admin"]}><OperationMode /></ProtectedRoute>} />
+      <Route path="/admin/branding" element={<ProtectedRoute requiredRole={["admin"]}><Branding /></ProtectedRoute>} />
       <Route path="/admin/cash-flow" element={<ProtectedRoute requiredRole={["admin"]}><CashFlow /></ProtectedRoute>} />
       <Route path="/admin/reports" element={<ProtectedRoute requiredRole={["admin"]}><Reports /></ProtectedRoute>} />
       

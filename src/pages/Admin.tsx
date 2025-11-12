@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import Footer from "@/components/Footer";
+import { useState, useEffect } from "react";
 import { 
   LogOut, 
   Users, 
@@ -12,12 +14,19 @@ import {
   Settings,
   DollarSign,
   TrendingUp,
-  Monitor
+  Monitor,
+  Palette
 } from "lucide-react";
 
 const Admin = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const [systemName, setSystemName] = useState("Pastel Favorite");
+
+  useEffect(() => {
+    const savedName = localStorage.getItem("systemName");
+    if (savedName) setSystemName(savedName);
+  }, []);
 
   const adminSections = [
     {
@@ -61,6 +70,13 @@ const Admin = () => {
       description: "Impressão ou Display Digital",
       color: "bg-info",
       path: "/admin/operation-mode"
+    },
+    {
+      icon: Palette,
+      title: "Marca e Identidade",
+      description: "Logo e nome do sistema",
+      color: "bg-primary",
+      path: "/admin/branding"
     }
   ];
 
@@ -92,7 +108,7 @@ const Admin = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold">Painel Administrativo</h1>
-              <p className="text-sm text-muted-foreground">Pastel Favorite</p>
+              <p className="text-sm text-muted-foreground">{systemName}</p>
             </div>
           </div>
           <Button 
@@ -162,6 +178,8 @@ const Admin = () => {
           </div>
         </div>
       </main>
+      
+      <Footer />
     </div>
   );
 };

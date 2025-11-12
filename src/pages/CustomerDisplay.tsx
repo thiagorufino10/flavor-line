@@ -4,15 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut, UtensilsCrossed, Printer } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { useState, useEffect } from "react";
+import Footer from "@/components/Footer";
 
 const CustomerDisplay = () => {
   const navigate = useNavigate();
   const { orders, loading } = useOrders();
   const [operationMode, setOperationMode] = useState<string>("");
+  const [systemName, setSystemName] = useState("Pastel Favorite");
 
   useEffect(() => {
     const mode = localStorage.getItem("operationMode") || "display";
     setOperationMode(mode);
+    
+    const savedName = localStorage.getItem("systemName");
+    if (savedName) setSystemName(savedName);
   }, []);
   
   const preparingOrders = orders.filter(order => order.status === "preparando");
@@ -27,7 +32,7 @@ const CustomerDisplay = () => {
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
               <UtensilsCrossed className="w-6 h-6 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold">Pastel Favorite</h1>
+            <h1 className="text-2xl font-bold">{systemName}</h1>
           </div>
           <Button 
             variant="outline" 
@@ -218,6 +223,8 @@ const CustomerDisplay = () => {
           </div>
         )}
       </main>
+      
+      <Footer />
     </div>
   );
 };
