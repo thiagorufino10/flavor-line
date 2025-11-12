@@ -122,7 +122,7 @@ export const useOrders = (status?: string) => {
         }
       }
 
-      // Inserir pedido (sem order_number para o trigger gerar)
+      // Inserir pedido (order_number será gerado pelo trigger)
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert([{
@@ -130,6 +130,7 @@ export const useOrders = (status?: string) => {
           payment_method: paymentMethod,
           total_amount: totalAmount,
           status: "novo",
+          order_number: 0, // Será sobrescrito pelo trigger
         }])
         .select()
         .single();
