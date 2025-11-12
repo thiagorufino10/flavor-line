@@ -6,45 +6,49 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UtensilsCrossed } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn, user, userRole } = useAuth();
 
   useEffect(() => {
-    if (user && userRole) {
+    // Criar usuário admin padrão se não existir
+    const users = localStorage.getItem("users");
+    if (!users) {
+      const defaultUsers = [
+        { 
+          id: "1", 
+          username: "admin", 
+          password: "admin",
+          name: "Administrador", 
+          role: "admin" 
+        }
+      ];
+      localStorage.setItem("users", JSON.stringify(defaultUsers));
+    }
+  }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const user = users.find((u: any) => u.username === username && u.password === password);
+    
+    if (user) {
+      localStorage.setItem("currentUser", JSON.stringify(user));
+      toast.success("Login realizado com sucesso!");
+      
       // Redirect based on role
-      if (userRole === "admin") {
+      if (user.role === "admin") {
         navigate("/admin");
-      } else if (userRole === "atendente") {
+      } else if (user.role === "atendente") {
         navigate("/orders");
-      } else if (userRole === "cozinha") {
+      } else if (user.role === "cozinha") {
         navigate("/kitchen");
       }
-    }
-  }, [user, userRole, navigate]);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    try {
-      const { error } = await signIn(email, password);
-      
-      if (error) {
-        toast.error("Email ou senha inválidos");
-        return;
-      }
-      
-      toast.success("Login realizado com sucesso!");
-    } catch (error) {
-      toast.error("Erro ao fazer login");
-    } finally {
-      setLoading(false);
+    } else {
+      toast.error("Usuário ou senha inválidos");
     }
   };
 
@@ -65,16 +69,15 @@ const Login = () => {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Usuário</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="Digite seu usuário"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
                 className="h-12"
-                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -87,13 +90,19 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="h-12"
-                disabled={loading}
               />
             </div>
-            <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={loading}>
-              {loading ? "Entrando..." : "Entrar"}
+            <Button type="submit" className="w-full h-12 text-lg font-semibold">
+              Entrar
             </Button>
           </form>
+          
+          <div className="mt-6 p-4 bg-muted rounded-lg">
+            <p className="text-xs text-muted-foreground text-center mb-2">Usuário Padrão:</p>
+            <div className="space-y-1 text-xs text-muted-foreground text-center">
+              <p>👤 <strong>admin</strong> / admin</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { 
   LogOut, 
   Users, 
@@ -17,7 +16,6 @@ import {
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
 
   const adminSections = [
     {
@@ -98,7 +96,7 @@ const Admin = () => {
           <Button 
             variant="outline" 
             onClick={() => {
-              signOut();
+              localStorage.removeItem("currentUser");
               navigate("/");
             }}
             className="gap-2"
