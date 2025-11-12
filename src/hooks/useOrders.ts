@@ -104,16 +104,33 @@ export const useOrders = (status?: string) => {
     }>
   ) => {
     try {
-      // Inserir pedido
+      // Calcular valor líquido antes de inserir
+      let amountReceived = totalAmount;
+      
+      if (paymentMethod === "credito" || paymentMethod === "debito") {
+        // Buscar taxa do banco
+        const { data: rateData } = await supabase
+          .from("payment_rates")
+          .select("rate_percentage")
+          .eq("payment_method", paymentMethod)
+          .maybeSingle();
+
+        if (rateData) {
+          const rate = parseFloat(String(rateData.rate_percentage));
+          const taxAmount = totalAmount * rate / 100;
+          amountReceived = totalAmount - taxAmount;
+        }
+      }
+
+      // Inserir pedido (sem order_number para o trigger gerar)
       const { data: order, error: orderError } = await supabase
         .from("orders")
-        .insert({
+        .insert([{
           customer_name: customerName,
           payment_method: paymentMethod,
           total_amount: totalAmount,
           status: "novo",
-          order_number: 0, // Será gerado pelo trigger
-        })
+        }])
         .select()
         .single();
 
@@ -135,31 +152,13 @@ export const useOrders = (status?: string) => {
 
       if (itemsError) throw itemsError;
 
-      // Calcular valor líquido e criar entrada no fluxo de caixa
-      let amountReceived = totalAmount;
-      
-      if (paymentMethod === "credito" || paymentMethod === "debito") {
-        // Buscar taxa do banco
-        const { data: rateData } = await supabase
-          .from("payment_rates")
-          .select("rate_percentage")
-          .eq("payment_method", paymentMethod)
-          .maybeSingle();
-
-        if (rateData) {
-          const rate = parseFloat(String(rateData.rate_percentage));
-          const taxAmount = totalAmount * rate / 100;
-          amountReceived = totalAmount - taxAmount;
-        }
-      }
-
       // Criar entrada no fluxo de caixa
       const { error: cashFlowError } = await supabase
         .from("cash_flow_transactions")
         .insert({
           transaction_type: "entrada",
           amount: amountReceived,
-          description: `Pedido #${order.order_number} - ${customerName} (${paymentMethod})`,
+          description: `Pedido #${order.order_number} - ${customerName}`,
           transaction_date: new Date().toISOString(),
         });
 
