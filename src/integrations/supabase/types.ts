@@ -171,7 +171,7 @@ export type Database = {
           created_at?: string
           customer_name: string
           id?: string
-          order_number: number
+          order_number?: number
           payment_method: string
           status?: string
           total_amount: number
