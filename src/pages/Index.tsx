@@ -1,29 +1,25 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UtensilsCrossed, Settings, ShoppingCart, ChefHat, Tv } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { user, userRole } = useAuth();
 
   useEffect(() => {
-    const user = localStorage.getItem("currentUser");
-    if (user) {
-      const parsedUser = JSON.parse(user);
-      setCurrentUser(parsedUser);
-      
-      // Redirect based on role
-      if (parsedUser.role === "admin") {
+    if (user && userRole) {
+      if (userRole === "admin") {
         navigate("/admin");
-      } else if (parsedUser.role === "atendente") {
+      } else if (userRole === "atendente") {
         navigate("/orders");
-      } else if (parsedUser.role === "cozinha") {
+      } else if (userRole === "cozinha") {
         navigate("/kitchen");
       }
     }
-  }, [navigate]);
+  }, [user, userRole, navigate]);
 
   const modules = [
     {
