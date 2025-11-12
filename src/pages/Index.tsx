@@ -1,19 +1,27 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UtensilsCrossed, Settings, ShoppingCart, ChefHat, Tv } from "lucide-react";
+import { UtensilsCrossed, Settings, ShoppingCart, ChefHat, Tv, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { userRole, signOut } = useAuth();
 
-  const modules = [
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
+  const allModules = [
     {
       icon: Settings,
       title: "Administração",
       description: "Configurações e cadastros do sistema",
       path: "/admin",
       color: "bg-primary",
-      demo: "Admin"
+      demo: "Admin",
+      roles: ["admin"]
     },
     {
       icon: ShoppingCart,
@@ -21,7 +29,8 @@ const Index = () => {
       description: "Tela de atendimento e vendas",
       path: "/orders",
       color: "bg-warning",
-      demo: "Atendente"
+      demo: "Atendente",
+      roles: ["admin", "atendente"]
     },
     {
       icon: ChefHat,
@@ -29,7 +38,8 @@ const Index = () => {
       description: "Visualização de pedidos para produção",
       path: "/kitchen",
       color: "bg-accent",
-      demo: "Cozinha"
+      demo: "Cozinha",
+      roles: ["admin", "cozinha"]
     },
     {
       icon: Tv,
@@ -37,23 +47,35 @@ const Index = () => {
       description: "Chamada de pedidos prontos",
       path: "/customer-display",
       color: "bg-destructive",
-      demo: "Acesso público"
+      demo: "Acesso público",
+      roles: ["admin", "atendente", "cozinha"]
     }
   ];
+
+  // Filtrar módulos baseado no role do usuário
+  const modules = allModules.filter(module => 
+    userRole && module.roles.includes(userRole)
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b shadow-sm">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
-              <UtensilsCrossed className="w-7 h-7 text-primary-foreground" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
+                <UtensilsCrossed className="w-7 h-7 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">Pastel Favorite</h1>
+                <p className="text-sm text-muted-foreground">Sistema de Pedidos v1.0</p>
+              </div>
             </div>
-            <div className="text-center">
-              <h1 className="text-3xl font-bold">Pastel Favorite</h1>
-              <p className="text-sm text-muted-foreground">Sistema de Pedidos v1.0</p>
-            </div>
+            <Button variant="outline" onClick={handleLogout} className="gap-2">
+              <LogOut className="w-4 h-4" />
+              Sair
+            </Button>
           </div>
         </div>
       </header>
