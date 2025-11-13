@@ -20,7 +20,7 @@ export interface Complement {
   name: string;
   price: number;
   category: "pasteis" | "salgados" | "acai";
-  isSpecial: boolean; // Se true, cobra valor adicional
+  isSpecial: boolean;
 }
 
 interface ComplementsModalProps {
@@ -57,38 +57,42 @@ export const ComplementsModal = ({
     
     setLoading(true);
     try {
-      // Primeiro buscar o menu_item_id baseado no nome do item
+      // Buscar o ID do produto pelo nome
       const { data: menuItemData, error: menuError } = await supabase
         .from("menu_items")
         .select("id")
         .eq("name", item.name)
+        .eq("category", item.category)
         .eq("active", true)
-        .single();
+        .maybeSingle();
 
       if (menuError) throw menuError;
+      
+      if (!menuItemData) {
+        setAvailableComplements([]);
+        return;
+      }
 
       // Buscar complementos vinculados a este produto específico
       const { data, error } = await supabase
-        .from("complement_menu_items")
+        .from("complements")
         .select(`
-          complement_id,
-          complements (
-            id,
-            name,
-            price,
-            category
+          *,
+          complement_menu_items!inner (
+            menu_item_id
           )
         `)
-        .eq("menu_item_id", menuItemData.id);
+        .eq("active", true)
+        .eq("complement_menu_items.menu_item_id", menuItemData.id);
 
       if (error) throw error;
 
-      const formatted = data?.map((rel: any) => ({
-        id: rel.complements.id,
-        name: rel.complements.name,
-        price: parseFloat(String(rel.complements.price)),
-        category: rel.complements.category as "pasteis" | "salgados" | "acai",
-        isSpecial: parseFloat(String(rel.complements.price)) > 0,
+      const formatted = data?.map(comp => ({
+        id: comp.id,
+        name: comp.name,
+        price: parseFloat(String(comp.price)),
+        category: comp.category as "pasteis" | "salgados" | "acai",
+        isSpecial: parseFloat(String(comp.price)) > 0,
       })) || [];
 
       setAvailableComplements(formatted);
@@ -167,7 +171,7 @@ export const ComplementsModal = ({
           </div>
         ) : availableComplements.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            Nenhum complemento disponível para esta categoria.
+            Nenhum complemento vinculado a este produto.
           </div>
         ) : (
           <>

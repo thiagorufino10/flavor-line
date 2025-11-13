@@ -31,7 +31,7 @@ interface Complement {
   price: number;
   category: "pasteis" | "salgados" | "acai";
   isSpecial: boolean;
-  menuItemIds?: string[];
+  linkedItems?: string[];
 }
 
 interface MenuItem {
@@ -44,7 +44,6 @@ const Complements = () => {
   const navigate = useNavigate();
   const [complements, setComplements] = useState<Complement[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [filteredMenuItems, setFilteredMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingComplement, setEditingComplement] = useState<Complement | null>(null);
@@ -53,7 +52,7 @@ const Complements = () => {
     price: "",
     category: "pasteis" as "pasteis" | "salgados" | "acai",
     isSpecial: false,
-    selectedMenuItems: [] as string[],
+    linkedItems: [] as string[],
   });
 
   useEffect(() => {
@@ -61,18 +60,14 @@ const Complements = () => {
     fetchMenuItems();
   }, []);
 
-  useEffect(() => {
-    const filtered = menuItems.filter(item => item.category === formData.category);
-    setFilteredMenuItems(filtered);
-  }, [formData.category, menuItems]);
-
   const fetchMenuItems = async () => {
     try {
       const { data, error } = await supabase
         .from("menu_items")
         .select("id, name, category")
         .eq("active", true)
-        .order("name");
+        .order("category", { ascending: true })
+        .order("name", { ascending: true });
 
       if (error) throw error;
       setMenuItems(data || []);
@@ -102,7 +97,7 @@ const Complements = () => {
         price: parseFloat(String(comp.price)),
         category: comp.category as "pasteis" | "salgados" | "acai",
         isSpecial: parseFloat(String(comp.price)) > 0,
-        menuItemIds: comp.complement_menu_items?.map((rel: any) => rel.menu_item_id) || [],
+        linkedItems: comp.complement_menu_items?.map((link: any) => link.menu_item_id) || [],
       })) || [];
 
       setComplements(formattedComplements);
@@ -122,7 +117,7 @@ const Complements = () => {
         price: complement.price.toString(),
         category: complement.category,
         isSpecial: complement.isSpecial,
-        selectedMenuItems: complement.menuItemIds || [],
+        linkedItems: complement.linkedItems || [],
       });
     } else {
       setEditingComplement(null);
@@ -131,7 +126,7 @@ const Complements = () => {
         price: "",
         category: "pasteis",
         isSpecial: false,
-        selectedMenuItems: [],
+        linkedItems: [],
       });
     }
     setDialogOpen(true);
@@ -143,8 +138,8 @@ const Complements = () => {
       return;
     }
 
-    if (formData.selectedMenuItems.length === 0) {
-      toast.error("Selecione pelo menos um produto");
+    if (formData.linkedItems.length === 0) {
+      toast.error("Selecione pelo menos um produto para vincular");
       return;
     }
 
@@ -190,8 +185,8 @@ const Complements = () => {
       }
 
       // Criar novos vínculos
-      if (complementId) {
-        const links = formData.selectedMenuItems.map(menuItemId => ({
+      if (complementId && formData.linkedItems.length > 0) {
+        const links = formData.linkedItems.map(menuItemId => ({
           complement_id: complementId,
           menu_item_id: menuItemId,
         }));
@@ -266,7 +261,7 @@ const Complements = () => {
               <div>
                 <h1 className="text-2xl font-bold">Gerenciar Complementos</h1>
                 <p className="text-sm text-muted-foreground">
-                  Configure complementos para pastéis, salgados e açaí
+                  Configure complementos e vincule aos produtos
                 </p>
               </div>
             </div>
@@ -303,25 +298,23 @@ const Complements = () => {
                     key={complement.id}
                     className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
                   >
-                     <div className="flex-1 space-y-1">
-                       <div className="flex items-center gap-3">
-                         <span className="font-semibold">{complement.name}</span>
-                         {getCategoryBadge(complement.category)}
-                         {complement.isSpecial && (
-                           <Badge variant="default">Especial</Badge>
-                         )}
-                       </div>
-                       <p className="text-sm text-muted-foreground">
-                         {complement.isSpecial
-                           ? `R$ ${complement.price.toFixed(2)}`
-                           : "Grátis"}
-                       </p>
-                       <p className="text-xs text-muted-foreground">
-                         {complement.menuItemIds && complement.menuItemIds.length > 0
-                           ? `Vinculado a ${complement.menuItemIds.length} produto(s)`
-                           : "Sem produtos vinculados"}
-                       </p>
-                     </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-3">
+                        <span className="font-semibold">{complement.name}</span>
+                        {getCategoryBadge(complement.category)}
+                        {complement.isSpecial && (
+                          <Badge variant="default">Especial</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {complement.isSpecial
+                          ? `R$ ${complement.price.toFixed(2)}`
+                          : "Grátis"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Vinculado a {complement.linkedItems?.length || 0} produto(s)
+                      </p>
+                    </div>
                     <div className="flex items-center gap-2">
                       <Button
                         size="icon"
@@ -348,13 +341,13 @@ const Complements = () => {
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingComplement ? "Editar" : "Novo"} Complemento
             </DialogTitle>
             <DialogDescription>
-              Preencha os dados do complemento
+              Preencha os dados do complemento e vincule aos produtos
             </DialogDescription>
           </DialogHeader>
 
@@ -374,7 +367,7 @@ const Complements = () => {
               <Select
                 value={formData.category}
                 onValueChange={(value: any) =>
-                  setFormData({ ...formData, category: value })
+                  setFormData({ ...formData, category: value, linkedItems: [] })
                 }
               >
                 <SelectTrigger id="category">
@@ -393,7 +386,7 @@ const Complements = () => {
                 id="isSpecial"
                 checked={formData.isSpecial}
                 onCheckedChange={(checked) =>
-                  setFormData({ ...formData, isSpecial: checked as boolean })
+                  setFormData({ ...formData, isSpecial: checked as boolean, price: checked ? formData.price : "0" })
                 }
               />
               <label
@@ -421,50 +414,47 @@ const Complements = () => {
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label>Produtos desta Categoria *</Label>
-              <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
-                {filteredMenuItems.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-2">
-                    Nenhum produto cadastrado nesta categoria
-                  </p>
-                ) : (
-                  filteredMenuItems.map((item) => (
+            <div className="space-y-3">
+              <Label>Produtos Vinculados *</Label>
+              <p className="text-xs text-muted-foreground">
+                Selecione os produtos desta categoria que terão este complemento disponível
+              </p>
+              <div className="border rounded-lg p-3 max-h-64 overflow-y-auto space-y-2">
+                {menuItems
+                  .filter(item => item.category === formData.category)
+                  .map((item) => (
                     <div key={item.id} className="flex items-center space-x-2">
                       <Checkbox
                         id={`item-${item.id}`}
-                        checked={formData.selectedMenuItems.includes(item.id)}
+                        checked={formData.linkedItems.includes(item.id)}
                         onCheckedChange={(checked) => {
                           if (checked) {
                             setFormData({
                               ...formData,
-                              selectedMenuItems: [...formData.selectedMenuItems, item.id],
+                              linkedItems: [...formData.linkedItems, item.id],
                             });
                           } else {
                             setFormData({
                               ...formData,
-                              selectedMenuItems: formData.selectedMenuItems.filter(
-                                (id) => id !== item.id
-                              ),
+                              linkedItems: formData.linkedItems.filter(id => id !== item.id),
                             });
                           }
                         }}
                       />
                       <label
                         htmlFor={`item-${item.id}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        className="text-sm font-medium leading-none cursor-pointer"
                       >
                         {item.name}
                       </label>
                     </div>
-                  ))
+                  ))}
+                {menuItems.filter(item => item.category === formData.category).length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nenhum produto cadastrado nesta categoria
+                  </p>
                 )}
               </div>
-              {formData.selectedMenuItems.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {formData.selectedMenuItems.length} produto(s) selecionado(s)
-                </p>
-              )}
             </div>
           </div>
 
