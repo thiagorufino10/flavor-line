@@ -24,6 +24,10 @@ ITENS DO PEDIDO:
     if (item.complements && Array.isArray(item.complements) && item.complements.length > 0) {
       receipt += `\n    Complementos: ${item.complements.map((c: any) => c.name).join(', ')}`;
     }
+    
+    if (item.observations) {
+      receipt += `\n    OBS: ${item.observations}`;
+    }
     receipt += '\n';
   });
 

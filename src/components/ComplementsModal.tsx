@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 export interface Complement {
   id: string;
@@ -29,7 +31,7 @@ interface ComplementsModalProps {
     price: number;
     category: "pasteis" | "salgados" | "acai";
   } | null;
-  onConfirm: (selectedComplements: Complement[], totalPrice: number) => void;
+  onConfirm: (selectedComplements: Complement[], totalPrice: number, observations?: string) => void;
 }
 
 export const ComplementsModal = ({
@@ -42,6 +44,7 @@ export const ComplementsModal = ({
   const [totalPrice, setTotalPrice] = useState(0);
   const [availableComplements, setAvailableComplements] = useState<Complement[]>([]);
   const [loading, setLoading] = useState(false);
+  const [observations, setObservations] = useState("");
 
   useEffect(() => {
     if (item && open) {
@@ -113,13 +116,15 @@ export const ComplementsModal = ({
       selectedComplements.has(c.id)
     );
     
-    onConfirm(selected, totalPrice);
+    onConfirm(selected, totalPrice, observations.trim() || undefined);
     setSelectedComplements(new Set());
+    setObservations("");
     onOpenChange(false);
   };
 
   const handleCancel = () => {
     setSelectedComplements(new Set());
+    setObservations("");
     onOpenChange(false);
   };
 
@@ -217,6 +222,26 @@ export const ComplementsModal = ({
               </div>
             </div>
           )}
+        </div>
+
+        <Separator />
+
+        {/* Observações */}
+        <div className="space-y-2">
+          <Label htmlFor="observations" className="text-base font-semibold">
+            Observações
+          </Label>
+          <Textarea
+            id="observations"
+            placeholder="Ex: Sem cebola, bem passado, etc..."
+            value={observations}
+            onChange={(e) => setObservations(e.target.value)}
+            className="min-h-[80px] resize-none"
+            maxLength={200}
+          />
+          <p className="text-xs text-muted-foreground text-right">
+            {observations.length}/200 caracteres
+          </p>
         </div>
 
         <Separator />

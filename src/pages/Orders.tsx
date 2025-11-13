@@ -17,6 +17,7 @@ interface OrderItem {
   price: number;
   quantity: number;
   complements?: Complement[];
+  observations?: string;
 }
 
 interface MenuCategory {
@@ -109,7 +110,8 @@ const Orders = () => {
   const addItemToOrder = (
     item: { name: string; price: number },
     complements: Complement[],
-    totalPrice: number
+    totalPrice: number,
+    observations?: string
   ) => {
     const newItem: OrderItem = {
       id: Math.random().toString(),
@@ -117,6 +119,7 @@ const Orders = () => {
       price: totalPrice,
       quantity: 1,
       complements,
+      observations,
     };
 
     setCurrentOrder([...currentOrder, newItem]);
@@ -149,7 +152,8 @@ const Orders = () => {
         quantity: item.quantity,
         unit_price: item.price / item.quantity,
         total_price: item.price,
-        complements: item.complements || null
+        complements: item.complements || null,
+        observations: item.observations || null
       }));
 
       const order = await createOrder(customerName, paymentMethod, getTotalPrice(), items);
@@ -265,9 +269,14 @@ const Orders = () => {
                           <p className="text-sm text-muted-foreground">
                             {item.quantity}x R$ {item.price.toFixed(2)}
                           </p>
-                          {item.complements && item.complements.length > 0 && (
+                           {item.complements && item.complements.length > 0 && (
                             <p className="text-xs text-muted-foreground mt-1">
                               + {item.complements.map(c => c.name).join(", ")}
+                            </p>
+                          )}
+                          {item.observations && (
+                            <p className="text-xs text-muted-foreground mt-1 italic">
+                              Obs: {item.observations}
                             </p>
                           )}
                         </div>
@@ -312,9 +321,9 @@ const Orders = () => {
         open={complementsModalOpen}
         onOpenChange={setComplementsModalOpen}
         item={selectedMenuItem}
-        onConfirm={(complements, totalPrice) => {
+        onConfirm={(complements, totalPrice, observations) => {
           if (selectedMenuItem) {
-            addItemToOrder(selectedMenuItem, complements, totalPrice);
+            addItemToOrder(selectedMenuItem, complements, totalPrice, observations);
           }
         }}
       />

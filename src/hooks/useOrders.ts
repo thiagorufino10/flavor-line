@@ -9,6 +9,7 @@ export interface OrderItem {
   unit_price: number;
   total_price: number;
   complements?: any;
+  observations?: string;
 }
 
 export interface Order {
@@ -39,7 +40,8 @@ export const useOrders = (status?: string) => {
             quantity,
             unit_price,
             total_price,
-            complements
+            complements,
+            observations
           )
         `)
         .order("created_at", { ascending: false });
@@ -101,6 +103,7 @@ export const useOrders = (status?: string) => {
       unit_price: number;
       total_price: number;
       complements?: any;
+      observations?: string;
     }>
   ) => {
     try {
@@ -145,6 +148,7 @@ export const useOrders = (status?: string) => {
         unit_price: item.unit_price,
         total_price: item.total_price,
         complements: item.complements || null,
+        observations: item.observations || null,
       }));
 
       const { error: itemsError } = await supabase
