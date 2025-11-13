@@ -98,7 +98,11 @@ export const PaymentModal = ({
                 const rates = JSON.parse(localStorage.getItem("paymentRates") || '{"credito": 3.5, "debito": 2.0}');
                 const rate = selectedPayment === "credito" ? rates.credito : rates.debito;
                 const taxAmount = totalAmount * rate / 100;
-                const amountReceived = totalAmount - taxAmount;
+                
+                // Para crédito: adiciona taxa (cliente paga mais)
+                // Para débito: subtrai taxa (entra menos no caixa)
+                const clientPays = selectedPayment === "credito" ? totalAmount + taxAmount : totalAmount;
+                const amountReceived = selectedPayment === "credito" ? clientPays : totalAmount - taxAmount;
                 
                 return (
                   <>
@@ -107,12 +111,12 @@ export const PaymentModal = ({
                       <span className="font-medium">R$ {totalAmount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Taxa maquininha ({rate}%):</span>
-                      <span className="font-medium text-destructive">- R$ {taxAmount.toFixed(2)}</span>
+                      <span className="text-sm text-muted-foreground">Taxa {selectedPayment === "credito" ? "crédito" : "débito"} ({rate}%):</span>
+                      <span className="font-medium text-destructive">{selectedPayment === "credito" ? "+" : "-"} R$ {taxAmount.toFixed(2)}</span>
                     </div>
                     <div className="border-t pt-2 flex justify-between items-center">
                       <span className="font-semibold">Cliente paga:</span>
-                      <span className="text-xl font-bold text-primary">R$ {totalAmount.toFixed(2)}</span>
+                      <span className="text-xl font-bold text-primary">R$ {clientPays.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center text-muted-foreground">
                       <span className="text-sm">Entra no caixa:</span>

@@ -121,7 +121,12 @@ export const useOrders = (status?: string) => {
         if (rateData) {
           const rate = parseFloat(String(rateData.rate_percentage));
           const taxAmount = totalAmount * rate / 100;
-          amountReceived = totalAmount - taxAmount;
+          
+          // Para crédito: adiciona taxa (cliente paga mais, e esse valor entra no caixa)
+          // Para débito: subtrai taxa (cliente paga o valor base, mas entra menos no caixa)
+          amountReceived = paymentMethod === "credito" 
+            ? totalAmount + taxAmount 
+            : totalAmount - taxAmount;
         }
       }
 
