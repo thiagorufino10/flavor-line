@@ -57,20 +57,38 @@ export const ComplementsModal = ({
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("complements")
-        .select("*")
+      // Primeiro buscar o menu_item_id baseado no nome do item
+      const { data: menuItemData, error: menuError } = await supabase
+        .from("menu_items")
+        .select("id")
+        .eq("name", item.name)
         .eq("active", true)
-        .eq("category", item.category);
+        .single();
+
+      if (menuError) throw menuError;
+
+      // Buscar complementos vinculados a este produto específico
+      const { data, error } = await supabase
+        .from("complement_menu_items")
+        .select(`
+          complement_id,
+          complements (
+            id,
+            name,
+            price,
+            category
+          )
+        `)
+        .eq("menu_item_id", menuItemData.id);
 
       if (error) throw error;
 
-      const formatted = data?.map(comp => ({
-        id: comp.id,
-        name: comp.name,
-        price: parseFloat(String(comp.price)),
-        category: comp.category as "pasteis" | "salgados" | "acai",
-        isSpecial: parseFloat(String(comp.price)) > 0,
+      const formatted = data?.map((rel: any) => ({
+        id: rel.complements.id,
+        name: rel.complements.name,
+        price: parseFloat(String(rel.complements.price)),
+        category: rel.complements.category as "pasteis" | "salgados" | "acai",
+        isSpecial: parseFloat(String(rel.complements.price)) > 0,
       })) || [];
 
       setAvailableComplements(formatted);

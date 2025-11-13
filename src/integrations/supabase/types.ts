@@ -52,6 +52,42 @@ export type Database = {
           },
         ]
       }
+      complement_menu_items: {
+        Row: {
+          complement_id: string
+          created_at: string
+          id: string
+          menu_item_id: string
+        }
+        Insert: {
+          complement_id: string
+          created_at?: string
+          id?: string
+          menu_item_id: string
+        }
+        Update: {
+          complement_id?: string
+          created_at?: string
+          id?: string
+          menu_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complement_menu_items_complement_id_fkey"
+            columns: ["complement_id"]
+            isOneToOne: false
+            referencedRelation: "complements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complement_menu_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complements: {
         Row: {
           active: boolean

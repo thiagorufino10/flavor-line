@@ -31,11 +31,20 @@ interface Complement {
   price: number;
   category: "pasteis" | "salgados" | "acai";
   isSpecial: boolean;
+  menuItemIds?: string[];
+}
+
+interface MenuItem {
+  id: string;
+  name: string;
+  category: string;
 }
 
 const Complements = () => {
   const navigate = useNavigate();
   const [complements, setComplements] = useState<Complement[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [filteredMenuItems, setFilteredMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingComplement, setEditingComplement] = useState<Complement | null>(null);
@@ -44,17 +53,44 @@ const Complements = () => {
     price: "",
     category: "pasteis" as "pasteis" | "salgados" | "acai",
     isSpecial: false,
+    selectedMenuItems: [] as string[],
   });
 
   useEffect(() => {
     fetchComplements();
+    fetchMenuItems();
   }, []);
+
+  useEffect(() => {
+    const filtered = menuItems.filter(item => item.category === formData.category);
+    setFilteredMenuItems(filtered);
+  }, [formData.category, menuItems]);
+
+  const fetchMenuItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("menu_items")
+        .select("id, name, category")
+        .eq("active", true)
+        .order("name");
+
+      if (error) throw error;
+      setMenuItems(data || []);
+    } catch (error) {
+      console.error("Erro ao buscar itens do menu:", error);
+    }
+  };
 
   const fetchComplements = async () => {
     try {
       const { data, error } = await supabase
         .from("complements")
-        .select("*")
+        .select(`
+          *,
+          complement_menu_items (
+            menu_item_id
+          )
+        `)
         .eq("active", true)
         .order("category", { ascending: true });
 
@@ -66,6 +102,7 @@ const Complements = () => {
         price: parseFloat(String(comp.price)),
         category: comp.category as "pasteis" | "salgados" | "acai",
         isSpecial: parseFloat(String(comp.price)) > 0,
+        menuItemIds: comp.complement_menu_items?.map((rel: any) => rel.menu_item_id) || [],
       })) || [];
 
       setComplements(formattedComplements);
@@ -85,6 +122,7 @@ const Complements = () => {
         price: complement.price.toString(),
         category: complement.category,
         isSpecial: complement.isSpecial,
+        selectedMenuItems: complement.menuItemIds || [],
       });
     } else {
       setEditingComplement(null);
@@ -93,6 +131,7 @@ const Complements = () => {
         price: "",
         category: "pasteis",
         isSpecial: false,
+        selectedMenuItems: [],
       });
     }
     setDialogOpen(true);
@@ -104,11 +143,19 @@ const Complements = () => {
       return;
     }
 
+    if (formData.selectedMenuItems.length === 0) {
+      toast.error("Selecione pelo menos um produto");
+      return;
+    }
+
     const price = parseFloat(formData.price) || 0;
     setLoading(true);
 
     try {
+      let complementId = editingComplement?.id;
+
       if (editingComplement) {
+        // Atualizar complemento
         const { error } = await supabase
           .from("complements")
           .update({
@@ -119,21 +166,44 @@ const Complements = () => {
           .eq("id", editingComplement.id);
 
         if (error) throw error;
-        toast.success("Complemento atualizado com sucesso");
+
+        // Remover vínculos antigos
+        await supabase
+          .from("complement_menu_items")
+          .delete()
+          .eq("complement_id", editingComplement.id);
       } else {
-        const { error } = await supabase
+        // Criar novo complemento
+        const { data, error } = await supabase
           .from("complements")
           .insert({
             name: formData.name,
             price: price,
             category: formData.category,
             active: true,
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
-        toast.success("Complemento cadastrado com sucesso");
+        complementId = data.id;
       }
 
+      // Criar novos vínculos
+      if (complementId) {
+        const links = formData.selectedMenuItems.map(menuItemId => ({
+          complement_id: complementId,
+          menu_item_id: menuItemId,
+        }));
+
+        const { error: linkError } = await supabase
+          .from("complement_menu_items")
+          .insert(links);
+
+        if (linkError) throw linkError;
+      }
+
+      toast.success(editingComplement ? "Complemento atualizado com sucesso" : "Complemento cadastrado com sucesso");
       await fetchComplements();
       setDialogOpen(false);
     } catch (error) {
@@ -233,20 +303,25 @@ const Complements = () => {
                     key={complement.id}
                     className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
                   >
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-3">
-                        <span className="font-semibold">{complement.name}</span>
-                        {getCategoryBadge(complement.category)}
-                        {complement.isSpecial && (
-                          <Badge variant="default">Especial</Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {complement.isSpecial
-                          ? `R$ ${complement.price.toFixed(2)}`
-                          : "Grátis"}
-                      </p>
-                    </div>
+                     <div className="flex-1 space-y-1">
+                       <div className="flex items-center gap-3">
+                         <span className="font-semibold">{complement.name}</span>
+                         {getCategoryBadge(complement.category)}
+                         {complement.isSpecial && (
+                           <Badge variant="default">Especial</Badge>
+                         )}
+                       </div>
+                       <p className="text-sm text-muted-foreground">
+                         {complement.isSpecial
+                           ? `R$ ${complement.price.toFixed(2)}`
+                           : "Grátis"}
+                       </p>
+                       <p className="text-xs text-muted-foreground">
+                         {complement.menuItemIds && complement.menuItemIds.length > 0
+                           ? `Vinculado a ${complement.menuItemIds.length} produto(s)`
+                           : "Sem produtos vinculados"}
+                       </p>
+                     </div>
                     <div className="flex items-center gap-2">
                       <Button
                         size="icon"
@@ -345,6 +420,52 @@ const Complements = () => {
                 />
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label>Produtos desta Categoria *</Label>
+              <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                {filteredMenuItems.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    Nenhum produto cadastrado nesta categoria
+                  </p>
+                ) : (
+                  filteredMenuItems.map((item) => (
+                    <div key={item.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`item-${item.id}`}
+                        checked={formData.selectedMenuItems.includes(item.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData({
+                              ...formData,
+                              selectedMenuItems: [...formData.selectedMenuItems, item.id],
+                            });
+                          } else {
+                            setFormData({
+                              ...formData,
+                              selectedMenuItems: formData.selectedMenuItems.filter(
+                                (id) => id !== item.id
+                              ),
+                            });
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`item-${item.id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {item.name}
+                      </label>
+                    </div>
+                  ))
+                )}
+              </div>
+              {formData.selectedMenuItems.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {formData.selectedMenuItems.length} produto(s) selecionado(s)
+                </p>
+              )}
+            </div>
           </div>
 
           <DialogFooter>
