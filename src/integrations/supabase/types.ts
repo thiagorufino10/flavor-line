@@ -120,6 +120,7 @@ export type Database = {
           complements: Json | null
           created_at: string
           id: string
+          observations: string | null
           order_id: string
           product_name: string
           quantity: number
@@ -130,6 +131,7 @@ export type Database = {
           complements?: Json | null
           created_at?: string
           id?: string
+          observations?: string | null
           order_id: string
           product_name: string
           quantity?: number
@@ -140,6 +142,7 @@ export type Database = {
           complements?: Json | null
           created_at?: string
           id?: string
+          observations?: string | null
           order_id?: string
           product_name?: string
           quantity?: number
