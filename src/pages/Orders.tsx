@@ -35,7 +35,7 @@ const Orders = () => {
   const [selectedMenuItem, setSelectedMenuItem] = useState<{
     name: string;
     price: number;
-    category: "pasteis" | "salgados" | "acai";
+    category: "pasteis" | "salgados" | "acai" | "bebidas";
   } | null>(null);
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,13 +96,7 @@ const Orders = () => {
     item: { name: string; price: number },
     category: "pasteis" | "salgados" | "acai" | "bebidas"
   ) => {
-    // Bebidas não têm complementos, adiciona direto
-    if (category === "bebidas") {
-      addItemToOrder(item, [], item.price);
-      return;
-    }
-
-    // Para Pastéis, Salgados e Açaí, abre o modal de complementos
+    // Abre o modal de complementos para todas as categorias
     setSelectedMenuItem({ ...item, category });
     setComplementsModalOpen(true);
   };
