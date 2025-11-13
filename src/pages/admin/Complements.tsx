@@ -29,7 +29,7 @@ interface Complement {
   id: string;
   name: string;
   price: number;
-  category: "pasteis" | "salgados" | "acai";
+  category: "pasteis" | "salgados" | "acai" | "bebidas";
   isSpecial: boolean;
   linkedItems?: string[];
 }
@@ -50,7 +50,7 @@ const Complements = () => {
   const [formData, setFormData] = useState({
     name: "",
     price: "",
-    category: "pasteis" as "pasteis" | "salgados" | "acai",
+    category: "pasteis" as "pasteis" | "salgados" | "acai" | "bebidas",
     isSpecial: false,
     linkedItems: [] as string[],
   });
@@ -231,11 +231,13 @@ const Complements = () => {
       pasteis: "bg-primary/10 text-primary",
       salgados: "bg-accent/10 text-accent",
       acai: "bg-warning/10 text-warning",
+      bebidas: "bg-secondary/10 text-secondary",
     };
     const labels = {
       pasteis: "Pastéis",
       salgados: "Salgados",
       acai: "Açaí",
+      bebidas: "Bebidas",
     };
     return (
       <Badge className={colors[category as keyof typeof colors]}>
@@ -377,6 +379,7 @@ const Complements = () => {
                   <SelectItem value="pasteis">Pastéis</SelectItem>
                   <SelectItem value="salgados">Salgados</SelectItem>
                   <SelectItem value="acai">Açaí</SelectItem>
+                  <SelectItem value="bebidas">Bebidas</SelectItem>
                 </SelectContent>
               </Select>
             </div>

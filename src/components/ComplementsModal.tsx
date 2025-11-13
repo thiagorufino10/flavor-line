@@ -19,7 +19,7 @@ export interface Complement {
   id: string;
   name: string;
   price: number;
-  category: "pasteis" | "salgados" | "acai";
+  category: "pasteis" | "salgados" | "acai" | "bebidas";
   isSpecial: boolean;
 }
 
@@ -29,7 +29,7 @@ interface ComplementsModalProps {
   item: {
     name: string;
     price: number;
-    category: "pasteis" | "salgados" | "acai";
+    category: "pasteis" | "salgados" | "acai" | "bebidas";
   } | null;
   onConfirm: (selectedComplements: Complement[], totalPrice: number, observations?: string) => void;
 }
