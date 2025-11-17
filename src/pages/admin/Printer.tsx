@@ -20,16 +20,23 @@ const Printer = () => {
     const saved = localStorage.getItem("printerConfig");
     return saved ? JSON.parse(saved) : {
       printerType: "thermal",
+      connectionType: "network",
       ipAddress: "192.168.1.100",
       port: "9100",
+      usbPort: "",
       printerName: "Zebra ZD220",
       paperWidth: "80mm",
     };
   });
 
   const handleSave = () => {
-    if (!config.ipAddress || !config.port) {
-      toast.error("Preencha todos os campos obrigatórios");
+    if (config.connectionType === "network" && (!config.ipAddress || !config.port)) {
+      toast.error("Preencha o endereço IP e porta para conexão de rede");
+      return;
+    }
+    
+    if (config.connectionType === "usb" && !config.usbPort) {
+      toast.error("Preencha a porta USB");
       return;
     }
 
@@ -103,24 +110,56 @@ const Printer = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ipAddress">Endereço IP *</Label>
-              <Input
-                id="ipAddress"
-                value={config.ipAddress}
-                onChange={(e) => setConfig({ ...config, ipAddress: e.target.value })}
-                placeholder="192.168.1.100"
-              />
+              <Label htmlFor="connectionType">Tipo de Conexão</Label>
+              <Select 
+                value={config.connectionType} 
+                onValueChange={(value) => setConfig({ ...config, connectionType: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="network">Rede (IP)</SelectItem>
+                  <SelectItem value="usb">USB</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="port">Porta *</Label>
-              <Input
-                id="port"
-                value={config.port}
-                onChange={(e) => setConfig({ ...config, port: e.target.value })}
-                placeholder="9100"
-              />
-            </div>
+            {config.connectionType === "network" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="ipAddress">Endereço IP *</Label>
+                  <Input
+                    id="ipAddress"
+                    value={config.ipAddress}
+                    onChange={(e) => setConfig({ ...config, ipAddress: e.target.value })}
+                    placeholder="192.168.1.100"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="port">Porta *</Label>
+                  <Input
+                    id="port"
+                    value={config.port}
+                    onChange={(e) => setConfig({ ...config, port: e.target.value })}
+                    placeholder="9100"
+                  />
+                </div>
+              </>
+            )}
+
+            {config.connectionType === "usb" && (
+              <div className="space-y-2">
+                <Label htmlFor="usbPort">Porta USB *</Label>
+                <Input
+                  id="usbPort"
+                  value={config.usbPort}
+                  onChange={(e) => setConfig({ ...config, usbPort: e.target.value })}
+                  placeholder="COM3, /dev/usb/lp0 ou USB001"
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="paperWidth">Largura do Papel</Label>
