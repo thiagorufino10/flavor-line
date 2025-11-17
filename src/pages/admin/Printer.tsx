@@ -34,22 +34,60 @@ const Printer = () => {
   const detectUSBPrinters = async () => {
     setDetectingPrinters(true);
     try {
-      // Simular detecção de impressoras USB disponíveis no sistema
-      // Em produção, isso seria feito através de um serviço local ou driver
-      const mockPrinters = [
-        "Zebra ZD220 (USB001)",
-        "Epson TM-T20 (USB002)",
-        "Bematech MP-4200 (USB003)",
-      ];
+      // Verificar se o navegador suporta Web USB API
+      if (!('usb' in navigator)) {
+        toast.error("Seu navegador não suporta detecção USB. Use Chrome, Edge ou Opera.");
+        setDetectingPrinters(false);
+        return;
+      }
+
+      // Solicitar acesso aos dispositivos USB conectados
+      const devices = await (navigator as any).usb.requestDevice({
+        filters: [
+          // Filtros para impressoras térmicas comuns
+          { vendorId: 0x0A5F }, // Zebra
+          { vendorId: 0x04B8 }, // Epson
+          { vendorId: 0x0B00 }, // Bematech
+          { vendorId: 0x154F }, // HPRT
+          { vendorId: 0x0416 }, // Printer
+        ]
+      });
+
+      console.log("Dispositivo USB selecionado:", devices);
+
+      // Obter todos os dispositivos já autorizados
+      const authorizedDevices = await (navigator as any).usb.getDevices();
       
-      // Simular delay de detecção
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setAvailablePrinters(mockPrinters);
-      toast.success(`${mockPrinters.length} impressora(s) detectada(s)`);
-    } catch (error) {
-      toast.error("Erro ao detectar impressoras USB");
-      console.error(error);
+      const printersList = authorizedDevices.map((device: any, index: number) => {
+        const vendorName = device.productName || `Impressora USB ${index + 1}`;
+        return `${vendorName} (Vendor: ${device.vendorId.toString(16)})`;
+      });
+
+      if (printersList.length > 0) {
+        setAvailablePrinters(printersList);
+        toast.success(`${printersList.length} impressora(s) detectada(s)`, {
+          description: "Selecione uma impressora da lista abaixo"
+        });
+      } else {
+        toast.info("Nenhuma impressora USB foi selecionada", {
+          description: "Conecte sua impressora e tente novamente"
+        });
+      }
+    } catch (error: any) {
+      console.error("Erro ao detectar impressoras USB:", error);
+      if (error.name === 'NotFoundError') {
+        toast.error("Nenhuma impressora USB encontrada", {
+          description: "Certifique-se de que a impressora está conectada"
+        });
+      } else if (error.name === 'SecurityError') {
+        toast.error("Acesso USB bloqueado", {
+          description: "Verifique as permissões do navegador"
+        });
+      } else {
+        toast.error("Erro ao detectar impressoras USB", {
+          description: error.message || "Tente novamente"
+        });
+      }
     } finally {
       setDetectingPrinters(false);
     }
@@ -270,17 +308,17 @@ const Printer = () => {
 
               <div className="my-3">
                 <p className="font-bold mb-2">ITENS:</p>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div>
-                    <p>1x Pastel de Carne - R$ 8,00</p>
+                    <p className="font-semibold">1x Pastel de Carne - R$ 8,00</p>
                     <p className="text-xs ml-4">+ Batata palha</p>
-                    <p className="text-xs ml-4 italic">OBS: Bem passado</p>
+                    <p className="text-xs ml-4 font-bold bg-yellow-200 inline-block px-2 py-0.5 mt-1">OBS: Bem passado</p>
                   </div>
                   <div>
-                    <p>1x Açaí 300ml - R$ 15,00</p>
+                    <p className="font-semibold">1x Açaí 300ml - R$ 15,00</p>
                     <p className="text-xs ml-4">+ Morango</p>
                     <p className="text-xs ml-4">+ Granola</p>
-                    <p className="text-xs ml-4 italic">OBS: Sem leite condensado</p>
+                    <p className="text-xs ml-4 font-bold bg-yellow-200 inline-block px-2 py-0.5 mt-1">OBS: Sem leite condensado</p>
                   </div>
                 </div>
               </div>
