@@ -28,6 +28,32 @@ const Printer = () => {
       paperWidth: "80mm",
     };
   });
+  const [availablePrinters, setAvailablePrinters] = useState<string[]>([]);
+  const [detectingPrinters, setDetectingPrinters] = useState(false);
+
+  const detectUSBPrinters = async () => {
+    setDetectingPrinters(true);
+    try {
+      // Simular detecção de impressoras USB disponíveis no sistema
+      // Em produção, isso seria feito através de um serviço local ou driver
+      const mockPrinters = [
+        "Zebra ZD220 (USB001)",
+        "Epson TM-T20 (USB002)",
+        "Bematech MP-4200 (USB003)",
+      ];
+      
+      // Simular delay de detecção
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setAvailablePrinters(mockPrinters);
+      toast.success(`${mockPrinters.length} impressora(s) detectada(s)`);
+    } catch (error) {
+      toast.error("Erro ao detectar impressoras USB");
+      console.error(error);
+    } finally {
+      setDetectingPrinters(false);
+    }
+  };
 
   const handleSave = () => {
     if (config.connectionType === "network" && (!config.ipAddress || !config.port)) {
@@ -150,15 +176,51 @@ const Printer = () => {
             )}
 
             {config.connectionType === "usb" && (
-              <div className="space-y-2">
-                <Label htmlFor="usbPort">Porta USB *</Label>
-                <Input
-                  id="usbPort"
-                  value={config.usbPort}
-                  onChange={(e) => setConfig({ ...config, usbPort: e.target.value })}
-                  placeholder="COM3, /dev/usb/lp0 ou USB001"
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label>Impressoras Detectadas</Label>
+                  <Button 
+                    type="button"
+                    variant="outline" 
+                    onClick={detectUSBPrinters}
+                    disabled={detectingPrinters}
+                    className="w-full"
+                  >
+                    {detectingPrinters ? "Detectando..." : "Detectar Impressoras USB"}
+                  </Button>
+                </div>
+
+                {availablePrinters.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="detectedPrinter">Selecionar Impressora</Label>
+                    <Select 
+                      value={config.usbPort} 
+                      onValueChange={(value) => setConfig({ ...config, usbPort: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma impressora" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availablePrinters.map((printer) => (
+                          <SelectItem key={printer} value={printer}>
+                            {printer}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="usbPort">Ou digite manualmente a porta USB</Label>
+                  <Input
+                    id="usbPort"
+                    value={config.usbPort}
+                    onChange={(e) => setConfig({ ...config, usbPort: e.target.value })}
+                    placeholder="COM3, /dev/usb/lp0 ou USB001"
+                  />
+                </div>
+              </>
             )}
 
             <div className="space-y-2">
@@ -212,11 +274,13 @@ const Printer = () => {
                   <div>
                     <p>1x Pastel de Carne - R$ 8,00</p>
                     <p className="text-xs ml-4">+ Batata palha</p>
+                    <p className="text-xs ml-4 italic">OBS: Bem passado</p>
                   </div>
                   <div>
                     <p>1x Açaí 300ml - R$ 15,00</p>
                     <p className="text-xs ml-4">+ Morango</p>
                     <p className="text-xs ml-4">+ Granola</p>
+                    <p className="text-xs ml-4 italic">OBS: Sem leite condensado</p>
                   </div>
                 </div>
               </div>
