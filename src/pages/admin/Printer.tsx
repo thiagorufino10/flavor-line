@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getSystemPrinters, printHtmlToSystemPrinter } from "@/lib/systemPrinter";
+// Impressão via diálogo nativo do navegador
 
 const Printer = () => {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ const Printer = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [availablePrinters, setAvailablePrinters] = useState<string[]>([]);
-  const [detectingPrinters, setDetectingPrinters] = useState(false);
+  const [detectingPrinters] = useState(false);
   const [testingPrint, setTestingPrint] = useState(false);
 
   useEffect(() => {
