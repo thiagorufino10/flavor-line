@@ -68,7 +68,7 @@ const Printer = () => {
   }, []);
 
   const handleDetectUSBPrinters = () => {
-    // Abre o diálogo de impressão do sistema para o usuário ver as impressoras instaladas
+    // Abre uma página em branco que dispara o diálogo de impressão do sistema
     const printWindow = window.open("", "_blank", "width=400,height=300");
     if (!printWindow) {
       toast.error("Permita pop-ups para detectar impressoras.");
@@ -76,25 +76,16 @@ const Printer = () => {
     }
     printWindow.document.write(`
       <html><head><title>Detectar Impressoras</title></head>
-      <body><p>Selecione a impressora desejada no diálogo de impressão e anote o nome.</p>
-      <script>window.print(); window.close();<\/script></body></html>
+      <body style="font-family:sans-serif;padding:20px;text-align:center;">
+        <h3>Veja as impressoras instaladas no diálogo abaixo</h3>
+        <p>Anote o nome da impressora desejada e feche esta janela.</p>
+        <script>setTimeout(function(){ window.print(); }, 300);<\/script>
+      </body></html>
     `);
     printWindow.document.close();
-
-    // Pede ao usuário para digitar o nome da impressora
-    const printerName = prompt("Digite o nome exato da impressora que apareceu no diálogo (ex: Generic / Text Only, ARGOX OS-214 plus PPLA):");
-    if (printerName && printerName.trim()) {
-      const name = printerName.trim();
-      setAvailablePrinters([name]);
-      setConfig((current) => ({
-        ...current,
-        usbPort: name,
-        printerName: name,
-      }));
-      toast.success(`Impressora "${name}" configurada com sucesso!`);
-    } else {
-      toast.info("Nenhuma impressora foi selecionada.");
-    }
+    // Mostra o campo para digitar o nome
+    setShowNameInput(true);
+    toast.info("Veja as impressoras no diálogo e digite o nome abaixo.");
   };
 
   const handleSave = async () => {
