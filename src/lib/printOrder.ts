@@ -68,6 +68,7 @@ export const printOrder = (order: Order) => {
             body {
               font-family: 'Courier New', monospace;
               font-size: 12px;
+              font-weight: 700;
               margin: 0;
               padding: 10px;
               width: 280px;
