@@ -47,7 +47,7 @@ const Orders = () => {
   const [selectedMenuItem, setSelectedMenuItem] = useState<{
     name: string;
     price: number;
-    category: "pasteis" | "salgados" | "acai" | "bebidas";
+    category: ProductCategory;
   } | null>(null);
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
