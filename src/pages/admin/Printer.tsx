@@ -20,19 +20,18 @@ const Printer = () => {
   const navigate = useNavigate();
   const [config, setConfig] = useState({
     printerType: "thermal",
-    connectionType: "network",
+    connectionType: "usb",
     ipAddress: "192.168.1.100",
     port: "9100",
     usbPort: "",
-    printerName: "Impressora",
+    printerName: "",
     paperWidth: "80mm",
   });
   const [configId, setConfigId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [availablePrinters, setAvailablePrinters] = useState<string[]>([]);
-  const [detectingPrinters] = useState(false);
   const [testingPrint, setTestingPrint] = useState(false);
+  const [showNameInput, setShowNameInput] = useState(false);
 
   useEffect(() => {
     const loadConfig = async () => {
