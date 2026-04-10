@@ -19,6 +19,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { UtensilsCrossed, ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -37,15 +44,17 @@ const Menu = () => {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [formData, setFormData] = useState({
+  const emptyForm = {
     id: "",
     name: "",
     price: "",
     category: "pasteis" as "pasteis" | "salgados" | "acai" | "bebidas",
     description: "",
-  });
+  };
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState(emptyForm);
+  const [editFormData, setEditFormData] = useState(emptyForm);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   useEffect(() => {
     fetchMenuItems();
@@ -78,68 +87,79 @@ const Menu = () => {
     }
   };
 
-  const handleSave = async () => {
+  const handleCreate = async () => {
     if (!formData.name || !formData.price || !formData.category) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
-
     const price = parseFloat(formData.price);
     if (isNaN(price) || price <= 0) {
       toast.error("Preço inválido");
       return;
     }
-
     setLoading(true);
-
     try {
-      if (isEditing) {
-        const { error } = await supabase
-          .from("menu_items")
-          .update({
-            name: formData.name,
-            price: price,
-            category: formData.category,
-            description: formData.description || null,
-          })
-          .eq("id", formData.id);
-
-        if (error) throw error;
-        toast.success("Item atualizado com sucesso!");
-      } else {
-        const { error } = await supabase
-          .from("menu_items")
-          .insert({
-            name: formData.name,
-            price: price,
-            category: formData.category,
-            description: formData.description || null,
-            active: true,
-          });
-
-        if (error) throw error;
-        toast.success("Item criado com sucesso!");
-      }
-
+      const { error } = await supabase.from("menu_items").insert({
+        name: formData.name,
+        price,
+        category: formData.category,
+        description: formData.description || null,
+        active: true,
+      });
+      if (error) throw error;
+      toast.success("Item criado com sucesso!");
       await fetchMenuItems();
-      handleReset();
+      setFormData(emptyForm);
     } catch (error) {
-      console.error("Erro ao salvar item:", error);
-      toast.error("Erro ao salvar item");
+      console.error("Erro ao criar item:", error);
+      toast.error("Erro ao criar item");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditSave = async () => {
+    if (!editFormData.name || !editFormData.price || !editFormData.category) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+    const price = parseFloat(editFormData.price);
+    if (isNaN(price) || price <= 0) {
+      toast.error("Preço inválido");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("menu_items")
+        .update({
+          name: editFormData.name,
+          price,
+          category: editFormData.category,
+          description: editFormData.description || null,
+        })
+        .eq("id", editFormData.id);
+      if (error) throw error;
+      toast.success("Item atualizado com sucesso!");
+      await fetchMenuItems();
+      setEditModalOpen(false);
+    } catch (error) {
+      console.error("Erro ao atualizar item:", error);
+      toast.error("Erro ao atualizar item");
     } finally {
       setLoading(false);
     }
   };
 
   const handleEdit = (item: MenuItem) => {
-    setFormData({
+    setEditFormData({
       id: item.id,
       name: item.name,
       price: item.price.toString(),
       category: item.category,
       description: item.description || "",
     });
-    setIsEditing(true);
+    setEditModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -148,26 +168,13 @@ const Menu = () => {
         .from("menu_items")
         .update({ active: false })
         .eq("id", id);
-
       if (error) throw error;
-
       await fetchMenuItems();
       toast.success("Item excluído com sucesso!");
     } catch (error) {
       console.error("Erro ao excluir item:", error);
       toast.error("Erro ao excluir item");
     }
-  };
-
-  const handleReset = () => {
-    setFormData({
-      id: "",
-      name: "",
-      price: "",
-      category: "pasteis",
-      description: "",
-    });
-    setIsEditing(false);
   };
 
   const getCategoryBadge = (category: string) => {
@@ -200,10 +207,10 @@ const Menu = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Form */}
+        {/* Create Form */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle>{isEditing ? "Editar Item" : "Novo Item"}</CardTitle>
+            <CardTitle>Novo Item</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -215,7 +222,6 @@ const Menu = () => {
                 placeholder="Pastel de Carne"
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="category">Categoria *</Label>
               <Select value={formData.category} onValueChange={(value: any) => setFormData({ ...formData, category: value })}>
@@ -230,7 +236,6 @@ const Menu = () => {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="price">Preço (R$) *</Label>
               <Input
@@ -243,7 +248,6 @@ const Menu = () => {
                 placeholder="8.00"
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="description">Descrição</Label>
               <Input
@@ -253,17 +257,9 @@ const Menu = () => {
                 placeholder="Carne moída temperada"
               />
             </div>
-
-            <div className="flex gap-2">
-              <Button onClick={handleSave} className="flex-1" disabled={loading}>
-                {isEditing ? "Atualizar" : <><Plus className="w-4 h-4 mr-2" /> Criar</>}
-              </Button>
-              {isEditing && (
-                <Button variant="outline" onClick={handleReset} disabled={loading}>
-                  Cancelar
-                </Button>
-              )}
-            </div>
+            <Button onClick={handleCreate} className="w-full" disabled={loading}>
+              <Plus className="w-4 h-4 mr-2" /> Criar
+            </Button>
           </CardContent>
         </Card>
 
@@ -293,36 +289,28 @@ const Menu = () => {
                 </TableHeader>
                 <TableBody>
                   {items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{item.name}</p>
-                        {item.description && (
-                          <p className="text-sm text-muted-foreground">{item.description}</p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getCategoryBadge(item.category)}</TableCell>
-                    <TableCell className="font-medium">R$ {item.price.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleEdit(item)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{item.name}</p>
+                          {item.description && (
+                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{getCategoryBadge(item.category)}</TableCell>
+                      <TableCell className="font-medium">R$ {item.price.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="ghost" onClick={() => handleEdit(item)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => handleDelete(item.id)}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>
@@ -330,6 +318,59 @@ const Menu = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Item</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Nome do Item *</Label>
+              <Input
+                value={editFormData.name}
+                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Categoria *</Label>
+              <Select value={editFormData.category} onValueChange={(value: any) => setEditFormData({ ...editFormData, category: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pasteis">Pastéis</SelectItem>
+                  <SelectItem value="salgados">Salgados</SelectItem>
+                  <SelectItem value="acai">Açaí</SelectItem>
+                  <SelectItem value="bebidas">Bebidas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Preço (R$) *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={editFormData.price}
+                onChange={(e) => setEditFormData({ ...editFormData, price: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <Input
+                value={editFormData.description}
+                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleEditSave} disabled={loading}>Atualizar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
