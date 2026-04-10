@@ -137,7 +137,13 @@ const Orders = () => {
   };
 
   const handlePaymentConfirm = async (paymentMethod: string, customerName: string) => {
-    const operationMode = localStorage.getItem("operationMode") || "display";
+    // Buscar modo de operação do banco
+    const { data: settingData } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "operation_mode")
+      .maybeSingle();
+    const operationMode = settingData?.value || "display";
     const destinationText = operationMode === "printer" ? "impressora" : "tela da cozinha";
     
     try {
