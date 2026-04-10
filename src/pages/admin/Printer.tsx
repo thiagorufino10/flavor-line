@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getSystemPrinters, printHtmlToSystemPrinter } from "@/lib/systemPrinter";
+// Impressão via diálogo nativo do navegador
 
 const Printer = () => {
   const navigate = useNavigate();
@@ -31,7 +31,7 @@ const Printer = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [availablePrinters, setAvailablePrinters] = useState<string[]>([]);
-  const [detectingPrinters, setDetectingPrinters] = useState(false);
+  const [detectingPrinters] = useState(false);
   const [testingPrint, setTestingPrint] = useState(false);
 
   useEffect(() => {
@@ -68,29 +68,33 @@ const Printer = () => {
     loadConfig();
   }, []);
 
-  const handleDetectUSBPrinters = async () => {
-    setDetectingPrinters(true);
-    try {
-      const printers = await getSystemPrinters();
-      setAvailablePrinters(printers);
+  const handleDetectUSBPrinters = () => {
+    // Abre o diálogo de impressão do sistema para o usuário ver as impressoras instaladas
+    const printWindow = window.open("", "_blank", "width=400,height=300");
+    if (!printWindow) {
+      toast.error("Permita pop-ups para detectar impressoras.");
+      return;
+    }
+    printWindow.document.write(`
+      <html><head><title>Detectar Impressoras</title></head>
+      <body><p>Selecione a impressora desejada no diálogo de impressão e anote o nome.</p>
+      <script>window.print(); window.close();<\/script></body></html>
+    `);
+    printWindow.document.close();
 
-      if (printers.length > 0) {
-        setConfig((current) => ({
-          ...current,
-          usbPort: printers[0],
-          printerName: printers[0],
-        }));
-        toast.success(`${printers.length} impressora(s) detectada(s)! Selecione abaixo.`);
-      } else {
-        toast.info("Nenhuma impressora encontrada. Verifique se o QZ Tray está aberto.");
-      }
-    } catch (error: any) {
-      console.error("Erro ao detectar impressoras:", error);
-      toast.error("Erro ao detectar impressoras", {
-        description: error?.message || "Verifique se o QZ Tray está aberto e autorizado.",
-      });
-    } finally {
-      setDetectingPrinters(false);
+    // Pede ao usuário para digitar o nome da impressora
+    const printerName = prompt("Digite o nome exato da impressora que apareceu no diálogo (ex: Generic / Text Only, ARGOX OS-214 plus PPLA):");
+    if (printerName && printerName.trim()) {
+      const name = printerName.trim();
+      setAvailablePrinters([name]);
+      setConfig((current) => ({
+        ...current,
+        usbPort: name,
+        printerName: name,
+      }));
+      toast.success(`Impressora "${name}" configurada com sucesso!`);
+    } else {
+      toast.info("Nenhuma impressora foi selecionada.");
     }
   };
 
@@ -153,23 +157,26 @@ const Printer = () => {
 
     setTestingPrint(true);
     const now = new Date().toLocaleString("pt-BR");
-    const paperWidth = config.paperWidth === "58mm" ? "58mm" : "80mm";
+    const paperWidthMm = config.paperWidth === "58mm" ? "58mm" : "80mm";
+    const paperWidthPx = config.paperWidth === "58mm" ? "164px" : "226px";
+
     const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
   <style>
-    @page { size: ${paperWidth} auto; margin: 4mm; }
-    body { font-family: 'Courier New', monospace; color: #000; margin: 0; width: 100%; }
-    .receipt { width: 100%; font-size: 12px; }
+    @page { size: ${paperWidthMm} auto; margin: 2mm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Courier New', monospace; color: #000; width: ${paperWidthPx}; font-size: 11px; }
+    .receipt { width: 100%; }
     .center { text-align: center; }
-    .title { font-size: 16px; font-weight: 700; }
-    .divider { border-top: 1px dashed #000; margin: 8px 0; }
-    .item { margin-bottom: 8px; }
+    .title { font-size: 14px; font-weight: 700; }
+    .divider { border-top: 1px dashed #000; margin: 6px 0; }
+    .item { margin-bottom: 6px; }
     .name { font-weight: 700; }
-    .sub { font-size: 10px; margin-left: 12px; }
-    .obs { font-size: 10px; margin-left: 12px; font-weight: 700; }
-    .total { font-weight: 700; margin-top: 8px; }
+    .sub { font-size: 9px; margin-left: 8px; }
+    .obs { font-size: 9px; margin-left: 8px; font-weight: 700; }
+    .total { font-weight: 700; margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -198,18 +205,35 @@ const Printer = () => {
     <div class="divider"></div>
     <div class="total">TOTAL: R$ 23,00</div>
     <div>Pagamento: Dinheiro</div>
-    <div class="center" style="margin-top: 12px;">Obrigado pela preferência!</div>
+    <div class="center" style="margin-top: 8px;">Obrigado pela preferência!</div>
   </div>
 </body>
 </html>`;
 
     try {
-      await printHtmlToSystemPrinter(config.printerName, htmlContent);
-      toast.success("Comanda de teste enviada para " + config.printerName + "!");
+      const printWindow = window.open("", "_blank", "width=400,height=600");
+      if (!printWindow) {
+        toast.error("Permita pop-ups para imprimir.");
+        setTestingPrint(false);
+        return;
+      }
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      // Aguarda carregar e imprime
+      printWindow.onload = () => {
+        printWindow.print();
+        printWindow.onafterprint = () => printWindow.close();
+      };
+      // Fallback se onload não disparar
+      setTimeout(() => {
+        try { printWindow.print(); } catch {}
+      }, 500);
+      toast.success("Diálogo de impressão aberto. Selecione: " + config.printerName);
     } catch (error: any) {
       console.error("Erro ao imprimir:", error);
       toast.error("Erro ao imprimir", {
-        description: error?.message || "Verifique se o QZ Tray está aberto.",
+        description: error?.message || "Tente novamente.",
       });
     } finally {
       setTestingPrint(false);
