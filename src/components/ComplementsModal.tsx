@@ -107,10 +107,30 @@ export const ComplementsModal = ({
   const freeComplements = availableComplements.filter((c) => !c.isSpecial);
   const specialComplements = availableComplements.filter((c) => c.isSpecial);
 
+  const getItemPriceByComplements = (itemName: string, basePrice: number, complementCount: number): number => {
+    const nameLower = itemName.toLowerCase();
+    
+    if (nameLower.includes("coxinha de camarão") || nameLower.includes("coxinha de camarao")) {
+      if (complementCount >= 4) return 14;
+      if (complementCount >= 3) return 13;
+      return 12;
+    }
+    
+    if (nameLower.includes("coxinha especial")) {
+      if (complementCount >= 4) return 12;
+      if (complementCount >= 3) return 11;
+      return 10;
+    }
+    
+    return basePrice;
+  };
+
   useEffect(() => {
     if (item) {
-      // Calcular preço total
-      let total = item.price;
+      const complementCount = selectedComplements.size;
+      let total = getItemPriceByComplements(item.name, item.price, complementCount);
+      
+      // Adicionar preço dos complementos especiais (pagos)
       selectedComplements.forEach((complementId) => {
         const complement = availableComplements.find((c) => c.id === complementId);
         if (complement && complement.isSpecial) {
@@ -119,7 +139,7 @@ export const ComplementsModal = ({
       });
       setTotalPrice(total);
     }
-  }, [selectedComplements, item]);
+  }, [selectedComplements, item, availableComplements]);
 
   const toggleComplement = (complementId: string) => {
     const newSelected = new Set(selectedComplements);
