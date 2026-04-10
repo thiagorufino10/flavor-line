@@ -15,6 +15,13 @@ type USBDeviceLike = {
   productName?: string;
   serialNumber?: string;
   deviceClass?: number;
+  open?: () => Promise<void>;
+  close?: () => Promise<void>;
+  selectConfiguration?: (configurationValue: number) => Promise<void>;
+  claimInterface?: (interfaceNumber: number) => Promise<void>;
+  releaseInterface?: (interfaceNumber: number) => Promise<void>;
+  transferOut?: (endpointNumber: number, data: BufferSource) => Promise<{ status: string }>;
+  configuration?: { interfaces?: Array<{ interfaceNumber: number; alternate?: { endpoints?: Array<{ direction: string; endpointNumber: number }> } }> };
 };
 
 export type DetectedUSBPrinter = {
@@ -108,4 +115,65 @@ export const detectUSBPrinters = async ({ requestAccess = true }: { requestAcces
   });
 
   return Array.from(uniquePrinters.values());
+};
+
+/**
+ * Encontra o dispositivo USB real a partir do ID salvo na config.
+ */
+const findUSBDeviceById = async (printerId: string): Promise<USBDeviceLike | null> => {
+  const usb = getNavigatorUSB();
+  if (!usb) return null;
+
+  const devices = await usb.getDevices();
+  return (
+    devices.find((d) => {
+      const id = `${d.vendorId || 0}:${d.productId || 0}:${d.serialNumber || "sem-serie"}`;
+      return id === printerId;
+    }) || null
+  );
+};
+
+/**
+ * Envia dados raw (texto) diretamente para a impressora USB conectada,
+ * sem abrir diálogo de impressão do navegador.
+ */
+export const sendRawToUSBPrinter = async (printerId: string, text: string): Promise<void> => {
+  const device = await findUSBDeviceById(printerId);
+  if (!device) {
+    throw new Error("Impressora USB não encontrada. Detecte novamente nas configurações.");
+  }
+
+  if (!device.open || !device.close || !device.selectConfiguration || !device.claimInterface || !device.releaseInterface || !device.transferOut) {
+    throw new Error("Dispositivo USB não suporta operações de escrita.");
+  }
+
+  await device.open();
+
+  try {
+    if (device.configuration === null || device.configuration === undefined) {
+      await device.selectConfiguration(1);
+    }
+
+    // Encontrar a interface de impressão (class 7 = Printer)
+    const iface = device.configuration?.interfaces?.[0];
+    if (!iface) {
+      throw new Error("Nenhuma interface USB encontrada na impressora.");
+    }
+
+    const interfaceNumber = iface.interfaceNumber;
+    await device.claimInterface(interfaceNumber);
+
+    // Encontrar endpoint OUT
+    const outEndpoint = iface.alternate?.endpoints?.find((ep) => ep.direction === "out");
+    const endpointNumber = outEndpoint ? outEndpoint.endpointNumber : 1;
+
+    // Converter texto para bytes e enviar
+    const encoder = new TextEncoder();
+    const data = encoder.encode(text);
+    await device.transferOut(endpointNumber, data);
+
+    await device.releaseInterface(interfaceNumber);
+  } finally {
+    await device.close();
+  }
 };
