@@ -6,20 +6,37 @@ import { LogOut, Printer, Monitor, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 
 const OperationMode = () => {
   const navigate = useNavigate();
   const [operationMode, setOperationMode] = useState<"printer" | "display">("display");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedMode = localStorage.getItem("operationMode");
-    if (savedMode === "printer" || savedMode === "display") {
-      setOperationMode(savedMode);
-    }
+    const fetchMode = async () => {
+      const { data } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "operation_mode")
+        .maybeSingle();
+      if (data && (data.value === "printer" || data.value === "display")) {
+        setOperationMode(data.value);
+      }
+      setLoading(false);
+    };
+    fetchMode();
   }, []);
 
-  const handleSave = () => {
-    localStorage.setItem("operationMode", operationMode);
+  const handleSave = async () => {
+    const { error } = await supabase
+      .from("system_settings")
+      .upsert({ key: "operation_mode", value: operationMode, updated_at: new Date().toISOString() }, { onConflict: "key" });
+
+    if (error) {
+      toast.error("Erro ao salvar modo de operação");
+      return;
+    }
     toast.success("Modo de operação salvo com sucesso!");
   };
 
