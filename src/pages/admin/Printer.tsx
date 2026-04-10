@@ -15,7 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getSystemPrinters, printHtmlToSystemPrinter } from "@/lib/systemPrinter";
-import { getSystemPrinters, printHtmlToSystemPrinter } from "@/lib/systemPrinter";
 
 const Printer = () => {
   const navigate = useNavigate();
