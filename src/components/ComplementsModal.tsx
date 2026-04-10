@@ -19,7 +19,7 @@ export interface Complement {
   id: string;
   name: string;
   price: number;
-  category: "pasteis" | "salgados" | "acai" | "bebidas";
+  category: "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
   isSpecial: boolean;
 }
 
@@ -29,7 +29,7 @@ interface ComplementsModalProps {
   item: {
     name: string;
     price: number;
-    category: "pasteis" | "salgados" | "acai" | "bebidas";
+    category: "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
   } | null;
   onConfirm: (selectedComplements: Complement[], totalPrice: number, observations?: string) => void;
 }

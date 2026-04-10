@@ -29,7 +29,7 @@ interface Complement {
   id: string;
   name: string;
   price: number;
-  category: "pasteis" | "salgados" | "acai" | "bebidas";
+  category: "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
   isSpecial: boolean;
   linkedItems?: string[];
 }
@@ -50,7 +50,7 @@ const Complements = () => {
   const [formData, setFormData] = useState({
     name: "",
     price: "",
-    category: "pasteis" as "pasteis" | "salgados" | "acai" | "bebidas",
+    category: "pasteis" as "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente",
     isSpecial: false,
     linkedItems: [] as string[],
   });
@@ -376,10 +376,13 @@ const Complements = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pasteis">Pastéis</SelectItem>
-                  <SelectItem value="salgados">Salgados</SelectItem>
-                  <SelectItem value="acai">Açaí</SelectItem>
-                  <SelectItem value="bebidas">Bebidas</SelectItem>
+                 <SelectItem value="pasteis">Pastéis</SelectItem>
+                 <SelectItem value="salgados">Salgados</SelectItem>
+                 <SelectItem value="acai">Açaí</SelectItem>
+                 <SelectItem value="bebidas">Bebidas</SelectItem>
+                 <SelectItem value="doces">Doces</SelectItem>
+                 <SelectItem value="coxinha">Coxinha</SelectItem>
+                 <SelectItem value="cachorro_quente">Cachorro Quente</SelectItem>
                 </SelectContent>
               </Select>
             </div>

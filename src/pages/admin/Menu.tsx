@@ -31,11 +31,13 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 
+type ProductCategory = "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
+
 interface MenuItem {
   id: string;
   name: string;
   price: number;
-  category: "pasteis" | "salgados" | "acai" | "bebidas";
+  category: ProductCategory;
   description?: string;
 }
 
@@ -48,7 +50,7 @@ const Menu = () => {
     id: "",
     name: "",
     price: "",
-    category: "pasteis" as "pasteis" | "salgados" | "acai" | "bebidas",
+    category: "pasteis" as ProductCategory,
     description: "",
   };
 
@@ -74,7 +76,7 @@ const Menu = () => {
         id: item.id,
         name: item.name,
         price: parseFloat(String(item.price)),
-        category: item.category as "pasteis" | "salgados" | "acai" | "bebidas",
+        category: item.category as ProductCategory,
         description: item.description || undefined,
       })) || [];
 
@@ -183,6 +185,9 @@ const Menu = () => {
       salgados: { variant: "secondary", label: "Salgados" },
       acai: { variant: "destructive", label: "Açaí" },
       bebidas: { variant: "outline", label: "Bebidas" },
+      doces: { variant: "default", label: "Doces" },
+      coxinha: { variant: "secondary", label: "Coxinha" },
+      cachorro_quente: { variant: "destructive", label: "Cachorro Quente" },
     };
     const config = variants[category] || variants.pasteis;
     return <Badge variant={config.variant}>{config.label}</Badge>;
@@ -233,6 +238,9 @@ const Menu = () => {
                   <SelectItem value="salgados">Salgados</SelectItem>
                   <SelectItem value="acai">Açaí</SelectItem>
                   <SelectItem value="bebidas">Bebidas</SelectItem>
+                  <SelectItem value="doces">Doces</SelectItem>
+                  <SelectItem value="coxinha">Coxinha</SelectItem>
+                  <SelectItem value="cachorro_quente">Cachorro Quente</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -344,6 +352,9 @@ const Menu = () => {
                   <SelectItem value="salgados">Salgados</SelectItem>
                   <SelectItem value="acai">Açaí</SelectItem>
                   <SelectItem value="bebidas">Bebidas</SelectItem>
+                  <SelectItem value="doces">Doces</SelectItem>
+                  <SelectItem value="coxinha">Coxinha</SelectItem>
+                  <SelectItem value="cachorro_quente">Cachorro Quente</SelectItem>
                 </SelectContent>
               </Select>
             </div>
