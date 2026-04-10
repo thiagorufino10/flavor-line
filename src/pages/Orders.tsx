@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,10 +22,17 @@ interface OrderItem {
 
 type ProductCategory = "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
 
+interface MenuItemData {
+  id: string;
+  name: string;
+  price: number;
+  category: ProductCategory;
+}
+
 interface MenuCategory {
   name: string;
   category: ProductCategory;
-  items: { name: string; price: number }[];
+  items: MenuItemData[];
 }
 
 const categoryConfig: Record<string, { label: string; emoji: string }> = {
@@ -37,6 +44,16 @@ const categoryConfig: Record<string, { label: string; emoji: string }> = {
   coxinha: { label: "Coxinha", emoji: "🍗" },
   cachorro_quente: { label: "Cachorro Quente", emoji: "🌭" },
 };
+
+const CATEGORY_KEYS = ["pasteis", "salgados", "acai", "bebidas", "doces", "coxinha", "cachorro_quente"];
+
+// Pre-fetched complement data per menu item id
+interface ComplementData {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+}
 
 const Orders = () => {
   const navigate = useNavigate();
@@ -53,6 +70,11 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [systemName, setSystemName] = useState("Pastel Favorite");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Pre-fetched complements map: menuItemId -> complements[]
+  const [complementsMap, setComplementsMap] = useState<Record<string, ComplementData[]>>({});
+  // Pre-fetched menu item name->id map
+  const [menuItemIdMap, setMenuItemIdMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const savedName = localStorage.getItem("systemName");
@@ -60,53 +82,80 @@ const Orders = () => {
   }, []);
 
   useEffect(() => {
-    fetchMenuItems();
+    fetchAllData();
   }, []);
 
-  const fetchMenuItems = async () => {
+  const fetchAllData = async () => {
     try {
-      const { data, error } = await supabase
-        .from("menu_items")
-        .select("*")
-        .eq("active", true)
-        .order("category", { ascending: true });
+      // Fetch menu items, complements, and links in parallel
+      const [menuRes, compRes, linksRes] = await Promise.all([
+        supabase.from("menu_items").select("id, name, price, category").eq("active", true).order("category"),
+        supabase.from("complements").select("id, name, price, category").eq("active", true),
+        supabase.from("complement_menu_items").select("menu_item_id, complement_id"),
+      ]);
 
-      if (error) throw error;
+      if (menuRes.error) throw menuRes.error;
+      if (compRes.error) throw compRes.error;
+      if (linksRes.error) throw linksRes.error;
 
-      const groupedItems = data?.reduce((acc, item) => {
-        const categoryKey = item.category;
-        if (!acc[categoryKey]) {
-          acc[categoryKey] = {
-            name: categoryConfig[categoryKey]?.label || categoryKey,
-            category: categoryKey as ProductCategory,
+      const menuItems = menuRes.data || [];
+      const complements = compRes.data || [];
+      const links = linksRes.data || [];
+
+      // Build complements lookup
+      const compById: Record<string, ComplementData> = {};
+      complements.forEach(c => {
+        compById[c.id] = { id: c.id, name: c.name, price: parseFloat(String(c.price)), category: c.category };
+      });
+
+      // Build complementsMap: menuItemId -> complements[]
+      const cMap: Record<string, ComplementData[]> = {};
+      links.forEach(link => {
+        if (!cMap[link.menu_item_id]) cMap[link.menu_item_id] = [];
+        const comp = compById[link.complement_id];
+        if (comp) cMap[link.menu_item_id].push(comp);
+      });
+      setComplementsMap(cMap);
+
+      // Build id map and categories
+      const idMap: Record<string, string> = {};
+      const grouped: Record<string, MenuCategory> = {};
+
+      menuItems.forEach(item => {
+        const key = `${item.name}_${item.category}`;
+        idMap[key] = item.id;
+        
+        if (!grouped[item.category]) {
+          grouped[item.category] = {
+            name: categoryConfig[item.category]?.label || item.category,
+            category: item.category as ProductCategory,
             items: [],
           };
         }
-        acc[categoryKey].items.push({
+        grouped[item.category].items.push({
+          id: item.id,
           name: item.name,
           price: parseFloat(String(item.price)),
+          category: item.category as ProductCategory,
         });
-        return acc;
-      }, {} as Record<string, MenuCategory>);
+      });
 
-      setMenuCategories(Object.values(groupedItems || {}));
+      setMenuItemIdMap(idMap);
+      setMenuCategories(Object.values(grouped));
     } catch (error) {
-      console.error("Erro ao buscar itens do menu:", error);
+      console.error("Erro ao buscar dados:", error);
       toast.error("Erro ao carregar cardápio");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleItemClick = (
-    item: { name: string; price: number },
-    category: ProductCategory
-  ) => {
-    setSelectedMenuItem({ ...item, category });
+  const handleItemClick = useCallback((item: MenuItemData) => {
+    setSelectedMenuItem({ name: item.name, price: item.price, category: item.category });
     setComplementsModalOpen(true);
-  };
+  }, []);
 
-  const addItemToOrder = (
+  const addItemToOrder = useCallback((
     item: { name: string; price: number },
     complements: Complement[],
     totalPrice: number,
@@ -120,28 +169,27 @@ const Orders = () => {
       complements,
       observations,
     };
-
-    setCurrentOrder([...currentOrder, newItem]);
+    setCurrentOrder(prev => [...prev, newItem]);
     toast.success(`${item.name} adicionado ao pedido`);
-  };
+  }, []);
 
-  const removeItem = (id: string) => {
-    setCurrentOrder(currentOrder.filter(item => item.id !== id));
-  };
+  const removeItem = useCallback((id: string) => {
+    setCurrentOrder(prev => prev.filter(item => item.id !== id));
+  }, []);
 
-  const getTotalPrice = () => {
+  const getTotalPrice = useMemo(() => {
     return currentOrder.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  };
+  }, [currentOrder]);
 
-  const finishOrder = () => {
+  const finishOrder = useCallback(() => {
     if (currentOrder.length === 0) {
       toast.error("Adicione itens ao pedido primeiro");
       return;
     }
     setPaymentModalOpen(true);
-  };
+  }, [currentOrder.length]);
 
-  const handlePaymentConfirm = async (paymentMethod: string, customerName: string) => {
+  const handlePaymentConfirm = useCallback(async (paymentMethod: string, customerName: string) => {
     const { data: settingData } = await supabase
       .from("system_settings")
       .select("value")
@@ -160,7 +208,7 @@ const Orders = () => {
         observations: item.observations || null
       }));
 
-      const order = await createOrder(customerName, paymentMethod, getTotalPrice(), items);
+      const order = await createOrder(customerName, paymentMethod, getTotalPrice, items);
       
       if (operationMode === "printer" && order) {
         const { printOrder } = await import("@/lib/printOrder");
@@ -179,9 +227,20 @@ const Orders = () => {
     } catch (error) {
       console.error("Erro ao criar pedido:", error);
     }
-  };
+  }, [currentOrder, getTotalPrice, createOrder]);
 
-  const activeCategory = menuCategories.find(c => c.category === selectedCategory);
+  // Get pre-fetched complements for the selected item
+  const getComplementsForItem = useCallback((itemName: string, category: ProductCategory): ComplementData[] => {
+    const key = `${itemName}_${category}`;
+    const menuItemId = menuItemIdMap[key];
+    if (!menuItemId) return [];
+    return complementsMap[menuItemId] || [];
+  }, [menuItemIdMap, complementsMap]);
+
+  const activeCategory = useMemo(() => 
+    menuCategories.find(c => c.category === selectedCategory),
+    [menuCategories, selectedCategory]
+  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -225,9 +284,8 @@ const Orders = () => {
               </CardContent>
             </Card>
           ) : !selectedCategory ? (
-            /* Category Buttons */
             <div className="grid grid-cols-2 gap-4">
-              {["pasteis", "salgados", "acai", "bebidas", "doces", "coxinha", "cachorro_quente"].map((catKey) => {
+              {CATEGORY_KEYS.map((catKey) => {
                 const cat = menuCategories.find(c => c.category === catKey);
                 const conf = categoryConfig[catKey];
                 const itemCount = cat?.items.length || 0;
@@ -249,7 +307,6 @@ const Orders = () => {
               })}
             </div>
           ) : (
-            /* Items of selected category */
             <Card>
               <CardHeader className="flex flex-row items-center gap-3">
                 <Button
@@ -267,10 +324,10 @@ const Orders = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {activeCategory?.items.map((item) => (
                     <Button
-                      key={item.name}
+                      key={item.id}
                       variant="outline"
                       className="h-24 flex flex-col gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
-                      onClick={() => handleItemClick(item, activeCategory.category)}
+                      onClick={() => handleItemClick(item)}
                     >
                       <span className="font-semibold text-sm">{item.name}</span>
                       <span className="text-lg font-bold">
@@ -343,7 +400,7 @@ const Orders = () => {
                   <div className="border-t pt-4 space-y-2">
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total:</span>
-                      <span className="text-primary">R$ {getTotalPrice().toFixed(2)}</span>
+                      <span className="text-primary">R$ {getTotalPrice.toFixed(2)}</span>
                     </div>
                   </div>
 
@@ -360,11 +417,12 @@ const Orders = () => {
         </div>
       </div>
 
-      {/* Modal de Complementos */}
+      {/* Modal de Complementos - now with pre-fetched data */}
       <ComplementsModal
         open={complementsModalOpen}
         onOpenChange={setComplementsModalOpen}
         item={selectedMenuItem}
+        prefetchedComplements={selectedMenuItem ? getComplementsForItem(selectedMenuItem.name, selectedMenuItem.category) : undefined}
         onConfirm={(complements, totalPrice, observations) => {
           if (selectedMenuItem) {
             addItemToOrder(selectedMenuItem, complements, totalPrice, observations);
@@ -376,7 +434,7 @@ const Orders = () => {
       <PaymentModal
         open={paymentModalOpen}
         onOpenChange={setPaymentModalOpen}
-        totalAmount={getTotalPrice()}
+        totalAmount={getTotalPrice}
         onConfirm={handlePaymentConfirm}
       />
       
