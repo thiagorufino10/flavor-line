@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const OperationMode = () => {
   const navigate = useNavigate();
-  const [operationMode, setOperationMode] = useState<"printer" | "display">("display");
+  const [operationMode, setOperationMode] = useState<"printer" | "display" | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
