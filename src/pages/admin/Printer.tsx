@@ -427,7 +427,7 @@ const Printer = () => {
             <CardTitle>Visualização da Comanda</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="bg-white text-black p-6 rounded-lg border-2 border-dashed border-gray-300 font-mono text-sm">
+            <div className="bg-white text-black p-6 rounded-lg border-2 border-dashed border-gray-300 font-mono text-sm font-bold">
               <div className="text-center mb-4">
                 <h2 className="font-bold text-lg">PASTEL FAVORITE</h2>
                 <p className="text-xs">Comanda de Produção</p>
