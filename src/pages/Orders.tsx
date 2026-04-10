@@ -227,7 +227,7 @@ const Orders = () => {
           ) : !selectedCategory ? (
             /* Category Buttons */
             <div className="grid grid-cols-2 gap-4">
-              {["pasteis", "salgados", "acai", "bebidas"].map((catKey) => {
+              {["pasteis", "salgados", "acai", "bebidas", "doces", "coxinha", "cachorro_quente"].map((catKey) => {
                 const cat = menuCategories.find(c => c.category === catKey);
                 const conf = categoryConfig[catKey];
                 const itemCount = cat?.items.length || 0;
