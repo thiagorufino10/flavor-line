@@ -100,7 +100,7 @@ const Printer = () => {
     } catch (error: any) {
       console.error("Erro ao detectar impressoras:", error);
       toast.error("Erro ao detectar impressoras", {
-        description: error?.message || "Verifique se o JSPrintManager está aberto no computador.",
+        description: error?.message || "Verifique as configurações do navegador.",
       });
     } finally {
       setDetectingPrinters(false);
@@ -230,7 +230,7 @@ const Printer = () => {
     } catch (error: any) {
       console.error("Erro ao imprimir:", error);
       toast.error("Erro ao imprimir", {
-        description: error?.message || "Verifique se o JSPrintManager está aberto.",
+        description: error?.message || "Permita pop-ups no navegador e tente novamente.",
       });
     } finally {
       setTestingPrint(false);
@@ -479,31 +479,37 @@ const Printer = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="bg-muted p-4 rounded-lg space-y-2">
-            <h3 className="font-semibold">📋 Passo a passo:</h3>
-            <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Baixe e instale o <strong>JSPrintManager</strong> no computador (<a href="https://www.neodynamic.com/downloads/jspm/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Download aqui</a>)</li>
-              <li>Abra o JSPrintManager e deixe ele rodando</li>
-              <li>Clique em "Detectar Impressoras" para listar as impressoras instaladas</li>
-              <li>Selecione a impressora desejada na lista</li>
-              <li>Selecione a largura correta do papel (58mm ou 80mm)</li>
-              <li>Clique em "Testar" para enviar uma página de teste direto para a impressora</li>
-              <li>Salve as configurações quando tudo estiver funcionando</li>
+            <h3 className="font-semibold">📋 Como configurar impressão silenciosa (sem diálogo):</h3>
+            <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+              <li>Feche o Google Chrome completamente</li>
+              <li>Clique com o botão direito no atalho do Chrome → <strong>Propriedades</strong></li>
+              <li>No campo <strong>"Destino"</strong>, adicione ao final: <code className="bg-background px-2 py-0.5 rounded text-xs font-mono">--kiosk-printing</code></li>
+              <li>O destino deve ficar assim: <code className="bg-background px-2 py-0.5 rounded text-xs font-mono break-all">"C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk-printing</code></li>
+              <li>Clique em <strong>OK</strong> e abra o Chrome por esse atalho</li>
+              <li>Pronto! Agora o Chrome imprime direto na impressora padrão sem abrir diálogo</li>
             </ol>
           </div>
 
           <div className="bg-green-50 border border-green-200 p-4 rounded-lg space-y-2">
-            <h3 className="font-semibold text-green-800">✅ Vantagens do JSPrintManager:</h3>
+            <h3 className="font-semibold text-green-800">✅ Vantagens do modo quiosque:</h3>
             <ul className="list-disc list-inside space-y-1 text-sm text-green-700">
-              <li>Imprime direto sem abrir diálogo de impressão</li>
-              <li>Não pede confirmação a cada impressão</li>
-              <li>Funciona com qualquer impressora instalada no Windows</li>
-              <li>Suporta Windows, Linux e Mac</li>
+              <li>Não precisa instalar nenhum software extra</li>
+              <li>Imprime direto na impressora padrão sem perguntar</li>
+              <li>100% gratuito — usa apenas o Google Chrome</li>
+              <li>Funciona em Windows, Linux e Mac</li>
             </ul>
           </div>
 
-          <div className="bg-warning/10 border border-warning/20 p-4 rounded-lg">
+          <div className="bg-warning/10 border border-warning/20 p-4 rounded-lg space-y-2">
             <p className="text-sm text-warning-foreground">
-              <strong>⚠️ Nota:</strong> O JSPrintManager precisa estar aberto no computador para detectar impressoras e imprimir direto.
+              <strong>⚠️ Importante:</strong> No modo quiosque, o Chrome sempre imprime na <strong>impressora padrão</strong> do Windows. Para mudar a impressora, vá em <strong>Configurações do Windows → Impressoras</strong> e defina a impressora térmica como padrão.
+            </p>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg space-y-2">
+            <h3 className="font-semibold text-blue-800">💡 Dica:</h3>
+            <p className="text-sm text-blue-700">
+              Crie um atalho separado do Chrome com a flag <code className="bg-blue-100 px-1 rounded">--kiosk-printing</code> apenas para usar no sistema. Assim você pode continuar usando o Chrome normal para outras coisas.
             </p>
           </div>
         </CardContent>
