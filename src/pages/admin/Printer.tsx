@@ -100,7 +100,7 @@ const Printer = () => {
     } catch (error: any) {
       console.error("Erro ao detectar impressoras:", error);
       toast.error("Erro ao detectar impressoras", {
-        description: error?.message || "Verifique se o JSPrintManager está aberto no computador.",
+        description: error?.message || "Verifique as configurações do navegador.",
       });
     } finally {
       setDetectingPrinters(false);
@@ -230,7 +230,7 @@ const Printer = () => {
     } catch (error: any) {
       console.error("Erro ao imprimir:", error);
       toast.error("Erro ao imprimir", {
-        description: error?.message || "Verifique se o JSPrintManager está aberto.",
+        description: error?.message || "Permita pop-ups no navegador e tente novamente.",
       });
     } finally {
       setTestingPrint(false);
