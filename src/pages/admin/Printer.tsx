@@ -13,6 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  detectUSBPrinters as detectConnectedUSBPrinters,
+  isUSBSupported,
+  type DetectedUSBPrinter,
+} from "@/lib/usbPrinters";
 
 const Printer = () => {
   const navigate = useNavigate();
@@ -28,56 +33,40 @@ const Printer = () => {
       paperWidth: "80mm",
     };
   });
-  const [availablePrinters, setAvailablePrinters] = useState<string[]>([]);
+  const [availablePrinters, setAvailablePrinters] = useState<DetectedUSBPrinter[]>([]);
   const [detectingPrinters, setDetectingPrinters] = useState(false);
 
-  const detectUSBPrinters = async () => {
+  const handleDetectUSBPrinters = async () => {
     setDetectingPrinters(true);
     try {
-      // Verificar se o navegador suporta Web USB API
-      if (!('usb' in navigator)) {
+      if (!isUSBSupported()) {
         toast.error("Seu navegador não suporta detecção USB. Use Chrome, Edge ou Opera.");
-        setDetectingPrinters(false);
         return;
       }
 
-      // Solicitar acesso aos dispositivos USB conectados
-      const devices = await (navigator as any).usb.requestDevice({
-        filters: [
-          // Filtros para impressoras térmicas comuns
-          { vendorId: 0x0A5F }, // Zebra
-          { vendorId: 0x04B8 }, // Epson
-          { vendorId: 0x0B00 }, // Bematech
-          { vendorId: 0x154F }, // HPRT
-          { vendorId: 0x0416 }, // Printer
-        ]
-      });
+      const printers = await detectConnectedUSBPrinters();
+      setAvailablePrinters(printers);
 
-      console.log("Dispositivo USB selecionado:", devices);
+      if (printers.length > 0) {
+        setConfig((current) => ({
+          ...current,
+          usbPort: printers[0].id,
+          printerName: printers[0].name,
+        }));
 
-      // Obter todos os dispositivos já autorizados
-      const authorizedDevices = await (navigator as any).usb.getDevices();
-      
-      const printersList = authorizedDevices.map((device: any, index: number) => {
-        const vendorName = device.productName || `Impressora USB ${index + 1}`;
-        return `${vendorName} (Vendor: ${device.vendorId.toString(16)})`;
-      });
-
-      if (printersList.length > 0) {
-        setAvailablePrinters(printersList);
-        toast.success(`${printersList.length} impressora(s) detectada(s)`, {
+        toast.success(`${printers.length} impressora(s) detectada(s)`, {
           description: "Selecione uma impressora da lista abaixo"
         });
       } else {
-        toast.info("Nenhuma impressora USB foi selecionada", {
-          description: "Conecte sua impressora e tente novamente"
+        toast.info("Nenhuma impressora USB foi detectada", {
+          description: "Conecte a impressora Argox e autorize o acesso quando o navegador solicitar."
         });
       }
     } catch (error: any) {
       console.error("Erro ao detectar impressoras USB:", error);
       if (error.name === 'NotFoundError') {
-        toast.error("Nenhuma impressora USB encontrada", {
-          description: "Certifique-se de que a impressora está conectada"
+        toast.info("Nenhuma impressora foi autorizada", {
+          description: "Escolha a sua Argox na janela do navegador para concluir a detecção."
         });
       } else if (error.name === 'SecurityError') {
         toast.error("Acesso USB bloqueado", {
@@ -220,7 +209,7 @@ const Printer = () => {
                   <Button 
                     type="button"
                     variant="outline" 
-                    onClick={detectUSBPrinters}
+                    onClick={handleDetectUSBPrinters}
                     disabled={detectingPrinters}
                     className="w-full"
                   >
@@ -233,15 +222,22 @@ const Printer = () => {
                     <Label htmlFor="detectedPrinter">Selecionar Impressora</Label>
                     <Select 
                       value={config.usbPort} 
-                      onValueChange={(value) => setConfig({ ...config, usbPort: value })}
+                      onValueChange={(value) => {
+                        const selectedPrinter = availablePrinters.find((printer) => printer.id === value);
+                        setConfig({
+                          ...config,
+                          usbPort: value,
+                          printerName: selectedPrinter ? selectedPrinter.name : config.printerName,
+                        });
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione uma impressora" />
                       </SelectTrigger>
                       <SelectContent>
                         {availablePrinters.map((printer) => (
-                          <SelectItem key={printer} value={printer}>
-                            {printer}
+                          <SelectItem key={printer.id} value={printer.id}>
+                            {printer.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -250,12 +246,12 @@ const Printer = () => {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="usbPort">Ou digite manualmente a porta USB</Label>
+                  <Label htmlFor="usbPort">Identificador USB</Label>
                   <Input
                     id="usbPort"
                     value={config.usbPort}
                     onChange={(e) => setConfig({ ...config, usbPort: e.target.value })}
-                    placeholder="COM3, /dev/usb/lp0 ou USB001"
+                    placeholder="Preenchido automaticamente ao detectar"
                   />
                 </div>
               </>
