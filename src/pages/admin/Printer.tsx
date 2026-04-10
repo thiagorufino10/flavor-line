@@ -171,13 +171,7 @@ const Printer = () => {
   const handleTestPrint = () => {
     const paperPx = config.paperWidth === "58mm" ? "220px" : "300px";
 
-    const printWindow = window.open("", "_blank", "width=400,height=700");
-    if (!printWindow) {
-      toast.error("Não foi possível abrir a janela de impressão. Verifique se pop-ups estão permitidos.");
-      return;
-    }
-
-    printWindow.document.write(`<!DOCTYPE html>
+    const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8"/>
@@ -229,17 +223,41 @@ const Printer = () => {
 
   <div class="footer">Obrigado pela preferência!</div>
 </body>
-</html>`);
+</html>`;
 
-    printWindow.document.close();
-    printWindow.focus();
+    // Remover iframe anterior se existir
+    const existingFrame = document.getElementById("print-test-frame");
+    if (existingFrame) existingFrame.remove();
+
+    const iframe = document.createElement("iframe");
+    iframe.id = "print-test-frame";
+    iframe.style.position = "fixed";
+    iframe.style.top = "-10000px";
+    iframe.style.left = "-10000px";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      toast.error("Não foi possível preparar a impressão.");
+      return;
+    }
+
+    iframeDoc.open();
+    iframeDoc.write(htmlContent);
+    iframeDoc.close();
 
     setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 400);
-
-    toast.info("Janela de impressão aberta. Selecione a impressora configurada.");
+      try {
+        iframe.contentWindow?.print();
+        toast.success("Diálogo de impressão aberto. Selecione sua impressora.");
+      } catch (error) {
+        console.error("Erro ao imprimir:", error);
+        toast.error("Erro ao abrir o diálogo de impressão.");
+      }
+    }, 500);
   };
 
   if (loading) {
