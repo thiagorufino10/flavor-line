@@ -393,9 +393,9 @@ const Printer = () => {
               <Button onClick={handleSave} className="flex-1" disabled={saving}>
                 {saving ? "Salvando..." : "Salvar Configurações"}
               </Button>
-              <Button variant="outline" onClick={handleTestPrint} className="gap-2">
-                <TestTube className="w-4 h-4" />
-                Testar
+              <Button variant="outline" onClick={handleTestPrint} className="gap-2" disabled={testingPrint}>
+                {testingPrint ? <Loader2 className="w-4 h-4 animate-spin" /> : <TestTube className="w-4 h-4" />}
+                {testingPrint ? "Enviando..." : "Testar"}
               </Button>
             </div>
           </CardContent>
