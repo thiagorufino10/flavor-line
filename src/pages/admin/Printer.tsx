@@ -140,8 +140,8 @@ const Printer = () => {
   };
 
   const handleTestPrint = async () => {
-    if (!config.printerName || config.printerName === "Impressora") {
-      toast.error("Detecte e selecione uma impressora antes de testar.");
+    if (!config.printerName) {
+      toast.error("Digite o nome da impressora antes de testar.");
       return;
     }
 
@@ -219,7 +219,7 @@ const Printer = () => {
       setTimeout(() => {
         try { printWindow.print(); } catch {}
       }, 500);
-      toast.success("Diálogo de impressão aberto. Selecione: " + config.printerName);
+      toast.success(`Selecione a impressora "${config.printerName}" no diálogo e clique em Imprimir.`);
     } catch (error: any) {
       console.error("Erro ao imprimir:", error);
       toast.error("Erro ao imprimir", {
