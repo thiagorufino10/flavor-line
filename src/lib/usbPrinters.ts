@@ -26,40 +26,42 @@ export type DetectedUSBPrinter = {
   vendorId?: number;
 };
 
-const getNavigatorUSB = () => {
+type NavigatorUSB = {
+  getDevices: () => Promise<USBDeviceLike[]>;
+  requestDevice: (options: { filters: readonly Record<string, number>[] }) => Promise<USBDeviceLike>;
+};
+
+const getNavigatorUSB = (): NavigatorUSB | null => {
   if (typeof navigator === "undefined" || !("usb" in navigator)) {
     return null;
   }
 
-  return (navigator as Navigator & {
-    usb: {
-      getDevices: () => Promise<USBDeviceLike[]>;
-      requestDevice: (options: { filters: readonly Record<string, number>[] }) => Promise<USBDeviceLike>;
-    };
-  }).usb;
+  return (navigator as Navigator & { usb: NavigatorUSB }).usb;
 };
 
 export const isUSBSupported = () => Boolean(getNavigatorUSB());
 
 const isPrinterCandidate = (device: USBDeviceLike) => {
-  const manufacturer = `${device.manufacturerName || ""} ${device.productName || ""}`.toLowerCase();
+  const deviceText = `${device.manufacturerName || ""} ${device.productName || ""}`.toLowerCase();
 
   return (
     device.deviceClass === 0x07 ||
-    manufacturer.includes("printer") ||
-    manufacturer.includes("argox") ||
-    manufacturer.includes("zebra") ||
-    manufacturer.includes("epson") ||
-    manufacturer.includes("bematech") ||
-    manufacturer.includes("hprt")
+    deviceText.includes("printer") ||
+    deviceText.includes("argox") ||
+    deviceText.includes("os") ||
+    deviceText.includes("zebra") ||
+    deviceText.includes("epson") ||
+    deviceText.includes("bematech") ||
+    deviceText.includes("hprt")
   );
 };
 
-export const getUSBPrinterLabel = (device: USBDeviceLike) => {
+const formatHex = (value?: number) =>
+  value === undefined ? "----" : value.toString(16).toUpperCase().padStart(4, "0");
+
+const getUSBPrinterLabel = (device: USBDeviceLike) => {
   const name = device.productName || device.manufacturerName || "Impressora USB";
-  const vendor = device.vendorId?.toString(16).toUpperCase().padStart(4, "0") || "----";
-  const product = device.productId?.toString(16).toUpperCase().padStart(4, "0") || "----";
-  return `${name} (${vendor}:${product})`;
+  return `${name} (${formatHex(device.vendorId)}:${formatHex(device.productId)})`;
 };
 
 const toDetectedPrinter = (device: USBDeviceLike): DetectedUSBPrinter => ({
@@ -80,12 +82,22 @@ export const detectUSBPrinters = async ({ requestAccess = true }: { requestAcces
 
   let devices = await usb.getDevices();
 
-  if (devices.length === 0 && requestAccess) {
-    const selectedDevice = await usb.requestDevice({
-      filters: USB_PRINTER_FILTERS,
-    });
+  if (requestAccess) {
+    try {
+      const selectedDevice = await usb.requestDevice({
+        filters: USB_PRINTER_FILTERS,
+      });
 
-    devices = selectedDevice ? [selectedDevice, ...(await usb.getDevices())] : await usb.getDevices();
+      devices = [selectedDevice, ...(await usb.getDevices())];
+    } catch (error: any) {
+      if (error?.name !== "NotFoundError") {
+        throw error;
+      }
+
+      if (devices.length === 0) {
+        throw error;
+      }
+    }
   }
 
   const uniquePrinters = new Map<string, DetectedUSBPrinter>();
