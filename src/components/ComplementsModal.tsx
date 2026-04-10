@@ -199,10 +199,31 @@ export const ComplementsModal = ({
           {/* Complementos Grátis */}
           {freeComplements.length > 0 && (
             <div>
-              <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                Complementos Inclusos
-                <Badge variant="secondary">Grátis</Badge>
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  Complementos Inclusos
+                  <Badge variant="secondary">Grátis</Badge>
+                </h3>
+                {item && (item.name.toLowerCase().includes("misto") || item.name.toLowerCase().includes("tradicional")) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const allFreeIds = freeComplements.map(c => c.id);
+                      const allSelected = allFreeIds.every(id => selectedComplements.has(id));
+                      const newSelected = new Set(selectedComplements);
+                      if (allSelected) {
+                        allFreeIds.forEach(id => newSelected.delete(id));
+                      } else {
+                        allFreeIds.forEach(id => newSelected.add(id));
+                      }
+                      setSelectedComplements(newSelected);
+                    }}
+                  >
+                    {freeComplements.every(c => selectedComplements.has(c.id)) ? "Desmarcar todos" : "Marcar todos"}
+                  </Button>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 {freeComplements.map((complement) => (
                   <div
