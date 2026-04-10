@@ -78,11 +78,12 @@ const OperationMode = () => {
               Selecione como deseja que os pedidos sejam enviados para a cozinha
             </CardDescription>
           </CardHeader>
+          <CardContent className="space-y-6">
           {loading ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            ) : (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : (
             <>
             <RadioGroup value={operationMode || "display"} onValueChange={(value) => setOperationMode(value as "printer" | "display")}>
               {/* Modo Impressão */}
@@ -157,7 +158,7 @@ const OperationMode = () => {
               </Button>
             </div>
             </>
-            )}
+          )}
           </CardContent>
         </Card>
       </main>
