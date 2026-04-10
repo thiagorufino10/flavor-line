@@ -230,7 +230,7 @@ const Printer = () => {
     } catch (error: any) {
       console.error("Erro ao imprimir:", error);
       toast.error("Erro ao imprimir", {
-        description: error?.message || "Verifique se o QZ Tray está aberto e autorizado.",
+        description: error?.message || "Verifique se o JSPrintManager está aberto.",
       });
     } finally {
       setTestingPrint(false);
