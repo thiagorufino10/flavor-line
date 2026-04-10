@@ -120,17 +120,35 @@ export const detectUSBPrinters = async ({ requestAccess = true }: { requestAcces
 /**
  * Encontra o dispositivo USB real a partir do ID salvo na config.
  */
-const findUSBDeviceById = async (printerId: string): Promise<USBDeviceLike | null> => {
+const findUSBDeviceById = async (printerId: string, requestIfNeeded = true): Promise<USBDeviceLike | null> => {
   const usb = getNavigatorUSB();
   if (!usb) return null;
 
-  const devices = await usb.getDevices();
-  return (
-    devices.find((d) => {
-      const id = `${d.vendorId || 0}:${d.productId || 0}:${d.serialNumber || "sem-serie"}`;
-      return id === printerId;
-    }) || null
-  );
+  let devices = await usb.getDevices();
+  let match = devices.find((d) => {
+    const id = `${d.vendorId || 0}:${d.productId || 0}:${d.serialNumber || "sem-serie"}`;
+    return id === printerId;
+  });
+
+  // Se não encontrou entre os autorizados, solicitar acesso novamente
+  if (!match && requestIfNeeded) {
+    try {
+      const selected = await usb.requestDevice({ filters: USB_PRINTER_FILTERS });
+      devices = [selected, ...(await usb.getDevices())];
+      match = devices.find((d) => {
+        const id = `${d.vendorId || 0}:${d.productId || 0}:${d.serialNumber || "sem-serie"}`;
+        return id === printerId;
+      });
+      // Se o ID não bateu mas selecionou um dispositivo, usar ele mesmo
+      if (!match && selected) {
+        match = selected;
+      }
+    } catch {
+      // Usuário cancelou ou não encontrou
+    }
+  }
+
+  return match || null;
 };
 
 /**
