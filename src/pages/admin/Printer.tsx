@@ -14,9 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  type DetectedUSBPrinter,
-} from "@/lib/usbPrinters";
+import { getSystemPrinters, printHtmlToSystemPrinter } from "@/lib/systemPrinter";
 import { getSystemPrinters, printHtmlToSystemPrinter } from "@/lib/systemPrinter";
 
 const Printer = () => {
