@@ -1,4 +1,5 @@
 import { Order } from "@/hooks/useOrders";
+import { supabase } from "@/integrations/supabase/client";
 
 export const formatOrderForPrint = (order: Order): string => {
   const items = order.items || [];
