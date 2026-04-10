@@ -33,8 +33,7 @@ const Printer = () => {
   const [configId, setConfigId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [availablePrinters, setAvailablePrinters] = useState<DetectedUSBPrinter[]>([]);
-  const [detectingPrinters, setDetectingPrinters] = useState(false);
+  const [availablePrinters] = useState<DetectedUSBPrinter[]>([]);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -70,44 +69,26 @@ const Printer = () => {
     loadConfig();
   }, []);
 
-  const handleDetectUSBPrinters = async () => {
-    setDetectingPrinters(true);
-    try {
-      const printers = await getSystemPrinters();
-      const detectedPrinters: DetectedUSBPrinter[] = printers.map((printerName) => ({
-        id: printerName,
-        label: printerName,
-        name: printerName,
-        manufacturer: "Sistema",
-      }));
-
-      setAvailablePrinters(detectedPrinters);
-
-      if (detectedPrinters.length > 0) {
-        setConfig((current) => ({
-          ...current,
-          usbPort: detectedPrinters[0].id,
-          printerName: detectedPrinters[0].name,
-        }));
-
-        toast.success(`${detectedPrinters.length} impressora(s) detectada(s)`, {
-          description: "Selecione a Argox instalada no Windows na lista abaixo"
-        });
-      } else {
-        toast.info("Nenhuma impressora do sistema foi encontrada", {
-          description: "Verifique se a Argox está instalada no Windows e se o QZ Tray está aberto."
-        });
-      }
-    } catch (error: any) {
-      console.error("Erro ao detectar impressoras do sistema:", error);
-      toast.error("Erro ao detectar impressoras do sistema", {
-        description:
-          error?.message ||
-          "Abra o QZ Tray e confirme que a impressora está instalada e autorizada no Windows.",
-      });
-    } finally {
-      setDetectingPrinters(false);
+  const handleDetectUSBPrinters = () => {
+    // Open a small window with a blank page and trigger the native print dialog
+    // so the user can see all installed printers on their system
+    const printWindow = window.open("", "_blank", "width=400,height=300");
+    if (!printWindow) {
+      toast.error("Não foi possível abrir a janela de impressão. Permita pop-ups neste site.");
+      return;
     }
+    printWindow.document.write(`<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Impressoras do Sistema</title>
+<style>body{font-family:sans-serif;padding:20px;text-align:center;}
+h2{margin-bottom:12px;}p{color:#555;font-size:14px;}</style></head>
+<body>
+<h2>Selecione sua impressora</h2>
+<p>Na janela de impressão que vai abrir, veja todas as impressoras instaladas no seu computador.</p>
+<p>Anote o nome da impressora desejada (ex: ARGOX OS-214 plus PPLA) e volte para digitá-lo no campo "Nome da Impressora".</p>
+</body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   const handleSave = async () => {
@@ -161,9 +142,9 @@ const Printer = () => {
     }
   };
 
-  const handleTestPrint = async () => {
-    if (config.connectionType !== "usb" || !(config.printerName || config.usbPort)) {
-      toast.error("Detecte e selecione a impressora do sistema antes de testar.");
+  const handleTestPrint = () => {
+    if (!config.printerName) {
+      toast.error("Preencha o nome da impressora antes de testar.");
       return;
     }
 
@@ -173,6 +154,7 @@ const Printer = () => {
 <html>
 <head>
   <meta charset="utf-8" />
+  <title>Teste de Impressão</title>
   <style>
     @page { size: ${paperWidth} auto; margin: 4mm; }
     body { font-family: 'Courier New', monospace; color: #000; margin: 0; width: 100%; }
@@ -218,16 +200,16 @@ const Printer = () => {
 </body>
 </html>`;
 
-    try {
-      toast.info("Enviando para a impressora do sistema...");
-      await printHtmlToSystemPrinter(config.printerName || config.usbPort, htmlContent);
-      toast.success("Comanda de teste enviada para a impressora configurada!");
-    } catch (error: any) {
-      console.error("Erro ao imprimir teste:", error);
-      toast.error("Erro ao enviar para a impressora", {
-        description: error.message || "Abra o QZ Tray e confirme se a Argox está instalada no Windows.",
-      });
+    const printWindow = window.open("", "_blank", "width=400,height=600");
+    if (!printWindow) {
+      toast.error("Não foi possível abrir a janela de impressão. Permita pop-ups neste site.");
+      return;
     }
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    toast.success("Janela de impressão aberta! Selecione a impressora " + config.printerName);
   };
 
   if (loading) {
@@ -338,10 +320,9 @@ const Printer = () => {
                     type="button"
                     variant="outline" 
                     onClick={handleDetectUSBPrinters}
-                    disabled={detectingPrinters}
                     className="w-full"
                   >
-                    {detectingPrinters ? "Detectando..." : "Detectar Impressoras USB"}
+                    Detectar Impressoras do Sistema
                   </Button>
                 </div>
 
