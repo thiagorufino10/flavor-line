@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const OperationMode = () => {
   const navigate = useNavigate();
-  const [operationMode, setOperationMode] = useState<"printer" | "display">("display");
+  const [operationMode, setOperationMode] = useState<"printer" | "display" | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -79,7 +79,13 @@ const OperationMode = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <RadioGroup value={operationMode} onValueChange={(value) => setOperationMode(value as "printer" | "display")}>
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <>
+            <RadioGroup value={operationMode || "display"} onValueChange={(value) => setOperationMode(value as "printer" | "display")}>
               {/* Modo Impressão */}
               <Card className={`cursor-pointer transition-all ${operationMode === "printer" ? "border-primary border-2 shadow-md" : "hover:border-muted-foreground/30"}`}>
                 <CardContent className="pt-6">
@@ -151,6 +157,8 @@ const OperationMode = () => {
                 Salvar Configuração
               </Button>
             </div>
+            </>
+          )}
           </CardContent>
         </Card>
       </main>
