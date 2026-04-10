@@ -37,7 +37,6 @@ const ensureStarted = (): Promise<void> => {
       }
     };
 
-    // Small delay to let the websocket attempt connection
     setTimeout(check, 500);
   });
 };
@@ -51,24 +50,24 @@ export const getSystemPrinters = async (): Promise<string[]> => {
 export const printHtmlToSystemPrinter = async (printerName: string, html: string) => {
   await ensureStarted();
 
-  const cpj = new JSPM.ClientPrintJob();
-  cpj.clientPrinter = new JSPM.InstalledPrinter(printerName);
-  cpj.printFile = new JSPM.PrintFile(html, JSPM.FileSourceType.Base64, "order.html", 1);
-
-  // For HTML content, we use a data URI approach via PrintFilePDF or raw
-  // JSPM prints HTML by converting to image internally when using PrintFile
-  // The simplest approach is to encode the HTML and send as a file
   const blob = new Blob([html], { type: "text/html" });
-  const reader = new FileReader();
 
   return new Promise<void>((resolve, reject) => {
+    const reader = new FileReader();
     reader.onloadend = () => {
       try {
         const base64 = (reader.result as string).split(",")[1];
-        const cpj2 = new JSPM.ClientPrintJob();
-        cpj2.clientPrinter = new JSPM.InstalledPrinter(printerName);
-        cpj2.printFile = new JSPM.PrintFile(base64, JSPM.FileSourceType.Base64, "order.html", 1);
-        cpj2.sendToClient();
+        const cpj = new JSPM.ClientPrintJob();
+        cpj.clientPrinter = new JSPM.InstalledPrinter(printerName);
+
+        const file = new JSPM.PrintFile(
+          base64,
+          JSPM.FileSourceType.Base64,
+          "order.html",
+          1,
+        );
+        cpj.files.push(file);
+        cpj.sendToClient();
         resolve();
       } catch (error) {
         reject(error);
