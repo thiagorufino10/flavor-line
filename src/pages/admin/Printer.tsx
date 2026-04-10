@@ -19,6 +19,7 @@ import {
   isUSBSupported,
   type DetectedUSBPrinter,
 } from "@/lib/usbPrinters";
+import { sendRawToUSBPrinter } from "@/lib/usbPrinters";
 
 const Printer = () => {
   const navigate = useNavigate();
@@ -168,96 +169,59 @@ const Printer = () => {
     }
   };
 
-  const handleTestPrint = () => {
-    const paperPx = config.paperWidth === "58mm" ? "220px" : "300px";
-
-    const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <title>Teste de Impressão</title>
-  <style>
-    @page { margin: 0; size: ${paperPx} auto; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Courier New', monospace; font-size: 12px; width: ${paperPx}; padding: 8px; }
-    .center { text-align: center; }
-    .bold { font-weight: bold; }
-    .line { border-top: 1px dashed #000; margin: 6px 0; }
-    .item { margin-bottom: 6px; }
-    .complement { font-size: 10px; padding-left: 12px; }
-    .obs { font-size: 10px; padding-left: 12px; font-weight: bold; background: #fef08a; display: inline-block; padding: 1px 6px; margin-top: 2px; }
-    .total { font-weight: bold; font-size: 13px; }
-    .footer { text-align: center; margin-top: 10px; font-size: 10px; }
-  </style>
-</head>
-<body>
-  <div class="center">
-    <div class="bold" style="font-size:16px;">PASTEL FAVORITE</div>
-    <div style="font-size:10px;">Comanda de Produção</div>
-  </div>
-
-  <div class="line"></div>
-  <div><span class="bold">Pedido:</span> #123</div>
-  <div><span class="bold">Cliente:</span> JOÃO SILVA</div>
-  <div><span class="bold">Data/Hora:</span> ${new Date().toLocaleString("pt-BR")}</div>
-  <div class="line"></div>
-
-  <div class="bold" style="margin-bottom:4px;">ITENS:</div>
-
-  <div class="item">
-    <div class="bold">1x Pastel de Carne - R$ 8,00</div>
-    <div class="complement">+ Batata palha</div>
-    <div class="obs">OBS: Bem passado</div>
-  </div>
-
-  <div class="item">
-    <div class="bold">1x Açaí 300ml - R$ 15,00</div>
-    <div class="complement">+ Morango</div>
-    <div class="complement">+ Granola</div>
-    <div class="obs">OBS: Sem leite condensado</div>
-  </div>
-
-  <div class="line"></div>
-  <div class="total">TOTAL: R$ 23,00</div>
-  <div style="font-size:10px;">Pagamento: Dinheiro</div>
-
-  <div class="footer">Obrigado pela preferência!</div>
-</body>
-</html>`;
-
-    // Remover iframe anterior se existir
-    const existingFrame = document.getElementById("print-test-frame");
-    if (existingFrame) existingFrame.remove();
-
-    const iframe = document.createElement("iframe");
-    iframe.id = "print-test-frame";
-    iframe.style.position = "fixed";
-    iframe.style.top = "-10000px";
-    iframe.style.left = "-10000px";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "none";
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) {
-      toast.error("Não foi possível preparar a impressão.");
+  const handleTestPrint = async () => {
+    if (config.connectionType !== "usb" || !config.usbPort) {
+      toast.error("Configure e detecte uma impressora USB antes de testar.");
       return;
     }
 
-    iframeDoc.open();
-    iframeDoc.write(htmlContent);
-    iframeDoc.close();
+    const now = new Date().toLocaleString("pt-BR");
+    const separator = "========================================";
+    const line = "----------------------------------------";
 
-    setTimeout(() => {
-      try {
-        iframe.contentWindow?.print();
-        toast.success("Diálogo de impressão aberto. Selecione sua impressora.");
-      } catch (error) {
-        console.error("Erro ao imprimir:", error);
-        toast.error("Erro ao abrir o diálogo de impressão.");
-      }
-    }, 500);
+    const receipt = [
+      separator,
+      "           PASTEL FAVORITE",
+      separator,
+      "",
+      "PEDIDO #123",
+      "CLIENTE: JOAO SILVA",
+      `DATA: ${now}`,
+      "",
+      line,
+      "ITENS DO PEDIDO:",
+      line,
+      "",
+      "1x Pastel de Carne - R$ 8,00",
+      "   + Batata palha",
+      "   *** OBS: Bem passado ***",
+      "",
+      "1x Acai 300ml - R$ 15,00",
+      "   + Morango",
+      "   + Granola",
+      "   *** OBS: Sem leite condensado ***",
+      "",
+      line,
+      "TOTAL: R$ 23,00",
+      "PAGAMENTO: DINHEIRO",
+      line,
+      "",
+      "     Obrigado pela preferencia!",
+      "",
+      separator,
+      "\n\n\n",  // Avanço de papel
+    ].join("\n");
+
+    try {
+      toast.info("Enviando para a impressora...");
+      await sendRawToUSBPrinter(config.usbPort, receipt);
+      toast.success("Comanda de teste enviada com sucesso para a impressora!");
+    } catch (error: any) {
+      console.error("Erro ao imprimir teste:", error);
+      toast.error("Erro ao enviar para a impressora", {
+        description: error.message || "Verifique se a impressora está conectada e autorizada.",
+      });
+    }
   };
 
   if (loading) {
