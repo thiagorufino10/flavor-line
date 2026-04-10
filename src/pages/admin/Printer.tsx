@@ -333,53 +333,30 @@ const Printer = () => {
             {config.connectionType === "usb" && (
               <>
                 <div className="space-y-2">
-                  <Label>Impressoras Detectadas</Label>
+                  <Label>Impressoras do Sistema</Label>
                   <Button 
                     type="button"
                     variant="outline" 
                     onClick={handleDetectUSBPrinters}
-                    disabled={detectingPrinters}
                     className="w-full"
                   >
-                    {detectingPrinters ? "Detectando..." : "Detectar Impressoras do Sistema"}
+                    Detectar Impressoras do Sistema
                   </Button>
                 </div>
 
-                {availablePrinters.length > 0 && (
-                  <div className="space-y-2">
-                    <Label htmlFor="detectedPrinter">Selecionar Impressora</Label>
-                    <Select 
-                      value={config.printerName} 
-                      onValueChange={(value) => {
-                        setConfig({
-                          ...config,
-                          usbPort: value,
-                          printerName: value,
-                        });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma impressora" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availablePrinters.map((printer) => (
-                          <SelectItem key={printer} value={printer}>
-                            {printer}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
                 <div className="space-y-2">
-                  <Label htmlFor="usbPort">Impressora selecionada</Label>
+                  <Label htmlFor="printerNameInput">Nome da Impressora</Label>
                   <Input
-                    id="usbPort"
+                    id="printerNameInput"
                     value={config.printerName}
-                    readOnly
-                    placeholder="Clique em Detectar acima"
+                    onChange={(e) => setConfig({ ...config, printerName: e.target.value, usbPort: e.target.value })}
+                    placeholder="Ex: Generic / Text Only, ARGOX OS-214"
                   />
+                  {config.printerName && (
+                    <p className="text-xs text-muted-foreground">
+                      ✅ Impressora configurada: <strong>{config.printerName}</strong>
+                    </p>
+                  )}
                 </div>
               </>
             )}
