@@ -46,10 +46,15 @@ PAGAMENTO: ${order.payment_method.toUpperCase()}
   return receipt;
 };
 
-export const printOrder = (order: Order) => {
-  const printerConfig = localStorage.getItem("printerConfig");
-  const config = printerConfig ? JSON.parse(printerConfig) : null;
-  
+export const printOrder = async (order: Order) => {
+  // Buscar config do banco de dados
+  const { data: configs } = await supabase
+    .from("printer_config")
+    .select("*")
+    .limit(1);
+
+  const config = configs && configs.length > 0 ? configs[0] : null;
+
   if (!config) {
     console.warn("Configuração de impressora não encontrada");
     return;
