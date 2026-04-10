@@ -167,7 +167,7 @@ const Printer = () => {
   <style>
     @page { size: ${paperWidthMm} auto; margin: 2mm; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Courier New', monospace; color: #000; width: ${paperWidthPx}; font-size: 11px; }
+    body { font-family: 'Courier New', monospace; color: #000; width: ${paperWidthPx}; font-size: 12px; font-weight: 700; }
     .receipt { width: 100%; }
     .center { text-align: center; }
     .title { font-size: 14px; font-weight: 700; }
