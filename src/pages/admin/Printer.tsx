@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// Impressão via diálogo nativo do navegador
+import { getSystemPrinters, printHtmlToSystemPrinter } from "@/lib/systemPrinter";
 
 const Printer = () => {
   const navigate = useNavigate();
@@ -30,8 +30,9 @@ const Printer = () => {
   const [configId, setConfigId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [availablePrinters, setAvailablePrinters] = useState<string[]>([]);
+  const [detectingPrinters, setDetectingPrinters] = useState(false);
   const [testingPrint, setTestingPrint] = useState(false);
-  const [showNameInput, setShowNameInput] = useState(false);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -52,7 +53,7 @@ const Printer = () => {
             ipAddress: data.ip_address || "",
             port: data.port || "9100",
             usbPort: data.usb_port || "",
-            printerName: data.printer_name || "Impressora",
+            printerName: data.printer_name || "",
             paperWidth: data.paper_width || "80mm",
           });
         }
@@ -67,25 +68,43 @@ const Printer = () => {
     loadConfig();
   }, []);
 
-  const handleDetectUSBPrinters = () => {
-    // Abre uma página em branco que dispara o diálogo de impressão do sistema
-    const printWindow = window.open("", "_blank", "width=400,height=300");
-    if (!printWindow) {
-      toast.error("Permita pop-ups para detectar impressoras.");
-      return;
+  const handleDetectUSBPrinters = async () => {
+    setDetectingPrinters(true);
+
+    try {
+      const printers = (await getSystemPrinters())
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+      if (printers.length === 0) {
+        toast.error("Nenhuma impressora instalada foi encontrada no computador.");
+        setAvailablePrinters([]);
+        return;
+      }
+
+      setAvailablePrinters(printers);
+      setConfig((current) => {
+        const selectedPrinter =
+          current.printerName && printers.includes(current.printerName)
+            ? current.printerName
+            : printers[0];
+
+        return {
+          ...current,
+          printerName: selectedPrinter,
+          usbPort: selectedPrinter,
+        };
+      });
+
+      toast.success("Impressoras carregadas. Selecione a desejada e salve.");
+    } catch (error: any) {
+      console.error("Erro ao detectar impressoras:", error);
+      toast.error("Erro ao detectar impressoras", {
+        description: error?.message || "Verifique se o QZ Tray está aberto no computador.",
+      });
+    } finally {
+      setDetectingPrinters(false);
     }
-    printWindow.document.write(`
-      <html><head><title>Detectar Impressoras</title></head>
-      <body style="font-family:sans-serif;padding:20px;text-align:center;">
-        <h3>Veja as impressoras instaladas no diálogo abaixo</h3>
-        <p>Anote o nome da impressora desejada e feche esta janela.</p>
-        <script>setTimeout(function(){ window.print(); }, 300);<\/script>
-      </body></html>
-    `);
-    printWindow.document.close();
-    // Mostra o campo para digitar o nome
-    setShowNameInput(true);
-    toast.info("Veja as impressoras no diálogo e digite o nome abaixo.");
   };
 
   const handleSave = async () => {
@@ -93,9 +112,9 @@ const Printer = () => {
       toast.error("Preencha o endereço IP e porta para conexão de rede");
       return;
     }
-    
-    if (config.connectionType === "usb" && !config.usbPort) {
-      toast.error("Preencha a porta USB");
+
+    if (config.connectionType === "usb" && !config.printerName) {
+      toast.error("Selecione uma impressora antes de salvar");
       return;
     }
 
@@ -106,7 +125,7 @@ const Printer = () => {
         connection_type: config.connectionType,
         ip_address: config.ipAddress,
         port: config.port,
-        usb_port: config.usbPort,
+        usb_port: config.connectionType === "usb" ? config.printerName : config.usbPort,
         printer_name: config.printerName,
         paper_width: config.paperWidth,
         updated_at: new Date().toISOString(),
@@ -128,8 +147,13 @@ const Printer = () => {
         setConfigId(data.id);
       }
 
-      // Também salvar no localStorage para uso offline na impressão
-      localStorage.setItem("printerConfig", JSON.stringify(config));
+      localStorage.setItem(
+        "printerConfig",
+        JSON.stringify({
+          ...config,
+          usbPort: config.connectionType === "usb" ? config.printerName : config.usbPort,
+        }),
+      );
       toast.success("Configurações da impressora salvas com sucesso!");
     } catch (error) {
       console.error("Erro ao salvar configurações:", error);
@@ -141,7 +165,7 @@ const Printer = () => {
 
   const handleTestPrint = async () => {
     if (!config.printerName) {
-      toast.error("Digite o nome da impressora antes de testar.");
+      toast.error("Detecte e selecione uma impressora antes de testar.");
       return;
     }
 
@@ -201,29 +225,12 @@ const Printer = () => {
 </html>`;
 
     try {
-      const printWindow = window.open("", "_blank", "width=400,height=600");
-      if (!printWindow) {
-        toast.error("Permita pop-ups para imprimir.");
-        setTestingPrint(false);
-        return;
-      }
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      printWindow.focus();
-      // Aguarda carregar e imprime
-      printWindow.onload = () => {
-        printWindow.print();
-        printWindow.onafterprint = () => printWindow.close();
-      };
-      // Fallback se onload não disparar
-      setTimeout(() => {
-        try { printWindow.print(); } catch {}
-      }, 500);
-      toast.success(`Selecione a impressora "${config.printerName}" no diálogo e clique em Imprimir.`);
+      await printHtmlToSystemPrinter(config.printerName, htmlContent);
+      toast.success(`Página teste enviada para "${config.printerName}".`);
     } catch (error: any) {
       console.error("Erro ao imprimir:", error);
       toast.error("Erro ao imprimir", {
-        description: error?.message || "Tente novamente.",
+        description: error?.message || "Verifique se o QZ Tray está aberto e autorizado.",
       });
     } finally {
       setTestingPrint(false);
@@ -264,8 +271,8 @@ const Printer = () => {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="printerType">Tipo de Impressora</Label>
-              <Select 
-                value={config.printerType} 
+              <Select
+                value={config.printerType}
                 onValueChange={(value) => setConfig({ ...config, printerType: value })}
               >
                 <SelectTrigger>
@@ -285,15 +292,15 @@ const Printer = () => {
               <Input
                 id="printerName"
                 value={config.printerName}
-                onChange={(e) => setConfig({ ...config, printerName: e.target.value })}
-                placeholder="Zebra ZD220"
+                onChange={(e) => setConfig({ ...config, printerName: e.target.value, usbPort: e.target.value })}
+                placeholder="Generic / Text Only"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="connectionType">Tipo de Conexão</Label>
-              <Select 
-                value={config.connectionType} 
+              <Select
+                value={config.connectionType}
                 onValueChange={(value) => setConfig({ ...config, connectionType: value })}
               >
                 <SelectTrigger>
@@ -301,7 +308,7 @@ const Printer = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="network">Rede (IP)</SelectItem>
-                  <SelectItem value="usb">USB</SelectItem>
+                  <SelectItem value="usb">USB / Sistema</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -333,38 +340,68 @@ const Printer = () => {
             {config.connectionType === "usb" && (
               <>
                 <div className="space-y-2">
-                  <Label>Impressoras do Sistema</Label>
-                  <Button 
+                  <Label>Impressoras Instaladas</Label>
+                  <Button
                     type="button"
-                    variant="outline" 
+                    variant="outline"
                     onClick={handleDetectUSBPrinters}
+                    disabled={detectingPrinters}
                     className="w-full"
                   >
-                    Detectar Impressoras do Sistema
+                    {detectingPrinters ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Detectando...
+                      </>
+                    ) : (
+                      "Detectar Impressoras"
+                    )}
                   </Button>
                 </div>
 
+                {availablePrinters.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="detectedPrinter">Selecionar Impressora</Label>
+                    <Select
+                      value={config.printerName}
+                      onValueChange={(value) => {
+                        setConfig({
+                          ...config,
+                          usbPort: value,
+                          printerName: value,
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma impressora" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availablePrinters.map((printer) => (
+                          <SelectItem key={printer} value={printer}>
+                            {printer}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div className="space-y-2">
-                  <Label htmlFor="printerNameInput">Nome da Impressora</Label>
+                  <Label htmlFor="usbPort">Impressora selecionada</Label>
                   <Input
-                    id="printerNameInput"
+                    id="usbPort"
                     value={config.printerName}
-                    onChange={(e) => setConfig({ ...config, printerName: e.target.value, usbPort: e.target.value })}
-                    placeholder="Ex: Generic / Text Only, ARGOX OS-214"
+                    readOnly
+                    placeholder="Clique em Detectar para listar as impressoras"
                   />
-                  {config.printerName && (
-                    <p className="text-xs text-muted-foreground">
-                      ✅ Impressora configurada: <strong>{config.printerName}</strong>
-                    </p>
-                  )}
                 </div>
               </>
             )}
 
             <div className="space-y-2">
               <Label htmlFor="paperWidth">Largura do Papel</Label>
-              <Select 
-                value={config.paperWidth} 
+              <Select
+                value={config.paperWidth}
                 onValueChange={(value) => setConfig({ ...config, paperWidth: value })}
               >
                 <SelectTrigger>
@@ -399,7 +436,7 @@ const Printer = () => {
                 <h2 className="font-bold text-lg">PASTEL FAVORITE</h2>
                 <p className="text-xs">Comanda de Produção</p>
               </div>
-              
+
               <div className="border-t border-b border-gray-400 py-2 my-2">
                 <p><strong>Pedido:</strong> #123</p>
                 <p><strong>Cliente:</strong> JOÃO SILVA</p>
@@ -444,20 +481,19 @@ const Printer = () => {
           <div className="bg-muted p-4 rounded-lg space-y-2">
             <h3 className="font-semibold">📋 Passo a passo:</h3>
             <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Certifique-se de que a impressora está ligada e conectada à rede</li>
-              <li>Identifique o endereço IP da impressora (geralmente impresso no relatório de configuração)</li>
-              <li>Configure a porta de comunicação (padrão 9100 para impressoras térmicas)</li>
+              <li>Abra o QZ Tray no computador e deixe ele autorizado</li>
+              <li>Clique em "Detectar Impressoras" para listar as impressoras instaladas</li>
+              <li>Selecione a impressora desejada na lista</li>
               <li>Selecione a largura correta do papel (58mm ou 80mm)</li>
-              <li>Clique em "Testar" para enviar uma página de teste</li>
+              <li>Clique em "Testar" para enviar uma página de teste direto para a impressora</li>
               <li>Salve as configurações quando tudo estiver funcionando</li>
             </ol>
           </div>
 
           <div className="bg-warning/10 border border-warning/20 p-4 rounded-lg">
             <p className="text-sm text-warning-foreground">
-              <strong>⚠️ Nota:</strong> Para integração real com impressoras térmicas, será necessário 
-              implementar um serviço local ou usar a API de impressão do navegador. Esta interface 
-              armazena apenas as configurações básicas.
+              <strong>⚠️ Nota:</strong> Para listar as impressoras instaladas e imprimir direto sem abrir o diálogo,
+              o QZ Tray precisa estar aberto e autorizado no Windows.
             </p>
           </div>
         </CardContent>
