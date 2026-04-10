@@ -249,6 +249,53 @@ export type Database = {
         }
         Relationships: []
       }
+      printer_config: {
+        Row: {
+          connection_type: string
+          id: string
+          ip_address: string | null
+          paper_width: string | null
+          port: string | null
+          printer_name: string | null
+          printer_type: string
+          updated_at: string
+          updated_by: string | null
+          usb_port: string | null
+        }
+        Insert: {
+          connection_type?: string
+          id?: string
+          ip_address?: string | null
+          paper_width?: string | null
+          port?: string | null
+          printer_name?: string | null
+          printer_type?: string
+          updated_at?: string
+          updated_by?: string | null
+          usb_port?: string | null
+        }
+        Update: {
+          connection_type?: string
+          id?: string
+          ip_address?: string | null
+          paper_width?: string | null
+          port?: string | null
+          printer_name?: string | null
+          printer_type?: string
+          updated_at?: string
+          updated_by?: string | null
+          usb_port?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printer_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
