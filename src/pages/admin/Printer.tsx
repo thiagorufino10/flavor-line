@@ -481,7 +481,8 @@ const Printer = () => {
           <div className="bg-muted p-4 rounded-lg space-y-2">
             <h3 className="font-semibold">📋 Passo a passo:</h3>
             <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-              <li>Abra o QZ Tray no computador e deixe ele autorizado</li>
+              <li>Baixe e instale o <strong>JSPrintManager</strong> no computador (<a href="https://www.neodynamic.com/downloads/jspm/" target="_blank" rel="noopener noreferrer" className="text-primary underline">Download aqui</a>)</li>
+              <li>Abra o JSPrintManager e deixe ele rodando</li>
               <li>Clique em "Detectar Impressoras" para listar as impressoras instaladas</li>
               <li>Selecione a impressora desejada na lista</li>
               <li>Selecione a largura correta do papel (58mm ou 80mm)</li>
@@ -491,20 +492,18 @@ const Printer = () => {
           </div>
 
           <div className="bg-green-50 border border-green-200 p-4 rounded-lg space-y-2">
-            <h3 className="font-semibold text-green-800">🔓 Como parar o QZ Tray de perguntar toda vez:</h3>
-            <ol className="list-decimal list-inside space-y-1 text-sm text-green-700">
-              <li>Quando o QZ Tray mostrar a janela de permissão, marque a opção <strong>"Remember this decision"</strong> (Lembrar desta decisão)</li>
-              <li>Clique em <strong>"Allow"</strong> (Permitir)</li>
-              <li>Pronto! O QZ Tray não vai perguntar mais para este site</li>
-            </ol>
-            <p className="text-xs text-green-600 mt-2">
-              💡 Alternativa: clique com o botão direito no ícone do QZ Tray na bandeja do Windows → <strong>Advanced</strong> → <strong>Site Manager</strong> → adicione o endereço do site e marque como <strong>Always Allow</strong>.
-            </p>
+            <h3 className="font-semibold text-green-800">✅ Vantagens do JSPrintManager:</h3>
+            <ul className="list-disc list-inside space-y-1 text-sm text-green-700">
+              <li>Imprime direto sem abrir diálogo de impressão</li>
+              <li>Não pede confirmação a cada impressão</li>
+              <li>Funciona com qualquer impressora instalada no Windows</li>
+              <li>Suporta Windows, Linux e Mac</li>
+            </ul>
           </div>
 
           <div className="bg-warning/10 border border-warning/20 p-4 rounded-lg">
             <p className="text-sm text-warning-foreground">
-              <strong>⚠️ Nota:</strong> O QZ Tray precisa estar aberto no Windows para detectar impressoras e imprimir direto.
+              <strong>⚠️ Nota:</strong> O JSPrintManager precisa estar aberto no computador para detectar impressoras e imprimir direto.
             </p>
           </div>
         </CardContent>
