@@ -100,7 +100,7 @@ const Printer = () => {
     } catch (error: any) {
       console.error("Erro ao detectar impressoras:", error);
       toast.error("Erro ao detectar impressoras", {
-        description: error?.message || "Verifique se o QZ Tray está aberto no computador.",
+        description: error?.message || "Verifique se o JSPrintManager está aberto no computador.",
       });
     } finally {
       setDetectingPrinters(false);
