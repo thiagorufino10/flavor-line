@@ -490,10 +490,21 @@ const Printer = () => {
             </ol>
           </div>
 
+          <div className="bg-green-50 border border-green-200 p-4 rounded-lg space-y-2">
+            <h3 className="font-semibold text-green-800">🔓 Como parar o QZ Tray de perguntar toda vez:</h3>
+            <ol className="list-decimal list-inside space-y-1 text-sm text-green-700">
+              <li>Quando o QZ Tray mostrar a janela de permissão, marque a opção <strong>"Remember this decision"</strong> (Lembrar desta decisão)</li>
+              <li>Clique em <strong>"Allow"</strong> (Permitir)</li>
+              <li>Pronto! O QZ Tray não vai perguntar mais para este site</li>
+            </ol>
+            <p className="text-xs text-green-600 mt-2">
+              💡 Alternativa: clique com o botão direito no ícone do QZ Tray na bandeja do Windows → <strong>Advanced</strong> → <strong>Site Manager</strong> → adicione o endereço do site e marque como <strong>Always Allow</strong>.
+            </p>
+          </div>
+
           <div className="bg-warning/10 border border-warning/20 p-4 rounded-lg">
             <p className="text-sm text-warning-foreground">
-              <strong>⚠️ Nota:</strong> Para listar as impressoras instaladas e imprimir direto sem abrir o diálogo,
-              o QZ Tray precisa estar aberto e autorizado no Windows.
+              <strong>⚠️ Nota:</strong> O QZ Tray precisa estar aberto no Windows para detectar impressoras e imprimir direto.
             </p>
           </div>
         </CardContent>
