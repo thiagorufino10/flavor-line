@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Trash2, ShoppingCart } from "lucide-react";
+import { LogOut, Trash2, ShoppingCart, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { ComplementsModal, Complement } from "@/components/ComplementsModal";
 import { PaymentModal } from "@/components/PaymentModal";
@@ -26,6 +26,13 @@ interface MenuCategory {
   items: { name: string; price: number }[];
 }
 
+const categoryConfig: Record<string, { label: string; emoji: string }> = {
+  pasteis: { label: "Pastéis", emoji: "🥟" },
+  salgados: { label: "Salgados", emoji: "🍗" },
+  acai: { label: "Açaí", emoji: "🍇" },
+  bebidas: { label: "Bebidas", emoji: "🥤" },
+};
+
 const Orders = () => {
   const navigate = useNavigate();
   const { createOrder } = useOrders();
@@ -40,6 +47,7 @@ const Orders = () => {
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [systemName, setSystemName] = useState("Pastel Favorite");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
     const savedName = localStorage.getItem("systemName");
@@ -60,18 +68,11 @@ const Orders = () => {
 
       if (error) throw error;
 
-      const categoryMap: Record<string, string> = {
-        pasteis: "Pastéis",
-        salgados: "Salgados",
-        acai: "Açaí",
-        bebidas: "Bebidas",
-      };
-
       const groupedItems = data?.reduce((acc, item) => {
         const categoryKey = item.category;
         if (!acc[categoryKey]) {
           acc[categoryKey] = {
-            name: categoryMap[categoryKey] || categoryKey,
+            name: categoryConfig[categoryKey]?.label || categoryKey,
             category: categoryKey as "pasteis" | "salgados" | "acai" | "bebidas",
             items: [],
           };
@@ -96,7 +97,6 @@ const Orders = () => {
     item: { name: string; price: number },
     category: "pasteis" | "salgados" | "acai" | "bebidas"
   ) => {
-    // Abre o modal de complementos para todas as categorias
     setSelectedMenuItem({ ...item, category });
     setComplementsModalOpen(true);
   };
@@ -137,7 +137,6 @@ const Orders = () => {
   };
 
   const handlePaymentConfirm = async (paymentMethod: string, customerName: string) => {
-    // Buscar modo de operação do banco
     const { data: settingData } = await supabase
       .from("system_settings")
       .select("value")
@@ -158,10 +157,8 @@ const Orders = () => {
 
       const order = await createOrder(customerName, paymentMethod, getTotalPrice(), items);
       
-      // Se o modo for impressora, imprimir o pedido com os itens
       if (operationMode === "printer" && order) {
         const { printOrder } = await import("@/lib/printOrder");
-        // Anexar itens ao pedido pois createOrder retorna sem eles
         const orderWithItems = {
           ...order,
           items: items.map((item, index) => ({
@@ -178,6 +175,8 @@ const Orders = () => {
       console.error("Erro ao criar pedido:", error);
     }
   };
+
+  const activeCategory = menuCategories.find(c => c.category === selectedCategory);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -207,7 +206,7 @@ const Orders = () => {
       {/* Main Content */}
       <div className="flex-1 container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Menu */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           {loading ? (
             <Card>
               <CardContent className="flex justify-center py-12">
@@ -220,20 +219,53 @@ const Orders = () => {
                 Nenhum item no cardápio. Configure o cardápio em Administração → Cardápio.
               </CardContent>
             </Card>
+          ) : !selectedCategory ? (
+            /* Category Buttons */
+            <div className="grid grid-cols-2 gap-4">
+              {["pasteis", "salgados", "acai", "bebidas"].map((catKey) => {
+                const cat = menuCategories.find(c => c.category === catKey);
+                const conf = categoryConfig[catKey];
+                const itemCount = cat?.items.length || 0;
+                return (
+                  <Button
+                    key={catKey}
+                    variant="outline"
+                    className="h-32 flex flex-col gap-2 text-lg hover:bg-primary hover:text-primary-foreground transition-colors border-2"
+                    onClick={() => setSelectedCategory(catKey)}
+                    disabled={itemCount === 0}
+                  >
+                    <span className="text-4xl">{conf.emoji}</span>
+                    <span className="font-bold">{conf.label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {itemCount} {itemCount === 1 ? "item" : "itens"}
+                    </span>
+                  </Button>
+                );
+              })}
+            </div>
           ) : (
-            menuCategories.map((category) => (
-            <Card key={category.name}>
-              <CardHeader>
-                <CardTitle className="text-xl">{category.name}</CardTitle>
+            /* Items of selected category */
+            <Card>
+              <CardHeader className="flex flex-row items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedCategory(null)}
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+                <CardTitle className="text-xl">
+                  {categoryConfig[selectedCategory]?.emoji} {activeCategory?.name}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {category.items.map((item) => (
+                  {activeCategory?.items.map((item) => (
                     <Button
                       key={item.name}
                       variant="outline"
                       className="h-24 flex flex-col gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
-                      onClick={() => handleItemClick(item, category.category)}
+                      onClick={() => handleItemClick(item, activeCategory.category)}
                     >
                       <span className="font-semibold text-sm">{item.name}</span>
                       <span className="text-lg font-bold">
@@ -244,7 +276,6 @@ const Orders = () => {
                 </div>
               </CardContent>
             </Card>
-            ))
           )}
         </div>
 
