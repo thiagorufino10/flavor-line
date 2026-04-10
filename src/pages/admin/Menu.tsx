@@ -238,6 +238,9 @@ const Menu = () => {
                   <SelectItem value="salgados">Salgados</SelectItem>
                   <SelectItem value="acai">Açaí</SelectItem>
                   <SelectItem value="bebidas">Bebidas</SelectItem>
+                  <SelectItem value="doces">Doces</SelectItem>
+                  <SelectItem value="coxinha">Coxinha</SelectItem>
+                  <SelectItem value="cachorro_quente">Cachorro Quente</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -349,6 +352,9 @@ const Menu = () => {
                   <SelectItem value="salgados">Salgados</SelectItem>
                   <SelectItem value="acai">Açaí</SelectItem>
                   <SelectItem value="bebidas">Bebidas</SelectItem>
+                  <SelectItem value="doces">Doces</SelectItem>
+                  <SelectItem value="coxinha">Coxinha</SelectItem>
+                  <SelectItem value="cachorro_quente">Cachorro Quente</SelectItem>
                 </SelectContent>
               </Select>
             </div>
