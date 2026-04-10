@@ -169,16 +169,77 @@ const Printer = () => {
   };
 
   const handleTestPrint = () => {
-    toast.info("Enviando página de teste para a impressora...", {
-      description: "Esta é uma simulação. Configure a integração real com sua impressora.",
-    });
-    
-    // Simulação de impressão de teste
+    const paperPx = config.paperWidth === "58mm" ? "220px" : "300px";
+
+    const printWindow = window.open("", "_blank", "width=400,height=700");
+    if (!printWindow) {
+      toast.error("Não foi possível abrir a janela de impressão. Verifique se pop-ups estão permitidos.");
+      return;
+    }
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Teste de Impressão</title>
+  <style>
+    @page { margin: 0; size: ${paperPx} auto; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Courier New', monospace; font-size: 12px; width: ${paperPx}; padding: 8px; }
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+    .line { border-top: 1px dashed #000; margin: 6px 0; }
+    .item { margin-bottom: 6px; }
+    .complement { font-size: 10px; padding-left: 12px; }
+    .obs { font-size: 10px; padding-left: 12px; font-weight: bold; background: #fef08a; display: inline-block; padding: 1px 6px; margin-top: 2px; }
+    .total { font-weight: bold; font-size: 13px; }
+    .footer { text-align: center; margin-top: 10px; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <div class="center">
+    <div class="bold" style="font-size:16px;">PASTEL FAVORITE</div>
+    <div style="font-size:10px;">Comanda de Produção</div>
+  </div>
+
+  <div class="line"></div>
+  <div><span class="bold">Pedido:</span> #123</div>
+  <div><span class="bold">Cliente:</span> JOÃO SILVA</div>
+  <div><span class="bold">Data/Hora:</span> ${new Date().toLocaleString("pt-BR")}</div>
+  <div class="line"></div>
+
+  <div class="bold" style="margin-bottom:4px;">ITENS:</div>
+
+  <div class="item">
+    <div class="bold">1x Pastel de Carne - R$ 8,00</div>
+    <div class="complement">+ Batata palha</div>
+    <div class="obs">OBS: Bem passado</div>
+  </div>
+
+  <div class="item">
+    <div class="bold">1x Açaí 300ml - R$ 15,00</div>
+    <div class="complement">+ Morango</div>
+    <div class="complement">+ Granola</div>
+    <div class="obs">OBS: Sem leite condensado</div>
+  </div>
+
+  <div class="line"></div>
+  <div class="total">TOTAL: R$ 23,00</div>
+  <div style="font-size:10px;">Pagamento: Dinheiro</div>
+
+  <div class="footer">Obrigado pela preferência!</div>
+</body>
+</html>`);
+
+    printWindow.document.close();
+    printWindow.focus();
+
     setTimeout(() => {
-      toast.success("Página de teste enviada!", {
-        description: "Verifique se a impressora recebeu o comando.",
-      });
-    }, 1500);
+      printWindow.print();
+      printWindow.close();
+    }, 400);
+
+    toast.info("Janela de impressão aberta. Selecione a impressora configurada.");
   };
 
   if (loading) {
