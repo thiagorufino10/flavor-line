@@ -31,6 +31,7 @@ interface ComplementsModalProps {
     price: number;
     category: "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
   } | null;
+  prefetchedComplements?: { id: string; name: string; price: number; category: string }[];
   onConfirm: (selectedComplements: Complement[], totalPrice: number, observations?: string) => void;
 }
 
@@ -38,6 +39,7 @@ export const ComplementsModal = ({
   open,
   onOpenChange,
   item,
+  prefetchedComplements,
   onConfirm,
 }: ComplementsModalProps) => {
   const [selectedComplements, setSelectedComplements] = useState<Set<string>>(new Set());
@@ -48,9 +50,22 @@ export const ComplementsModal = ({
 
   useEffect(() => {
     if (item && open) {
-      fetchComplements();
+      if (prefetchedComplements) {
+        // Use pre-fetched data instantly
+        const formatted = prefetchedComplements.map(comp => ({
+          id: comp.id,
+          name: comp.name,
+          price: comp.price,
+          category: comp.category as Complement["category"],
+          isSpecial: comp.price > 0,
+        }));
+        setAvailableComplements(formatted);
+        setLoading(false);
+      } else {
+        fetchComplements();
+      }
     }
-  }, [item, open]);
+  }, [item, open, prefetchedComplements]);
 
   const fetchComplements = async () => {
     if (!item) return;
