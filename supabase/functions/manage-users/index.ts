@@ -25,6 +25,7 @@ serve(async (req) => {
 
     // Verificar autenticação do usuário
     const authHeader = req.headers.get("Authorization");
+    console.log("Auth header present:", !!authHeader);
     if (!authHeader) {
       throw new Error("Não autorizado");
     }
@@ -32,6 +33,7 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
+    console.log("Auth result:", { user: user?.id, error: authError?.message });
     if (authError || !user) {
       throw new Error("Não autorizado");
     }

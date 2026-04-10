@@ -62,6 +62,7 @@ const Users = () => {
           headers: {
             "Authorization": `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({ action: "list" }),
         }
@@ -111,6 +112,7 @@ const Users = () => {
           headers: {
             "Authorization": `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
             action: "create",
@@ -165,6 +167,7 @@ const Users = () => {
           headers: {
             "Authorization": `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
             action: "delete",
