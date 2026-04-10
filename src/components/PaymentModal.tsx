@@ -112,7 +112,7 @@ export const PaymentModal = ({
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Taxa {selectedPayment === "credito" ? "crédito" : "débito"} ({rate}%):</span>
-                      <span className="font-medium text-destructive">{selectedPayment === "credito" ? "+" : "-"} R$ {taxAmount.toFixed(2)}</span>
+                      <span className="font-medium text-destructive">{clientePaga ? "+" : "-"} R$ {taxAmount.toFixed(2)}</span>
                     </div>
                     <div className="border-t pt-2 flex justify-between items-center">
                       <span className="font-semibold">Cliente paga:</span>
