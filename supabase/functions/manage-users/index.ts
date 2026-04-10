@@ -12,29 +12,32 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
     // Verificar autenticação do usuário
     const authHeader = req.headers.get("Authorization");
-    console.log("Auth header present:", !!authHeader);
     if (!authHeader) {
       throw new Error("Não autorizado");
     }
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    
-    console.log("Auth result:", { user: user?.id, error: authError?.message });
+    // Usar cliente com contexto do usuário para validar
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+
     if (authError || !user) {
+      console.log("Auth error:", authError?.message);
       throw new Error("Não autorizado");
     }
 
@@ -53,12 +56,10 @@ serve(async (req) => {
     const { action, userData } = await req.json();
 
     if (action === "list") {
-      // Listar usuários
       const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
       
       if (listError) throw listError;
 
-      // Buscar perfis e roles
       const { data: profiles } = await supabaseAdmin
         .from("profiles")
         .select("id, full_name, user_roles(role)");
@@ -81,7 +82,6 @@ serve(async (req) => {
     }
 
     if (action === "create") {
-      // Criar usuário
       const { email, password, full_name, role } = userData;
 
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -94,14 +94,12 @@ serve(async (req) => {
       if (createError) throw createError;
       if (!newUser.user) throw new Error("Falha ao criar usuário");
 
-      // Adicionar role
       const { error: roleError } = await supabaseAdmin
         .from("user_roles")
         .insert({ user_id: newUser.user.id, role });
 
       if (roleError) throw roleError;
 
-      // Criar perfil
       const { error: profileError } = await supabaseAdmin
         .from("profiles")
         .upsert({ id: newUser.user.id, full_name });
@@ -115,7 +113,6 @@ serve(async (req) => {
     }
 
     if (action === "delete") {
-      // Deletar usuário
       const { userId } = userData;
 
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
@@ -132,6 +129,7 @@ serve(async (req) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    console.error("Edge function error:", errorMessage);
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
       {
