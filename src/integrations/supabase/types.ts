@@ -383,7 +383,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "atendente" | "cozinha"
-      product_category: "pasteis" | "salgados" | "acai" | "bebidas"
+      product_category:
+        | "pasteis"
+        | "salgados"
+        | "acai"
+        | "bebidas"
+        | "doces"
+        | "coxinha"
+        | "cachorro_quente"
       transaction_type: "entrada" | "saida"
     }
     CompositeTypes: {
@@ -513,7 +520,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "atendente", "cozinha"],
-      product_category: ["pasteis", "salgados", "acai", "bebidas"],
+      product_category: [
+        "pasteis",
+        "salgados",
+        "acai",
+        "bebidas",
+        "doces",
+        "coxinha",
+        "cachorro_quente",
+      ],
       transaction_type: ["entrada", "saida"],
     },
   },
