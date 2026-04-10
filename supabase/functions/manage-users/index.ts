@@ -25,7 +25,12 @@ serve(async (req) => {
 
     // Verificar autenticação do usuário
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
+      throw new Error("Não autorizado");
+    }
+
+    const accessToken = authHeader.replace("Bearer ", "").trim();
+    if (!accessToken) {
       throw new Error("Não autorizado");
     }
 
@@ -34,7 +39,7 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    const { data: { user }, error: authError } = await userClient.auth.getUser(accessToken);
 
     if (authError || !user) {
       console.log("Auth error:", authError?.message);
