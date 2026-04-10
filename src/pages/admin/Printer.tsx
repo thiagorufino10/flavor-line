@@ -20,19 +20,18 @@ const Printer = () => {
   const navigate = useNavigate();
   const [config, setConfig] = useState({
     printerType: "thermal",
-    connectionType: "network",
+    connectionType: "usb",
     ipAddress: "192.168.1.100",
     port: "9100",
     usbPort: "",
-    printerName: "Impressora",
+    printerName: "",
     paperWidth: "80mm",
   });
   const [configId, setConfigId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [availablePrinters, setAvailablePrinters] = useState<string[]>([]);
-  const [detectingPrinters] = useState(false);
   const [testingPrint, setTestingPrint] = useState(false);
+  const [showNameInput, setShowNameInput] = useState(false);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -69,7 +68,7 @@ const Printer = () => {
   }, []);
 
   const handleDetectUSBPrinters = () => {
-    // Abre o diálogo de impressão do sistema para o usuário ver as impressoras instaladas
+    // Abre uma página em branco que dispara o diálogo de impressão do sistema
     const printWindow = window.open("", "_blank", "width=400,height=300");
     if (!printWindow) {
       toast.error("Permita pop-ups para detectar impressoras.");
@@ -77,25 +76,16 @@ const Printer = () => {
     }
     printWindow.document.write(`
       <html><head><title>Detectar Impressoras</title></head>
-      <body><p>Selecione a impressora desejada no diálogo de impressão e anote o nome.</p>
-      <script>window.print(); window.close();<\/script></body></html>
+      <body style="font-family:sans-serif;padding:20px;text-align:center;">
+        <h3>Veja as impressoras instaladas no diálogo abaixo</h3>
+        <p>Anote o nome da impressora desejada e feche esta janela.</p>
+        <script>setTimeout(function(){ window.print(); }, 300);<\/script>
+      </body></html>
     `);
     printWindow.document.close();
-
-    // Pede ao usuário para digitar o nome da impressora
-    const printerName = prompt("Digite o nome exato da impressora que apareceu no diálogo (ex: Generic / Text Only, ARGOX OS-214 plus PPLA):");
-    if (printerName && printerName.trim()) {
-      const name = printerName.trim();
-      setAvailablePrinters([name]);
-      setConfig((current) => ({
-        ...current,
-        usbPort: name,
-        printerName: name,
-      }));
-      toast.success(`Impressora "${name}" configurada com sucesso!`);
-    } else {
-      toast.info("Nenhuma impressora foi selecionada.");
-    }
+    // Mostra o campo para digitar o nome
+    setShowNameInput(true);
+    toast.info("Veja as impressoras no diálogo e digite o nome abaixo.");
   };
 
   const handleSave = async () => {
@@ -150,8 +140,8 @@ const Printer = () => {
   };
 
   const handleTestPrint = async () => {
-    if (!config.printerName || config.printerName === "Impressora") {
-      toast.error("Detecte e selecione uma impressora antes de testar.");
+    if (!config.printerName) {
+      toast.error("Digite o nome da impressora antes de testar.");
       return;
     }
 
@@ -229,7 +219,7 @@ const Printer = () => {
       setTimeout(() => {
         try { printWindow.print(); } catch {}
       }, 500);
-      toast.success("Diálogo de impressão aberto. Selecione: " + config.printerName);
+      toast.success(`Selecione a impressora "${config.printerName}" no diálogo e clique em Imprimir.`);
     } catch (error: any) {
       console.error("Erro ao imprimir:", error);
       toast.error("Erro ao imprimir", {
@@ -343,53 +333,30 @@ const Printer = () => {
             {config.connectionType === "usb" && (
               <>
                 <div className="space-y-2">
-                  <Label>Impressoras Detectadas</Label>
+                  <Label>Impressoras do Sistema</Label>
                   <Button 
                     type="button"
                     variant="outline" 
                     onClick={handleDetectUSBPrinters}
-                    disabled={detectingPrinters}
                     className="w-full"
                   >
-                    {detectingPrinters ? "Detectando..." : "Detectar Impressoras do Sistema"}
+                    Detectar Impressoras do Sistema
                   </Button>
                 </div>
 
-                {availablePrinters.length > 0 && (
-                  <div className="space-y-2">
-                    <Label htmlFor="detectedPrinter">Selecionar Impressora</Label>
-                    <Select 
-                      value={config.printerName} 
-                      onValueChange={(value) => {
-                        setConfig({
-                          ...config,
-                          usbPort: value,
-                          printerName: value,
-                        });
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma impressora" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availablePrinters.map((printer) => (
-                          <SelectItem key={printer} value={printer}>
-                            {printer}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
                 <div className="space-y-2">
-                  <Label htmlFor="usbPort">Impressora selecionada</Label>
+                  <Label htmlFor="printerNameInput">Nome da Impressora</Label>
                   <Input
-                    id="usbPort"
+                    id="printerNameInput"
                     value={config.printerName}
-                    readOnly
-                    placeholder="Clique em Detectar acima"
+                    onChange={(e) => setConfig({ ...config, printerName: e.target.value, usbPort: e.target.value })}
+                    placeholder="Ex: Generic / Text Only, ARGOX OS-214"
                   />
+                  {config.printerName && (
+                    <p className="text-xs text-muted-foreground">
+                      ✅ Impressora configurada: <strong>{config.printerName}</strong>
+                    </p>
+                  )}
                 </div>
               </>
             )}
