@@ -1,142 +1,79 @@
-type QZTrayApi = {
-  security?: {
-    setCertificatePromise?: (
-      promiseHandler: () => Promise<string> | string,
-      options?: { rejectOnFailure?: boolean },
-    ) => void;
-    setSignaturePromise?: (promiseFactory: (toSign: string) => Promise<string> | string) => void;
-  };
-  websocket: {
-    connect: (options?: Record<string, unknown>) => Promise<void>;
-    isActive: () => boolean;
-    setClosedCallbacks?: (callback: () => void) => void;
-    setErrorCallbacks?: (callback: (error: unknown) => void) => void;
-  };
-  printers: {
-    find: (query?: string) => Promise<string[] | string>;
-  };
-  configs: {
-    create: (printer: string, options?: Record<string, unknown>) => unknown;
-  };
-  print: (config: unknown, data: Array<Record<string, string>>) => Promise<void>;
-};
+import * as JSPM from "jsprintmanager";
 
-let qzConnectionPromise: Promise<void> | null = null;
-let qzConfigured = false;
+let jspmStarted = false;
 
-const getErrorMessage = (error: unknown) => {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  if (typeof error === "string") {
-    return error;
-  }
-
-  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
-    return error.message;
-  }
-
-  return "Não foi possível se comunicar com o QZ Tray.";
-};
-
-const normalizeQZError = (error: unknown) => {
-  const message = getErrorMessage(error);
-
-  if (
-    message.includes("A connection to QZ has not been established yet") ||
-    message.includes("Unable to establish connection with QZ") ||
-    message.includes("Unable to create a websocket connection") ||
-    message.includes("ECONNREFUSED")
-  ) {
-    return new Error(
-      "Não foi possível conectar ao QZ Tray. Verifique se ele está aberto e autorizado no Windows.",
-    );
-  }
-
-  if (message.toLowerCase().includes("request blocked")) {
-    return new Error(
-      "O QZ Tray bloqueou esta solicitação. Autorize este site na janela do QZ Tray e tente novamente.",
-    );
-  }
-
-  return new Error(message);
-};
-
-const getConnectionOptions = () => ({
-  host: "localhost",
-  usingSecure: typeof window !== "undefined" ? window.location.protocol === "https:" : true,
-  retries: 1,
-  delay: 0,
-});
-
-const configureQZ = (qz: QZTrayApi) => {
-  if (qzConfigured) {
-    return;
-  }
-
-  qzConfigured = true;
-  qz.security?.setCertificatePromise?.(async () => "", { rejectOnFailure: false });
-  qz.security?.setSignaturePromise?.(async () => "");
-  qz.websocket.setClosedCallbacks?.(() => {
-    qzConnectionPromise = null;
-  });
-  qz.websocket.setErrorCallbacks?.((error) => {
-    console.error("QZ Tray websocket error:", error);
-  });
-};
-
-const getQZ = async (): Promise<QZTrayApi> => {
-  const module = await import("qz-tray");
-  return (module as { default: QZTrayApi }).default;
-};
-
-const ensureConnected = async (qz: QZTrayApi) => {
-  configureQZ(qz);
-
-  if (qz.websocket.isActive()) {
-    if (qzConnectionPromise) {
-      await qzConnectionPromise;
+const ensureStarted = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (jspmStarted && JSPM.JSPrintManager.websocket_status === JSPM.WSStatus.Open) {
+      resolve();
+      return;
     }
-    return;
-  }
 
-  if (!qzConnectionPromise) {
-    qzConnectionPromise = qz.websocket.connect(getConnectionOptions()).catch((error) => {
-      qzConnectionPromise = null;
-      throw normalizeQZError(error);
-    });
-  }
+    JSPM.JSPrintManager.auto_reconnect = true;
+    JSPM.JSPrintManager.start();
+    jspmStarted = true;
 
-  await qzConnectionPromise;
+    const timeout = setTimeout(() => {
+      reject(
+        new Error(
+          "Não foi possível conectar ao JSPrintManager. Verifique se o aplicativo JSPM está aberto no computador.",
+        ),
+      );
+    }, 8000);
+
+    const check = () => {
+      if (JSPM.JSPrintManager.websocket_status === JSPM.WSStatus.Open) {
+        clearTimeout(timeout);
+        resolve();
+      } else if (JSPM.JSPrintManager.websocket_status === JSPM.WSStatus.Closed) {
+        clearTimeout(timeout);
+        reject(
+          new Error(
+            "Não foi possível conectar ao JSPrintManager. Verifique se o aplicativo JSPM está aberto no computador.",
+          ),
+        );
+      } else {
+        setTimeout(check, 200);
+      }
+    };
+
+    setTimeout(check, 500);
+  });
 };
 
 export const getSystemPrinters = async (): Promise<string[]> => {
-  const qz = await getQZ();
-  await ensureConnected(qz);
-  const printers = await qz.printers.find();
-  return Array.isArray(printers) ? printers : [printers];
+  await ensureStarted();
+  const printers = await JSPM.JSPrintManager.getPrinters();
+  return Array.isArray(printers) ? printers : [];
 };
 
 export const printHtmlToSystemPrinter = async (printerName: string, html: string) => {
-  const qz = await getQZ();
-  await ensureConnected(qz);
+  await ensureStarted();
 
-  const printer = await qz.printers.find(printerName);
-  const resolvedPrinter = Array.isArray(printer) ? printer[0] : printer;
+  const blob = new Blob([html], { type: "text/html" });
 
-  if (!resolvedPrinter) {
-    throw new Error("Impressora não encontrada no sistema.");
-  }
+  return new Promise<void>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      try {
+        const base64 = (reader.result as string).split(",")[1];
+        const cpj = new JSPM.ClientPrintJob();
+        cpj.clientPrinter = new JSPM.InstalledPrinter(printerName);
 
-  const config = qz.configs.create(resolvedPrinter, { copies: 1 });
-
-  await qz.print(config, [
-    {
-      type: "pixel",
-      format: "html",
-      flavor: "plain",
-      data: html,
-    },
-  ]);
+        const file = new JSPM.PrintFile(
+          base64,
+          JSPM.FileSourceType.Base64,
+          "order.html",
+          1,
+        );
+        cpj.files.push(file);
+        cpj.sendToClient();
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    };
+    reader.onerror = () => reject(new Error("Erro ao processar conteúdo para impressão."));
+    reader.readAsDataURL(blob);
+  });
 };
