@@ -158,10 +158,18 @@ const Orders = () => {
 
       const order = await createOrder(customerName, paymentMethod, getTotalPrice(), items);
       
-      // Se o modo for impressora, imprimir o pedido
+      // Se o modo for impressora, imprimir o pedido com os itens
       if (operationMode === "printer" && order) {
         const { printOrder } = await import("@/lib/printOrder");
-        printOrder(order);
+        // Anexar itens ao pedido pois createOrder retorna sem eles
+        const orderWithItems = {
+          ...order,
+          items: items.map((item, index) => ({
+            id: `item-${index}`,
+            ...item,
+          })),
+        };
+        printOrder(orderWithItems);
       }
       
       toast.success(`Pedido de ${customerName} finalizado! Enviado para ${destinationText}`);
