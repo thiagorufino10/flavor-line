@@ -156,6 +156,8 @@ const OperationMode = () => {
                 Salvar Configuração
               </Button>
             </div>
+            </>
+            )}
           </CardContent>
         </Card>
       </main>
