@@ -20,9 +20,11 @@ interface OrderItem {
   observations?: string;
 }
 
+type ProductCategory = "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
+
 interface MenuCategory {
   name: string;
-  category: "pasteis" | "salgados" | "acai" | "bebidas";
+  category: ProductCategory;
   items: { name: string; price: number }[];
 }
 
@@ -31,6 +33,9 @@ const categoryConfig: Record<string, { label: string; emoji: string }> = {
   salgados: { label: "Salgados", emoji: "🍗" },
   acai: { label: "Açaí", emoji: "🍇" },
   bebidas: { label: "Bebidas", emoji: "🥤" },
+  doces: { label: "Doces", emoji: "🍰" },
+  coxinha: { label: "Coxinha", emoji: "🍗" },
+  cachorro_quente: { label: "Cachorro Quente", emoji: "🌭" },
 };
 
 const Orders = () => {
@@ -73,7 +78,7 @@ const Orders = () => {
         if (!acc[categoryKey]) {
           acc[categoryKey] = {
             name: categoryConfig[categoryKey]?.label || categoryKey,
-            category: categoryKey as "pasteis" | "salgados" | "acai" | "bebidas",
+            category: categoryKey as ProductCategory,
             items: [],
           };
         }
@@ -95,7 +100,7 @@ const Orders = () => {
 
   const handleItemClick = (
     item: { name: string; price: number },
-    category: "pasteis" | "salgados" | "acai" | "bebidas"
+    category: ProductCategory
   ) => {
     setSelectedMenuItem({ ...item, category });
     setComplementsModalOpen(true);
