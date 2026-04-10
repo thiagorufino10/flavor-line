@@ -204,7 +204,7 @@ export const ComplementsModal = ({
                   Complementos Inclusos
                   <Badge variant="secondary">Grátis</Badge>
                 </h3>
-                {item && (item.name.toLowerCase().includes("misto") || item.name.toLowerCase().includes("tradicional")) && (
+                {item && (item.name.toLowerCase().includes("disco") || item.name.toLowerCase().includes("tradicional")) && (
                   <Button
                     variant="outline"
                     size="sm"
