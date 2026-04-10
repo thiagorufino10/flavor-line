@@ -96,13 +96,13 @@ export const PaymentModal = ({
             <div className="bg-muted p-4 rounded-lg space-y-2">
               {(selectedPayment === "credito" || selectedPayment === "debito") && (() => {
                 const rates = JSON.parse(localStorage.getItem("paymentRates") || '{"credito": 3.5, "debito": 2.0}');
+                const taxPayerConfig = JSON.parse(localStorage.getItem("taxPayer") || '{"credito": "cliente", "debito": "estabelecimento"}');
                 const rate = selectedPayment === "credito" ? rates.credito : rates.debito;
                 const taxAmount = totalAmount * rate / 100;
+                const clientePaga = taxPayerConfig[selectedPayment] === "cliente";
                 
-                // Para crédito: adiciona taxa (cliente paga mais)
-                // Para débito: subtrai taxa (entra menos no caixa)
-                const clientPays = selectedPayment === "credito" ? totalAmount + taxAmount : totalAmount;
-                const amountReceived = selectedPayment === "credito" ? clientPays : totalAmount - taxAmount;
+                const clientPays = clientePaga ? totalAmount + taxAmount : totalAmount;
+                const amountReceived = clientePaga ? totalAmount : totalAmount - taxAmount;
                 
                 return (
                   <>
@@ -112,7 +112,7 @@ export const PaymentModal = ({
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Taxa {selectedPayment === "credito" ? "crédito" : "débito"} ({rate}%):</span>
-                      <span className="font-medium text-destructive">{selectedPayment === "credito" ? "+" : "-"} R$ {taxAmount.toFixed(2)}</span>
+                      <span className="font-medium text-destructive">{clientePaga ? "+" : "-"} R$ {taxAmount.toFixed(2)}</span>
                     </div>
                     <div className="border-t pt-2 flex justify-between items-center">
                       <span className="font-semibold">Cliente paga:</span>
