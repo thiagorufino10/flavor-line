@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Printer as PrinterIcon, ArrowLeft, TestTube } from "lucide-react";
+import { Printer as PrinterIcon, ArrowLeft, TestTube, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Select,
   SelectContent,
@@ -21,20 +22,54 @@ import {
 
 const Printer = () => {
   const navigate = useNavigate();
-  const [config, setConfig] = useState(() => {
-    const saved = localStorage.getItem("printerConfig");
-    return saved ? JSON.parse(saved) : {
-      printerType: "thermal",
-      connectionType: "network",
-      ipAddress: "192.168.1.100",
-      port: "9100",
-      usbPort: "",
-      printerName: "Zebra ZD220",
-      paperWidth: "80mm",
-    };
+  const [config, setConfig] = useState({
+    printerType: "thermal",
+    connectionType: "network",
+    ipAddress: "192.168.1.100",
+    port: "9100",
+    usbPort: "",
+    printerName: "Impressora",
+    paperWidth: "80mm",
   });
+  const [configId, setConfigId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [availablePrinters, setAvailablePrinters] = useState<DetectedUSBPrinter[]>([]);
   const [detectingPrinters, setDetectingPrinters] = useState(false);
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("printer_config")
+          .select("*")
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          setConfigId(data.id);
+          setConfig({
+            printerType: data.printer_type,
+            connectionType: data.connection_type,
+            ipAddress: data.ip_address || "",
+            port: data.port || "9100",
+            usbPort: data.usb_port || "",
+            printerName: data.printer_name || "Impressora",
+            paperWidth: data.paper_width || "80mm",
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao carregar configurações:", error);
+        toast.error("Erro ao carregar configurações da impressora");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadConfig();
+  }, []);
 
   const handleDetectUSBPrinters = async () => {
     setDetectingPrinters(true);
@@ -82,7 +117,7 @@ const Printer = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (config.connectionType === "network" && (!config.ipAddress || !config.port)) {
       toast.error("Preencha o endereço IP e porta para conexão de rede");
       return;
@@ -93,8 +128,44 @@ const Printer = () => {
       return;
     }
 
-    localStorage.setItem("printerConfig", JSON.stringify(config));
-    toast.success("Configurações da impressora salvas com sucesso!");
+    setSaving(true);
+    try {
+      const payload = {
+        printer_type: config.printerType,
+        connection_type: config.connectionType,
+        ip_address: config.ipAddress,
+        port: config.port,
+        usb_port: config.usbPort,
+        printer_name: config.printerName,
+        paper_width: config.paperWidth,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (configId) {
+        const { error } = await supabase
+          .from("printer_config")
+          .update(payload)
+          .eq("id", configId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from("printer_config")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error) throw error;
+        setConfigId(data.id);
+      }
+
+      // Também salvar no localStorage para uso offline na impressão
+      localStorage.setItem("printerConfig", JSON.stringify(config));
+      toast.success("Configurações da impressora salvas com sucesso!");
+    } catch (error) {
+      console.error("Erro ao salvar configurações:", error);
+      toast.error("Erro ao salvar configurações da impressora");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleTestPrint = () => {
@@ -109,6 +180,14 @@ const Printer = () => {
       });
     }, 1500);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -274,8 +353,8 @@ const Printer = () => {
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button onClick={handleSave} className="flex-1">
-                Salvar Configurações
+              <Button onClick={handleSave} className="flex-1" disabled={saving}>
+                {saving ? "Salvando..." : "Salvar Configurações"}
               </Button>
               <Button variant="outline" onClick={handleTestPrint} className="gap-2">
                 <TestTube className="w-4 h-4" />
