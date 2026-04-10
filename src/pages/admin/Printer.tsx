@@ -101,7 +101,9 @@ const Printer = () => {
     } catch (error: any) {
       console.error("Erro ao detectar impressoras do sistema:", error);
       toast.error("Erro ao detectar impressoras do sistema", {
-        description: "Abra o QZ Tray e confirme que a Argox está instalada no Windows.",
+        description:
+          error?.message ||
+          "Abra o QZ Tray e confirme que a impressora está instalada e autorizada no Windows.",
       });
     } finally {
       setDetectingPrinters(false);
