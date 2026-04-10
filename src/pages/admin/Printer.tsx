@@ -15,11 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  detectUSBPrinters as detectConnectedUSBPrinters,
-  isUSBSupported,
   type DetectedUSBPrinter,
 } from "@/lib/usbPrinters";
-import { sendRawToUSBPrinter } from "@/lib/usbPrinters";
+import { getSystemPrinters, printHtmlToSystemPrinter } from "@/lib/systemPrinter";
 
 const Printer = () => {
   const navigate = useNavigate();
@@ -75,44 +73,36 @@ const Printer = () => {
   const handleDetectUSBPrinters = async () => {
     setDetectingPrinters(true);
     try {
-      if (!isUSBSupported()) {
-        toast.error("Seu navegador não suporta detecção USB. Use Chrome, Edge ou Opera.");
-        return;
-      }
+      const printers = await getSystemPrinters();
+      const detectedPrinters: DetectedUSBPrinter[] = printers.map((printerName) => ({
+        id: printerName,
+        label: printerName,
+        name: printerName,
+        manufacturer: "Sistema",
+      }));
 
-      const printers = await detectConnectedUSBPrinters();
-      setAvailablePrinters(printers);
+      setAvailablePrinters(detectedPrinters);
 
-      if (printers.length > 0) {
+      if (detectedPrinters.length > 0) {
         setConfig((current) => ({
           ...current,
-          usbPort: printers[0].id,
-          printerName: printers[0].name,
+          usbPort: detectedPrinters[0].id,
+          printerName: detectedPrinters[0].name,
         }));
 
-        toast.success(`${printers.length} impressora(s) detectada(s)`, {
-          description: "Selecione uma impressora da lista abaixo"
+        toast.success(`${detectedPrinters.length} impressora(s) detectada(s)`, {
+          description: "Selecione a Argox instalada no Windows na lista abaixo"
         });
       } else {
-        toast.info("Nenhuma impressora USB foi detectada", {
-          description: "Conecte a impressora Argox e autorize o acesso quando o navegador solicitar."
+        toast.info("Nenhuma impressora do sistema foi encontrada", {
+          description: "Verifique se a Argox está instalada no Windows e se o QZ Tray está aberto."
         });
       }
     } catch (error: any) {
-      console.error("Erro ao detectar impressoras USB:", error);
-      if (error.name === 'NotFoundError') {
-        toast.info("Nenhuma impressora foi autorizada", {
-          description: "Escolha a sua Argox na janela do navegador para concluir a detecção."
-        });
-      } else if (error.name === 'SecurityError') {
-        toast.error("Acesso USB bloqueado", {
-          description: "Verifique as permissões do navegador"
-        });
-      } else {
-        toast.error("Erro ao detectar impressoras USB", {
-          description: error.message || "Tente novamente"
-        });
-      }
+      console.error("Erro ao detectar impressoras do sistema:", error);
+      toast.error("Erro ao detectar impressoras do sistema", {
+        description: "Abra o QZ Tray e confirme que a Argox está instalada no Windows.",
+      });
     } finally {
       setDetectingPrinters(false);
     }
@@ -170,56 +160,70 @@ const Printer = () => {
   };
 
   const handleTestPrint = async () => {
-    if (config.connectionType !== "usb" || !config.usbPort) {
-      toast.error("Configure e detecte uma impressora USB antes de testar.");
+    if (config.connectionType !== "usb" || !(config.printerName || config.usbPort)) {
+      toast.error("Detecte e selecione a impressora do sistema antes de testar.");
       return;
     }
 
     const now = new Date().toLocaleString("pt-BR");
-    const separator = "========================================";
-    const line = "----------------------------------------";
-
-    const receipt = [
-      separator,
-      "           PASTEL FAVORITE",
-      separator,
-      "",
-      "PEDIDO #123",
-      "CLIENTE: JOAO SILVA",
-      `DATA: ${now}`,
-      "",
-      line,
-      "ITENS DO PEDIDO:",
-      line,
-      "",
-      "1x Pastel de Carne - R$ 8,00",
-      "   + Batata palha",
-      "   *** OBS: Bem passado ***",
-      "",
-      "1x Acai 300ml - R$ 15,00",
-      "   + Morango",
-      "   + Granola",
-      "   *** OBS: Sem leite condensado ***",
-      "",
-      line,
-      "TOTAL: R$ 23,00",
-      "PAGAMENTO: DINHEIRO",
-      line,
-      "",
-      "     Obrigado pela preferencia!",
-      "",
-      separator,
-      "\n\n\n",  // Avanço de papel
-    ].join("\n");
+    const paperWidth = config.paperWidth === "58mm" ? "58mm" : "80mm";
+    const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    @page { size: ${paperWidth} auto; margin: 4mm; }
+    body { font-family: 'Courier New', monospace; color: #000; margin: 0; width: 100%; }
+    .receipt { width: 100%; font-size: 12px; }
+    .center { text-align: center; }
+    .title { font-size: 16px; font-weight: 700; }
+    .divider { border-top: 1px dashed #000; margin: 8px 0; }
+    .item { margin-bottom: 8px; }
+    .name { font-weight: 700; }
+    .sub { font-size: 10px; margin-left: 12px; }
+    .obs { font-size: 10px; margin-left: 12px; font-weight: 700; }
+    .total { font-weight: 700; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="receipt">
+    <div class="center">
+      <div class="title">PASTEL FAVORITE</div>
+      <div>Comanda de Produção</div>
+    </div>
+    <div class="divider"></div>
+    <div><strong>Pedido:</strong> #123</div>
+    <div><strong>Cliente:</strong> JOÃO SILVA</div>
+    <div><strong>Data/Hora:</strong> ${now}</div>
+    <div class="divider"></div>
+    <div><strong>ITENS:</strong></div>
+    <div class="item">
+      <div class="name">1x Pastel de Carne - R$ 8,00</div>
+      <div class="sub">+ Batata palha</div>
+      <div class="obs">OBS: Bem passado</div>
+    </div>
+    <div class="item">
+      <div class="name">1x Açaí 300ml - R$ 15,00</div>
+      <div class="sub">+ Morango</div>
+      <div class="sub">+ Granola</div>
+      <div class="obs">OBS: Sem leite condensado</div>
+    </div>
+    <div class="divider"></div>
+    <div class="total">TOTAL: R$ 23,00</div>
+    <div>Pagamento: Dinheiro</div>
+    <div class="center" style="margin-top: 12px;">Obrigado pela preferência!</div>
+  </div>
+</body>
+</html>`;
 
     try {
-      toast.info("Enviando para a impressora...");
-      await sendRawToUSBPrinter(config.usbPort, receipt);
-      toast.success("Comanda de teste enviada com sucesso para a impressora!");
+      toast.info("Enviando para a impressora do sistema...");
+      await printHtmlToSystemPrinter(config.printerName || config.usbPort, htmlContent);
+      toast.success("Comanda de teste enviada para a impressora configurada!");
     } catch (error: any) {
       console.error("Erro ao imprimir teste:", error);
       toast.error("Erro ao enviar para a impressora", {
-        description: error.message || "Verifique se a impressora está conectada e autorizada.",
+        description: error.message || "Abra o QZ Tray e confirme se a Argox está instalada no Windows.",
       });
     }
   };
@@ -368,12 +372,12 @@ const Printer = () => {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="usbPort">Identificador USB</Label>
+                  <Label htmlFor="usbPort">Impressora do sistema</Label>
                   <Input
                     id="usbPort"
                     value={config.usbPort}
                     onChange={(e) => setConfig({ ...config, usbPort: e.target.value })}
-                    placeholder="Preenchido automaticamente ao detectar"
+                    placeholder="Nome da impressora no Windows"
                   />
                 </div>
               </>
