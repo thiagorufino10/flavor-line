@@ -320,10 +320,9 @@ h2{margin-bottom:12px;}p{color:#555;font-size:14px;}</style></head>
                     type="button"
                     variant="outline" 
                     onClick={handleDetectUSBPrinters}
-                    disabled={detectingPrinters}
                     className="w-full"
                   >
-                    {detectingPrinters ? "Detectando..." : "Detectar Impressoras USB"}
+                    Detectar Impressoras do Sistema
                   </Button>
                 </div>
 
