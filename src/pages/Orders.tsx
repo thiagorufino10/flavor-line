@@ -208,7 +208,7 @@ const Orders = () => {
         observations: item.observations || null
       }));
 
-      const order = await createOrder(customerName, paymentMethod, getTotalPrice, items);
+      const order = await createOrder(customerName, paymentMethod, getTotalPrice, items, splitPayments);
       
       if (operationMode === "printer" && order) {
         const { printOrder } = await import("@/lib/printOrder");
