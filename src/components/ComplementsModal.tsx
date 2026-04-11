@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Minus, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,7 @@ interface ComplementsModalProps {
     category: "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
   } | null;
   prefetchedComplements?: { id: string; name: string; price: number; category: string }[];
-  onConfirm: (selectedComplements: Complement[], totalPrice: number, observations?: string) => void;
+  onConfirm: (selectedComplements: Complement[], totalPrice: number, observations?: string, quantity?: number) => void;
 }
 
 export const ComplementsModal = ({
@@ -47,7 +48,7 @@ export const ComplementsModal = ({
   const [availableComplements, setAvailableComplements] = useState<Complement[]>([]);
   const [loading, setLoading] = useState(false);
   const [observations, setObservations] = useState("");
-
+  const [quantity, setQuantity] = useState(1);
   useEffect(() => {
     if (item && open) {
       if (prefetchedComplements) {
@@ -173,15 +174,17 @@ export const ComplementsModal = ({
       selectedComplements.has(c.id)
     );
     
-    onConfirm(selected, totalPrice, observations.trim() || undefined);
+    onConfirm(selected, totalPrice, observations.trim() || undefined, quantity);
     setSelectedComplements(new Set());
     setObservations("");
+    setQuantity(1);
     onOpenChange(false);
   };
 
   const handleCancel = () => {
     setSelectedComplements(new Set());
     setObservations("");
+    setQuantity(1);
     onOpenChange(false);
   };
 
@@ -324,11 +327,38 @@ export const ComplementsModal = ({
 
         <Separator />
 
+        {/* Quantidade */}
+        <div className="flex items-center justify-between py-2">
+          <span className="text-lg font-semibold">Quantidade:</span>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setQuantity(q => Math.max(1, q - 1))}
+              disabled={quantity <= 1}
+            >
+              <Minus className="w-4 h-4" />
+            </Button>
+            <span className="text-2xl font-bold w-8 text-center">{quantity}</span>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setQuantity(q => q + 1)}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        <Separator />
+
         {/* Total */}
         <div className="flex items-center justify-between py-2">
           <span className="text-lg font-semibold">Valor Total:</span>
           <span className="text-2xl font-bold text-primary">
-            R$ {totalPrice.toFixed(2)}
+            R$ {(totalPrice * quantity).toFixed(2)}
           </span>
         </div>
 
