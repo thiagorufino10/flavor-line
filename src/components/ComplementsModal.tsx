@@ -33,7 +33,7 @@ interface ComplementsModalProps {
     category: "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
   } | null;
   prefetchedComplements?: { id: string; name: string; price: number; category: string }[];
-  onConfirm: (selectedComplements: Complement[], totalPrice: number, observations?: string) => void;
+  onConfirm: (selectedComplements: Complement[], totalPrice: number, observations?: string, quantity?: number) => void;
 }
 
 export const ComplementsModal = ({
