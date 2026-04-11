@@ -327,11 +327,38 @@ export const ComplementsModal = ({
 
         <Separator />
 
+        {/* Quantidade */}
+        <div className="flex items-center justify-between py-2">
+          <span className="text-lg font-semibold">Quantidade:</span>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setQuantity(q => Math.max(1, q - 1))}
+              disabled={quantity <= 1}
+            >
+              <Minus className="w-4 h-4" />
+            </Button>
+            <span className="text-2xl font-bold w-8 text-center">{quantity}</span>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setQuantity(q => q + 1)}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        <Separator />
+
         {/* Total */}
         <div className="flex items-center justify-between py-2">
           <span className="text-lg font-semibold">Valor Total:</span>
           <span className="text-2xl font-bold text-primary">
-            R$ {totalPrice.toFixed(2)}
+            R$ {(totalPrice * quantity).toFixed(2)}
           </span>
         </div>
 
