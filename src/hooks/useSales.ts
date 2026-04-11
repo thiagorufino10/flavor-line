@@ -7,10 +7,26 @@ export interface SaleDetail {
   quantidade: number;
   valorUnitario: number;
   valorTotal: number;
+  clienteNome: string;
+  numeroPedido: number;
+  dataPedido: string;
+  status: string;
+}
+
+export interface OrderSummary {
+  id: string;
+  order_number: number;
+  customer_name: string;
+  total_amount: number;
+  payment_method: string;
+  status: string;
+  created_at: string;
+  items_count: number;
 }
 
 export const useSales = (startDate?: Date, endDate?: Date) => {
   const [sales, setSales] = useState<SaleDetail[]>([]);
+  const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchSales = async () => {
@@ -20,7 +36,8 @@ export const useSales = (startDate?: Date, endDate?: Date) => {
         .select(`
           *,
           order_items (*)
-        `);
+        `)
+        .order("created_at", { ascending: false });
 
       if (startDate) {
         query = query.gte("created_at", startDate.toISOString());
@@ -35,10 +52,21 @@ export const useSales = (startDate?: Date, endDate?: Date) => {
 
       if (error) throw error;
 
-      // Transformar dados em formato de vendas detalhadas
       const salesDetails: SaleDetail[] = [];
-      
+      const orderSummaries: OrderSummary[] = [];
+
       data?.forEach((order: any) => {
+        orderSummaries.push({
+          id: order.id,
+          order_number: order.order_number,
+          customer_name: order.customer_name,
+          total_amount: parseFloat(order.total_amount),
+          payment_method: order.payment_method,
+          status: order.status,
+          created_at: order.created_at,
+          items_count: order.order_items?.length || 0,
+        });
+
         order.order_items?.forEach((item: any) => {
           salesDetails.push({
             produto: item.product_name,
@@ -46,14 +74,20 @@ export const useSales = (startDate?: Date, endDate?: Date) => {
             quantidade: item.quantity,
             valorUnitario: parseFloat(item.unit_price),
             valorTotal: parseFloat(item.total_price),
+            clienteNome: order.customer_name,
+            numeroPedido: order.order_number,
+            dataPedido: order.created_at,
+            status: order.status,
           });
         });
       });
 
       setSales(salesDetails);
+      setOrders(orderSummaries);
     } catch (error) {
       console.error("Erro ao buscar vendas:", error);
       setSales([]);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -65,6 +99,7 @@ export const useSales = (startDate?: Date, endDate?: Date) => {
 
   return {
     sales,
+    orders,
     loading,
     refetch: fetchSales,
   };

@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, TrendingUp, ShoppingCart, Users, DollarSign, CalendarIcon, FileSpreadsheet, Eye } from "lucide-react";
+import { ArrowLeft, DollarSign, ShoppingCart, CalendarIcon, FileSpreadsheet, Eye, TrendingUp, Users, BarChart3, Clock } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -20,14 +22,21 @@ import { toast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 import { ptBR } from "date-fns/locale";
 import { useSales, SaleDetail } from "@/hooks/useSales";
+import { supabase } from "@/integrations/supabase/client";
 
-interface VendaDetalhada {
-  produto: string;
-  formaPagamento: string;
-  quantidade: number;
-  valorUnitario: number;
-  valorTotal: number;
-}
+const paymentMethodLabel: Record<string, string> = {
+  dinheiro: "Dinheiro",
+  pix: "PIX",
+  credito: "Crédito",
+  debito: "Débito",
+};
+
+const statusLabel: Record<string, string> = {
+  novo: "Novo",
+  preparando: "Preparando",
+  pronto: "Pronto",
+  entregue: "Entregue",
+};
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -35,465 +44,674 @@ const Reports = () => {
   const [filterEndDate, setFilterEndDate] = useState<Date>();
   const [filterPaymentMethod, setFilterPaymentMethod] = useState<string>("todos");
   const [filterProduct, setFilterProduct] = useState<string>("todos");
-  const [showFiltered, setShowFiltered] = useState(false);
-  const [menuItems, setMenuItems] = useState<any[]>([]);
-  const [vendasDetalhadas, setVendasDetalhadas] = useState<VendaDetalhada[]>([]);
-  const { sales, loading } = useSales(filterStartDate, filterEndDate);
+  const [filterStatus, setFilterStatus] = useState<string>("todos");
+  const [menuItems, setMenuItems] = useState<{ id: string; name: string }[]>([]);
+  const { sales, orders, loading } = useSales(filterStartDate, filterEndDate);
 
   useEffect(() => {
-    const stored = localStorage.getItem("menuItems");
-    if (stored) {
-      setMenuItems(JSON.parse(stored));
-    }
+    const fetchMenuItems = async () => {
+      const { data } = await supabase.from("menu_items").select("id, name").eq("active", true).order("name");
+      if (data) setMenuItems(data);
+    };
+    fetchMenuItems();
   }, []);
 
-  const paymentMethodOptions = [
-    { value: "todos", label: "Todos" },
-    { value: "pix", label: "Pix" },
-    { value: "dinheiro", label: "Dinheiro" },
-    { value: "debito", label: "Débito" },
-    { value: "credito", label: "Crédito" },
-  ];
-
-  const aplicarFiltros = () => {
-    let vendas = [...sales];
-
-    // Filtrar por forma de pagamento
+  const filteredSales = useMemo(() => {
+    let result = [...sales];
     if (filterPaymentMethod !== "todos") {
-      const paymentLabel = paymentMethodOptions.find(p => p.value === filterPaymentMethod)?.label;
-      vendas = vendas.filter(v => v.formaPagamento === paymentLabel);
+      result = result.filter(v => {
+        // Support split payments like "dinheiro/pix"
+        const methods = v.formaPagamento.split("/");
+        return methods.includes(filterPaymentMethod);
+      });
     }
-
-    // Filtrar por produto
     if (filterProduct !== "todos") {
-      const produtoSelecionado = menuItems.find(item => item.id === filterProduct);
-      if (produtoSelecionado) {
-        vendas = vendas.filter(v => v.produto === produtoSelecionado.name);
-      }
+      result = result.filter(v => v.produto === filterProduct);
     }
+    if (filterStatus !== "todos") {
+      result = result.filter(v => v.status === filterStatus);
+    }
+    return result;
+  }, [sales, filterPaymentMethod, filterProduct, filterStatus]);
 
-    return vendas;
-  };
-
-  const calcularTotais = (vendas: VendaDetalhada[]) => {
-    const totalVendas = vendas.reduce((sum, v) => sum + v.valorTotal, 0);
-    const totalQuantidade = vendas.reduce((sum, v) => sum + v.quantidade, 0);
-    const ticketMedio = totalQuantidade > 0 ? totalVendas / totalQuantidade : 0;
-
-    return {
-      totalVendas,
-      totalQuantidade,
-      ticketMedio,
-      totalItens: vendas.length,
-    };
-  };
-
-  const stats = calcularTotais(aplicarFiltros());
-
-  const handleShowFiltered = () => {
-    if (!filterStartDate || !filterEndDate) {
-      toast({
-        title: "Atenção",
-        description: "Selecione o período inicial e final",
-        variant: "destructive",
+  const filteredOrders = useMemo(() => {
+    let result = [...orders];
+    if (filterPaymentMethod !== "todos") {
+      result = result.filter(o => {
+        const methods = o.payment_method.split("/");
+        return methods.includes(filterPaymentMethod);
       });
-      return;
     }
-    
-    const vendas = aplicarFiltros();
-    setVendasDetalhadas(vendas);
-    setShowFiltered(true);
-    
-    const paymentLabel = paymentMethodOptions.find(p => p.value === filterPaymentMethod)?.label || "Todos";
-    const productLabel = filterProduct === "todos" 
-      ? "Todos" 
-      : menuItems.find(item => item.id === filterProduct)?.name || "Todos";
-    
-    toast({
-      title: "Relatório Filtrado",
-      description: `Exibindo ${vendas.length} registros - Pagamento: ${paymentLabel} - Produto: ${productLabel}`,
+    if (filterStatus !== "todos") {
+      result = result.filter(o => o.status === filterStatus);
+    }
+    return result;
+  }, [orders, filterPaymentMethod, filterStatus]);
+
+  // Stats
+  const stats = useMemo(() => {
+    const totalVendas = filteredSales.reduce((sum, v) => sum + v.valorTotal, 0);
+    const totalQuantidade = filteredSales.reduce((sum, v) => sum + v.quantidade, 0);
+    const ticketMedio = filteredOrders.length > 0
+      ? filteredOrders.reduce((sum, o) => sum + o.total_amount, 0) / filteredOrders.length
+      : 0;
+    const totalPedidos = filteredOrders.length;
+    return { totalVendas, totalQuantidade, ticketMedio, totalPedidos };
+  }, [filteredSales, filteredOrders]);
+
+  // Breakdown by payment method
+  const paymentBreakdown = useMemo(() => {
+    const map: Record<string, { count: number; total: number }> = {};
+    filteredOrders.forEach(o => {
+      const methods = o.payment_method.split("/");
+      methods.forEach(m => {
+        const key = m.trim();
+        if (!map[key]) map[key] = { count: 0, total: 0 };
+        map[key].count += 1;
+        map[key].total += o.total_amount / methods.length;
+      });
     });
-  };
+    return Object.entries(map)
+      .map(([method, data]) => ({ method, label: paymentMethodLabel[method] || method, ...data }))
+      .sort((a, b) => b.total - a.total);
+  }, [filteredOrders]);
 
-  const handleExportComplete = () => {
-    if (!filterStartDate || !filterEndDate) {
-      toast({
-        title: "Atenção",
-        description: "Selecione o período inicial e final",
-        variant: "destructive",
+  // Top products
+  const productRanking = useMemo(() => {
+    const map: Record<string, { quantidade: number; total: number }> = {};
+    filteredSales.forEach(v => {
+      if (!map[v.produto]) map[v.produto] = { quantidade: 0, total: 0 };
+      map[v.produto].quantidade += v.quantidade;
+      map[v.produto].total += v.valorTotal;
+    });
+    return Object.entries(map)
+      .map(([produto, data]) => ({ produto, ...data }))
+      .sort((a, b) => b.quantidade - a.quantidade);
+  }, [filteredSales]);
+
+  // Sales by hour
+  const salesByHour = useMemo(() => {
+    const map: Record<number, { pedidos: number; total: number }> = {};
+    filteredOrders.forEach(o => {
+      const hour = new Date(o.created_at).getHours();
+      if (!map[hour]) map[hour] = { pedidos: 0, total: 0 };
+      map[hour].pedidos += 1;
+      map[hour].total += o.total_amount;
+    });
+    return Object.entries(map)
+      .map(([h, data]) => ({ hora: `${h.padStart(2, "0")}:00`, ...data }))
+      .sort((a, b) => a.hora.localeCompare(b.hora));
+  }, [filteredOrders]);
+
+  // Sales by day
+  const salesByDay = useMemo(() => {
+    const map: Record<string, { pedidos: number; total: number; itens: number }> = {};
+    filteredOrders.forEach(o => {
+      const day = format(new Date(o.created_at), "dd/MM/yyyy");
+      if (!map[day]) map[day] = { pedidos: 0, total: 0, itens: 0 };
+      map[day].pedidos += 1;
+      map[day].total += o.total_amount;
+      map[day].itens += o.items_count;
+    });
+    return Object.entries(map)
+      .map(([dia, data]) => ({ dia, ...data }))
+      .sort((a, b) => {
+        const [da, ma, ya] = a.dia.split("/").map(Number);
+        const [db, mb, yb] = b.dia.split("/").map(Number);
+        return new Date(yb, mb - 1, db).getTime() - new Date(ya, ma - 1, da).getTime();
       });
+  }, [filteredOrders]);
+
+  // Status breakdown
+  const statusBreakdown = useMemo(() => {
+    const map: Record<string, number> = {};
+    filteredOrders.forEach(o => {
+      map[o.status] = (map[o.status] || 0) + 1;
+    });
+    return Object.entries(map)
+      .map(([status, count]) => ({ status, label: statusLabel[status] || status, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [filteredOrders]);
+
+  const handleExport = () => {
+    if (!filterStartDate || !filterEndDate) {
+      toast({ title: "Atenção", description: "Selecione o período", variant: "destructive" });
       return;
     }
 
-    const vendas = aplicarFiltros();
     const wb = XLSX.utils.book_new();
 
-    // Sheet 1: Vendas Detalhadas
-    const vendasData = vendas.map((v) => ({
+    // Sheet 1: Vendas por Item
+    const vendasData = filteredSales.map(v => ({
+      "Pedido #": v.numeroPedido,
+      Cliente: v.clienteNome,
       Produto: v.produto,
-      "Forma de Pagamento": v.formaPagamento,
       Quantidade: v.quantidade,
-      "Valor Unitário": `R$ ${v.valorUnitario.toFixed(2)}`,
-      "Valor Total": `R$ ${v.valorTotal.toFixed(2)}`,
+      "Valor Unitário": v.valorUnitario,
+      "Valor Total": v.valorTotal,
+      "Forma de Pagamento": paymentMethodLabel[v.formaPagamento] || v.formaPagamento,
+      Data: format(new Date(v.dataPedido), "dd/MM/yyyy HH:mm"),
+      Status: statusLabel[v.status] || v.status,
     }));
-    const ws1 = XLSX.utils.json_to_sheet(vendasData);
-    XLSX.utils.book_append_sheet(wb, ws1, "Vendas Detalhadas");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(vendasData), "Vendas Detalhadas");
 
-    // Sheet 2: Resumo
-    const totais = calcularTotais(vendas);
-    const summaryData = [
-      { Métrica: "Total de Vendas", Valor: `R$ ${totais.totalVendas.toFixed(2)}` },
-      { Métrica: "Total de Itens Vendidos", Valor: totais.totalQuantidade },
-      { Métrica: "Ticket Médio por Item", Valor: `R$ ${totais.ticketMedio.toFixed(2)}` },
-      { Métrica: "Registros Encontrados", Valor: totais.totalItens },
+    // Sheet 2: Pedidos
+    const pedidosData = filteredOrders.map(o => ({
+      "Pedido #": o.order_number,
+      Cliente: o.customer_name,
+      "Valor Total": o.total_amount,
+      "Forma de Pagamento": o.payment_method.split("/").map(m => paymentMethodLabel[m.trim()] || m).join(" / "),
+      Status: statusLabel[o.status] || o.status,
+      "Qtd Itens": o.items_count,
+      Data: format(new Date(o.created_at), "dd/MM/yyyy HH:mm"),
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pedidosData), "Pedidos");
+
+    // Sheet 3: Ranking de Produtos
+    const produtoData = productRanking.map((p, i) => ({
+      "#": i + 1,
+      Produto: p.produto,
+      "Qtd Vendida": p.quantidade,
+      "Faturamento": p.total,
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(produtoData), "Ranking Produtos");
+
+    // Sheet 4: Por Forma de Pagamento
+    const pgtoData = paymentBreakdown.map(p => ({
+      "Forma de Pagamento": p.label,
+      "Nº Pedidos": p.count,
+      "Valor Total": p.total,
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pgtoData), "Por Pagamento");
+
+    // Sheet 5: Por Dia
+    const diaData = salesByDay.map(d => ({
+      Dia: d.dia,
+      Pedidos: d.pedidos,
+      Itens: d.itens,
+      Faturamento: d.total,
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(diaData), "Por Dia");
+
+    // Sheet 6: Por Horário
+    const horaData = salesByHour.map(h => ({
+      Horário: h.hora,
+      Pedidos: h.pedidos,
+      Faturamento: h.total,
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(horaData), "Por Horário");
+
+    // Sheet 7: Resumo
+    const resumo = [
+      { Métrica: "Total de Pedidos", Valor: stats.totalPedidos },
+      { Métrica: "Itens Vendidos", Valor: stats.totalQuantidade },
+      { Métrica: "Faturamento Total", Valor: `R$ ${stats.totalVendas.toFixed(2)}` },
+      { Métrica: "Ticket Médio", Valor: `R$ ${stats.ticketMedio.toFixed(2)}` },
+      { Métrica: "Período", Valor: `${format(filterStartDate, "dd/MM/yyyy")} a ${format(filterEndDate, "dd/MM/yyyy")}` },
     ];
-    const ws2 = XLSX.utils.json_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(wb, ws2, "Resumo");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumo), "Resumo");
 
-    // Sheet 3: Totais por Forma de Pagamento
-    const totaisPorPagamento: { [key: string]: { quantidade: number; valor: number } } = {};
-    vendas.forEach(v => {
-      if (!totaisPorPagamento[v.formaPagamento]) {
-        totaisPorPagamento[v.formaPagamento] = { quantidade: 0, valor: 0 };
-      }
-      totaisPorPagamento[v.formaPagamento].quantidade += v.quantidade;
-      totaisPorPagamento[v.formaPagamento].valor += v.valorTotal;
-    });
-    
-    const pagamentoData = Object.entries(totaisPorPagamento).map(([forma, dados]) => ({
-      "Forma de Pagamento": forma,
-      "Quantidade Total": dados.quantidade,
-      "Valor Total": `R$ ${dados.valor.toFixed(2)}`,
-    }));
-    const ws3 = XLSX.utils.json_to_sheet(pagamentoData);
-    XLSX.utils.book_append_sheet(wb, ws3, "Totais por Pagamento");
-
-    // Sheet 4: Totais por Produto
-    const totaisPorProduto: { [key: string]: { quantidade: number; valor: number } } = {};
-    vendas.forEach(v => {
-      if (!totaisPorProduto[v.produto]) {
-        totaisPorProduto[v.produto] = { quantidade: 0, valor: 0 };
-      }
-      totaisPorProduto[v.produto].quantidade += v.quantidade;
-      totaisPorProduto[v.produto].valor += v.valorTotal;
-    });
-    
-    const produtoData = Object.entries(totaisPorProduto).map(([produto, dados]) => ({
-      Produto: produto,
-      "Quantidade Total": dados.quantidade,
-      "Valor Total": `R$ ${dados.valor.toFixed(2)}`,
-    }));
-    const ws4 = XLSX.utils.json_to_sheet(produtoData);
-    XLSX.utils.book_append_sheet(wb, ws4, "Totais por Produto");
-
-    // Sheet 5: Informações do Filtro
-    const paymentLabel = paymentMethodOptions.find(p => p.value === filterPaymentMethod)?.label || "Todos";
-    const productLabel = filterProduct === "todos" 
-      ? "Todos" 
-      : menuItems.find(item => item.id === filterProduct)?.name || "Todos";
-    
-    const filterData = [
-      { Campo: "Data Inicial", Valor: format(filterStartDate, "PPP", { locale: ptBR }) },
-      { Campo: "Data Final", Valor: format(filterEndDate, "PPP", { locale: ptBR }) },
-      { Campo: "Forma de Pagamento", Valor: paymentLabel },
-      { Campo: "Produto", Valor: productLabel },
-      { Campo: "Data da Exportação", Valor: format(new Date(), "PPP", { locale: ptBR }) },
-    ];
-    const ws5 = XLSX.utils.json_to_sheet(filterData);
-    XLSX.utils.book_append_sheet(wb, ws5, "Filtros Aplicados");
-
-    const fileName = `relatorio-vendas-${format(filterStartDate, "yyyy-MM-dd")}-ate-${format(filterEndDate, "yyyy-MM-dd")}.xlsx`;
+    const fileName = `relatorio-${format(filterStartDate, "yyyy-MM-dd")}-ate-${format(filterEndDate, "yyyy-MM-dd")}.xlsx`;
     XLSX.writeFile(wb, fileName);
-    
-    toast({
-      title: "Sucesso",
-      description: "Relatório completo exportado com sucesso",
-    });
+    toast({ title: "Exportado!", description: "Relatório Excel gerado com sucesso" });
   };
+
+  const formatPaymentMethod = (pm: string) =>
+    pm.split("/").map(m => paymentMethodLabel[m.trim()] || m).join(" / ");
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-card border-b sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/admin")}
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold">Relatórios</h1>
-                <p className="text-sm text-muted-foreground">
-                  Análises e insights do seu negócio
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">Relatórios</h1>
+              <p className="text-sm text-muted-foreground">Análises completas do seu negócio</p>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 space-y-6">
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Filtros */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Filtros</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("justify-start text-left font-normal text-sm", !filterStartDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filterStartDate ? format(filterStartDate, "dd/MM/yy", { locale: ptBR }) : "Data Inicial"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={filterStartDate} onSelect={setFilterStartDate} initialFocus className="pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("justify-start text-left font-normal text-sm", !filterEndDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filterEndDate ? format(filterEndDate, "dd/MM/yy", { locale: ptBR }) : "Data Final"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={filterEndDate} onSelect={setFilterEndDate} initialFocus className="pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+
+              <Select value={filterPaymentMethod} onValueChange={setFilterPaymentMethod}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos Pagamentos</SelectItem>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="debito">Débito</SelectItem>
+                  <SelectItem value="credito">Crédito</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={filterProduct} onValueChange={setFilterProduct}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Produto" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos Produtos</SelectItem>
+                  {menuItems.map(item => (
+                    <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos Status</SelectItem>
+                  <SelectItem value="novo">Novo</SelectItem>
+                  <SelectItem value="preparando">Preparando</SelectItem>
+                  <SelectItem value="pronto">Pronto</SelectItem>
+                  <SelectItem value="entregue">Entregue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex gap-3">
+              <Button onClick={handleExport} variant="secondary" className="gap-2" disabled={!filterStartDate || !filterEndDate}>
+                <FileSpreadsheet className="w-4 h-4" />
+                Exportar Excel
+              </Button>
+              {(filterStartDate || filterEndDate || filterPaymentMethod !== "todos" || filterProduct !== "todos" || filterStatus !== "todos") && (
+                <Button variant="ghost" onClick={() => {
+                  setFilterStartDate(undefined);
+                  setFilterEndDate(undefined);
+                  setFilterPaymentMethod("todos");
+                  setFilterProduct("todos");
+                  setFilterStatus("todos");
+                }}>
+                  Limpar Filtros
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <p className="text-muted-foreground">Carregando relatórios...</p>
           </div>
         ) : (
           <>
-            {/* Cards de Resumo */}
-            <Card>
-          <CardHeader>
-            <CardTitle>Resumo Geral</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Cards Resumo */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Total de Vendas
-                  </CardTitle>
-                  <DollarSign className="w-5 h-5 text-success" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Faturamento</CardTitle>
+                  <DollarSign className="w-4 h-4 text-emerald-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">
-                    R$ {stats.totalVendas.toFixed(2)}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Filtros aplicados
-                  </p>
+                  <div className="text-2xl font-bold">R$ {stats.totalVendas.toFixed(2)}</div>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Itens Vendidos
-                  </CardTitle>
-                  <ShoppingCart className="w-5 h-5 text-primary" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Pedidos</CardTitle>
+                  <ShoppingCart className="w-4 h-4 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{stats.totalQuantidade}</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Unidades totais
-                  </p>
+                  <div className="text-2xl font-bold">{stats.totalPedidos}</div>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Ticket Médio/Item
-                  </CardTitle>
-                  <DollarSign className="w-5 h-5 text-accent" />
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Itens Vendidos</CardTitle>
+                  <BarChart3 className="w-4 h-4 text-orange-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">
-                    R$ {stats.ticketMedio.toFixed(2)}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Por item vendido
-                  </p>
+                  <div className="text-2xl font-bold">{stats.totalQuantidade}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Médio</CardTitle>
+                  <TrendingUp className="w-4 h-4 text-violet-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">R$ {stats.ticketMedio.toFixed(2)}</div>
                 </CardContent>
               </Card>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Seção de Filtro e Exportação */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Filtrar e Exportar Relatório Completo</CardTitle>
-            <CardDescription>
-              Selecione o período, forma de pagamento e produto desejados para visualizar ou exportar os dados
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Data Inicial */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "justify-start text-left font-normal",
-                      !filterStartDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filterStartDate ? format(filterStartDate, "dd/MM/yy", { locale: ptBR }) : "Data Inicial"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={filterStartDate}
-                    onSelect={setFilterStartDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
+            {/* Tabs de relatórios */}
+            <Tabs defaultValue="vendas" className="space-y-4">
+              <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full">
+                <TabsTrigger value="vendas">Vendas</TabsTrigger>
+                <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
+                <TabsTrigger value="produtos">Produtos</TabsTrigger>
+                <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
+                <TabsTrigger value="horarios">Horários</TabsTrigger>
+                <TabsTrigger value="diario">Diário</TabsTrigger>
+              </TabsList>
 
-              {/* Data Final */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "justify-start text-left font-normal",
-                      !filterEndDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filterEndDate ? format(filterEndDate, "dd/MM/yy", { locale: ptBR }) : "Data Final"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={filterEndDate}
-                    onSelect={setFilterEndDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-
-              {/* Forma de Pagamento */}
-              <Select value={filterPaymentMethod} onValueChange={setFilterPaymentMethod}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Forma de Pagamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  {paymentMethodOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Produto */}
-              <Select value={filterProduct} onValueChange={setFilterProduct}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Produto" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  {menuItems.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Separator />
-
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={handleShowFiltered} className="gap-2">
-                <Eye className="w-4 h-4" />
-                Visualizar Filtrado
-              </Button>
-              <Button onClick={handleExportComplete} variant="secondary" className="gap-2">
-                <FileSpreadsheet className="w-4 h-4" />
-                Exportar para Excel
-              </Button>
-            </div>
-
-            {showFiltered && filterStartDate && filterEndDate && (
-              <div className="mt-6 space-y-4">
-                <div className="p-4 bg-muted rounded-lg space-y-3">
-                  <h3 className="font-semibold text-lg">Filtros Aplicados:</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                    <p className="text-muted-foreground">
-                      <span className="font-medium text-foreground">Período:</span> {format(filterStartDate, "dd/MM/yy")} até {format(filterEndDate, "dd/MM/yy")}
-                    </p>
-                    <p className="text-muted-foreground">
-                      <span className="font-medium text-foreground">Pagamento:</span> {paymentMethodOptions.find(p => p.value === filterPaymentMethod)?.label}
-                    </p>
-                    <p className="text-muted-foreground">
-                      <span className="font-medium text-foreground">Produto:</span> {filterProduct === "todos" ? "Todos" : menuItems.find(item => item.id === filterProduct)?.name}
-                    </p>
-                  </div>
-                </div>
-
+              {/* Vendas Detalhadas */}
+              <TabsContent value="vendas">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Vendas Detalhadas</CardTitle>
-                    <CardDescription>
-                      {vendasDetalhadas.length} registro(s) encontrado(s)
-                    </CardDescription>
+                    <CardTitle>Vendas por Item</CardTitle>
+                    <CardDescription>{filteredSales.length} registro(s)</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="rounded-md border">
+                    <div className="rounded-md border overflow-auto max-h-[500px]">
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead>Pedido</TableHead>
                             <TableHead>Produto</TableHead>
-                            <TableHead>Forma de Pagamento</TableHead>
-                            <TableHead className="text-right">Quantidade</TableHead>
-                            <TableHead className="text-right">Valor Unitário</TableHead>
-                            <TableHead className="text-right">Valor Total</TableHead>
+                            <TableHead>Pagamento</TableHead>
+                            <TableHead className="text-right">Qtd</TableHead>
+                            <TableHead className="text-right">Unit.</TableHead>
+                            <TableHead className="text-right">Total</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {vendasDetalhadas.length > 0 ? (
-                            vendasDetalhadas.map((venda, index) => (
-                              <TableRow key={index}>
-                                <TableCell className="font-medium">{venda.produto}</TableCell>
-                                <TableCell>{venda.formaPagamento}</TableCell>
-                                <TableCell className="text-right">{venda.quantidade}</TableCell>
-                                <TableCell className="text-right">R$ {venda.valorUnitario.toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-bold">R$ {venda.valorTotal.toFixed(2)}</TableCell>
-                              </TableRow>
-                            ))
-                          ) : (
+                          {filteredSales.length > 0 ? filteredSales.map((v, i) => (
+                            <TableRow key={i}>
+                              <TableCell className="font-medium">#{v.numeroPedido}</TableCell>
+                              <TableCell>{v.produto}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-xs">{formatPaymentMethod(v.formaPagamento)}</Badge>
+                              </TableCell>
+                              <TableCell className="text-right">{v.quantidade}</TableCell>
+                              <TableCell className="text-right">R$ {v.valorUnitario.toFixed(2)}</TableCell>
+                              <TableCell className="text-right font-bold">R$ {v.valorTotal.toFixed(2)}</TableCell>
+                            </TableRow>
+                          )) : (
                             <TableRow>
-                              <TableCell colSpan={5} className="text-center text-muted-foreground">
-                                Nenhum registro encontrado com os filtros aplicados
+                              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                Nenhum registro encontrado
                               </TableCell>
                             </TableRow>
                           )}
                         </TableBody>
                       </Table>
                     </div>
-
-                    {vendasDetalhadas.length > 0 && (
-                      <div className="mt-4 p-4 bg-muted rounded-lg">
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Total Geral</p>
-                            <p className="text-xl font-bold text-success">
-                              R$ {vendasDetalhadas.reduce((sum, v) => sum + v.valorTotal, 0).toFixed(2)}
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Quantidade Total</p>
-                            <p className="text-xl font-bold">
-                              {vendasDetalhadas.reduce((sum, v) => sum + v.quantidade, 0)} unidades
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Registros</p>
-                            <p className="text-xl font-bold">
-                              {vendasDetalhadas.length}
-                            </p>
-                          </div>
-                        </div>
+                    {filteredSales.length > 0 && (
+                      <div className="mt-4 p-3 bg-muted rounded-lg flex justify-between items-center">
+                        <span className="font-semibold">Total:</span>
+                        <span className="text-xl font-bold text-primary">
+                          R$ {filteredSales.reduce((s, v) => s + v.valorTotal, 0).toFixed(2)}
+                        </span>
                       </div>
                     )}
                   </CardContent>
                 </Card>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              </TabsContent>
+
+              {/* Pedidos */}
+              <TabsContent value="pedidos">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Lista de Pedidos</CardTitle>
+                    <CardDescription>{filteredOrders.length} pedido(s)</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border overflow-auto max-h-[500px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>#</TableHead>
+                            <TableHead>Cliente</TableHead>
+                            <TableHead>Pagamento</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Itens</TableHead>
+                            <TableHead className="text-right">Total</TableHead>
+                            <TableHead>Data</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredOrders.length > 0 ? filteredOrders.map(o => (
+                            <TableRow key={o.id}>
+                              <TableCell className="font-bold">{o.order_number}</TableCell>
+                              <TableCell>{o.customer_name}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-xs">{formatPaymentMethod(o.payment_method)}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="text-xs">{statusLabel[o.status] || o.status}</Badge>
+                              </TableCell>
+                              <TableCell className="text-right">{o.items_count}</TableCell>
+                              <TableCell className="text-right font-bold">R$ {o.total_amount.toFixed(2)}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {format(new Date(o.created_at), "dd/MM HH:mm")}
+                              </TableCell>
+                            </TableRow>
+                          )) : (
+                            <TableRow>
+                              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                                Nenhum pedido encontrado
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Ranking de Produtos */}
+              <TabsContent value="produtos">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ranking de Produtos</CardTitle>
+                    <CardDescription>Produtos mais vendidos</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border overflow-auto max-h-[500px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">#</TableHead>
+                            <TableHead>Produto</TableHead>
+                            <TableHead className="text-right">Qtd Vendida</TableHead>
+                            <TableHead className="text-right">Faturamento</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {productRanking.length > 0 ? productRanking.map((p, i) => (
+                            <TableRow key={p.produto}>
+                              <TableCell>
+                                <Badge variant={i < 3 ? "default" : "secondary"} className="text-xs">
+                                  {i + 1}º
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-medium">{p.produto}</TableCell>
+                              <TableCell className="text-right">{p.quantidade}</TableCell>
+                              <TableCell className="text-right font-bold">R$ {p.total.toFixed(2)}</TableCell>
+                            </TableRow>
+                          )) : (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                Nenhum dado disponível
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Por Forma de Pagamento */}
+              <TabsContent value="pagamentos">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Resumo por Pagamento</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {paymentBreakdown.length > 0 ? paymentBreakdown.map(p => {
+                          const pct = stats.totalPedidos > 0 ? (p.count / stats.totalPedidos * 100) : 0;
+                          return (
+                            <div key={p.method} className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium">{p.label}</span>
+                                <span className="text-sm text-muted-foreground">{p.count} pedido(s)</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
+                                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
+                                </div>
+                                <span className="font-bold text-sm w-28 text-right">R$ {p.total.toFixed(2)}</span>
+                              </div>
+                            </div>
+                          );
+                        }) : (
+                          <p className="text-center text-muted-foreground py-4">Nenhum dado</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Status dos Pedidos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {statusBreakdown.length > 0 ? statusBreakdown.map(s => (
+                          <div key={s.status} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                            <Badge variant="secondary">{s.label}</Badge>
+                            <span className="font-bold text-lg">{s.count}</span>
+                          </div>
+                        )) : (
+                          <p className="text-center text-muted-foreground py-4">Nenhum dado</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              {/* Por Horário */}
+              <TabsContent value="horarios">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Vendas por Horário</CardTitle>
+                    <CardDescription>Horários de pico do seu negócio</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border overflow-auto max-h-[500px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Horário</TableHead>
+                            <TableHead className="text-right">Pedidos</TableHead>
+                            <TableHead className="text-right">Faturamento</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {salesByHour.length > 0 ? salesByHour.map(h => (
+                            <TableRow key={h.hora}>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-4 h-4 text-muted-foreground" />
+                                  {h.hora}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">{h.pedidos}</TableCell>
+                              <TableCell className="text-right font-bold">R$ {h.total.toFixed(2)}</TableCell>
+                            </TableRow>
+                          )) : (
+                            <TableRow>
+                              <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                                Nenhum dado disponível
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Diário */}
+              <TabsContent value="diario">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Relatório Diário</CardTitle>
+                    <CardDescription>Desempenho por dia</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border overflow-auto max-h-[500px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Dia</TableHead>
+                            <TableHead className="text-right">Pedidos</TableHead>
+                            <TableHead className="text-right">Itens</TableHead>
+                            <TableHead className="text-right">Faturamento</TableHead>
+                            <TableHead className="text-right">Média/Pedido</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {salesByDay.length > 0 ? salesByDay.map(d => (
+                            <TableRow key={d.dia}>
+                              <TableCell className="font-medium">{d.dia}</TableCell>
+                              <TableCell className="text-right">{d.pedidos}</TableCell>
+                              <TableCell className="text-right">{d.itens}</TableCell>
+                              <TableCell className="text-right font-bold">R$ {d.total.toFixed(2)}</TableCell>
+                              <TableCell className="text-right text-muted-foreground">
+                                R$ {(d.total / d.pedidos).toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          )) : (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                Nenhum dado disponível
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </>
         )}
       </main>
