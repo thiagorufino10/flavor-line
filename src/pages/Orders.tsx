@@ -189,7 +189,7 @@ const Orders = () => {
     setPaymentModalOpen(true);
   }, [currentOrder.length]);
 
-  const handlePaymentConfirm = useCallback(async (paymentMethod: string, customerName: string) => {
+  const handlePaymentConfirm = useCallback(async (paymentMethod: string, customerName: string, splitPayments?: Array<{ method: string; amount: number }>) => {
     const { data: settingData } = await supabase
       .from("system_settings")
       .select("value")

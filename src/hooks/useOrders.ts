@@ -93,6 +93,32 @@ export const useOrders = (status?: string) => {
     };
   }, [status]);
 
+  const calculateNetAmount = async (method: string, amount: number): Promise<number> => {
+    if (method !== "credito" && method !== "debito") return amount;
+    
+    const { data: rateData } = await supabase
+      .from("payment_rates")
+      .select("rate_percentage")
+      .eq("payment_method", method)
+      .maybeSingle();
+
+    if (!rateData) return amount;
+
+    const rate = parseFloat(String(rateData.rate_percentage));
+    const taxAmount = amount * rate / 100;
+
+    // Check who pays the tax
+    const { data: taxPayerSetting } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", `tax_payer_${method}`)
+      .maybeSingle();
+
+    const clientePaga = (taxPayerSetting?.value || (method === "credito" ? "cliente" : "estabelecimento")) === "cliente";
+    
+    return clientePaga ? amount + taxAmount : amount - taxAmount;
+  };
+
   const createOrder = async (
     customerName: string,
     paymentMethod: string,
@@ -104,30 +130,20 @@ export const useOrders = (status?: string) => {
       total_price: number;
       complements?: any;
       observations?: string;
-    }>
+    }>,
+    splitPayments?: Array<{ method: string; amount: number }>
   ) => {
     try {
-      // Calcular valor líquido para armazenar no pedido
-      let amountReceived = totalAmount;
-      
-      if (paymentMethod === "credito" || paymentMethod === "debito") {
-        // Buscar taxa do banco
-        const { data: rateData } = await supabase
-          .from("payment_rates")
-          .select("rate_percentage")
-          .eq("payment_method", paymentMethod)
-          .maybeSingle();
+      let amountReceived: number;
 
-        if (rateData) {
-          const rate = parseFloat(String(rateData.rate_percentage));
-          const taxAmount = totalAmount * rate / 100;
-          
-          // Para crédito: adiciona taxa (cliente paga mais, e esse valor entra no caixa)
-          // Para débito: subtrai taxa (cliente paga o valor base, mas entra menos no caixa)
-          amountReceived = paymentMethod === "credito" 
-            ? totalAmount + taxAmount 
-            : totalAmount - taxAmount;
-        }
+      if (splitPayments && splitPayments.length === 2) {
+        // Calculate net for each split portion
+        const nets = await Promise.all(
+          splitPayments.map(sp => calculateNetAmount(sp.method, sp.amount))
+        );
+        amountReceived = nets[0] + nets[1];
+      } else {
+        amountReceived = await calculateNetAmount(paymentMethod, totalAmount);
       }
 
       // Inserir pedido com o valor líquido (descontada a taxa)
