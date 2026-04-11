@@ -174,15 +174,17 @@ export const ComplementsModal = ({
       selectedComplements.has(c.id)
     );
     
-    onConfirm(selected, totalPrice, observations.trim() || undefined);
+    onConfirm(selected, totalPrice, observations.trim() || undefined, quantity);
     setSelectedComplements(new Set());
     setObservations("");
+    setQuantity(1);
     onOpenChange(false);
   };
 
   const handleCancel = () => {
     setSelectedComplements(new Set());
     setObservations("");
+    setQuantity(1);
     onOpenChange(false);
   };
 
