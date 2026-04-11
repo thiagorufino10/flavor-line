@@ -48,7 +48,7 @@ export const ComplementsModal = ({
   const [availableComplements, setAvailableComplements] = useState<Complement[]>([]);
   const [loading, setLoading] = useState(false);
   const [observations, setObservations] = useState("");
-
+  const [quantity, setQuantity] = useState(1);
   useEffect(() => {
     if (item && open) {
       if (prefetchedComplements) {
