@@ -274,9 +274,13 @@ export const PaymentModal = ({
                         step="0.01"
                         min="0.01"
                         value={splitAmount2}
-                        onChange={(e) => setSplitAmount2(e.target.value)}
+                        onChange={(e) => {
+                          setSplitAmount2(e.target.value);
+                          const a2 = parseFloat(e.target.value) || 0;
+                          const remaining = Math.max(0, totalAmount - a2);
+                          setSplitAmount1(remaining.toFixed(2));
+                        }}
                         placeholder="0.00"
-                        disabled
                       />
                     </div>
                   </div>
