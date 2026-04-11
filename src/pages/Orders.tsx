@@ -425,9 +425,9 @@ const Orders = () => {
         onOpenChange={setComplementsModalOpen}
         item={selectedMenuItem}
         prefetchedComplements={selectedMenuItem ? getComplementsForItem(selectedMenuItem.name, selectedMenuItem.category) : undefined}
-        onConfirm={(complements, totalPrice, observations) => {
+        onConfirm={(complements, totalPrice, observations, quantity) => {
           if (selectedMenuItem) {
-            addItemToOrder(selectedMenuItem, complements, totalPrice, observations);
+            addItemToOrder(selectedMenuItem, complements, totalPrice, observations, quantity);
           }
         }}
       />
