@@ -159,18 +159,20 @@ const Orders = () => {
     item: { name: string; price: number },
     complements: Complement[],
     totalPrice: number,
-    observations?: string
+    observations?: string,
+    quantity?: number
   ) => {
+    const qty = quantity || 1;
     const newItem: OrderItem = {
       id: Math.random().toString(),
       name: item.name,
       price: totalPrice,
-      quantity: 1,
+      quantity: qty,
       complements,
       observations,
     };
     setCurrentOrder(prev => [...prev, newItem]);
-    toast.success(`${item.name} adicionado ao pedido`);
+    toast.success(`${qty}x ${item.name} adicionado ao pedido`);
   }, []);
 
   const removeItem = useCallback((id: string) => {
