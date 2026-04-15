@@ -205,7 +205,7 @@ const Menu = () => {
             <p className="text-muted-foreground">Gerencie os itens do cardápio</p>
           </div>
         </div>
-        <Button variant="outline" onClick={() => navigate("/admin")} className="gap-2">
+        <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
           <ArrowLeft className="w-4 h-4" />
           Voltar
         </Button>
