@@ -126,12 +126,6 @@ export const ComplementsModal = ({
   const getItemPriceByComplements = (itemName: string, basePrice: number, complementCount: number): number => {
     const nameLower = itemName.toLowerCase();
     
-    if (nameLower.includes("coxinha de camarão") || nameLower.includes("coxinha de camarao")) {
-      if (complementCount >= 4) return 14;
-      if (complementCount >= 3) return 13;
-      return 12;
-    }
-    
     if (nameLower.includes("coxinha especial")) {
       if (complementCount >= 4) return 12;
       if (complementCount >= 3) return 11;
