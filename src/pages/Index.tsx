@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UtensilsCrossed, Settings, ShoppingCart, ChefHat, Tv, LogOut } from "lucide-react";
+import { UtensilsCrossed, Settings, ShoppingCart, ChefHat, Tv, LogOut, Package } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import Footer from "@/components/Footer";
@@ -52,6 +52,24 @@ const Index = () => {
       color: "bg-accent",
       demo: "Cozinha",
       roles: ["admin", "cozinha"]
+    },
+    {
+      icon: UtensilsCrossed,
+      title: "Cardápio",
+      description: "Gerenciar itens do cardápio",
+      path: "/admin/menu",
+      color: "bg-accent",
+      demo: "Gestão",
+      roles: ["admin", "atendente"]
+    },
+    {
+      icon: Package,
+      title: "Complementos",
+      description: "Gerenciar complementos dos produtos",
+      path: "/admin/complements",
+      color: "bg-secondary",
+      demo: "Gestão",
+      roles: ["admin", "atendente"]
     },
     {
       icon: Tv,
