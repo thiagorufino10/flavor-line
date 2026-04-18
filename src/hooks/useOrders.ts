@@ -93,9 +93,12 @@ export const useOrders = (status?: string) => {
     };
   }, [status]);
 
-  const calculateNetAmount = async (method: string, amount: number): Promise<number> => {
+  // Calcula o valor BRUTO que o cliente efetivamente paga (o que sai impresso na comanda).
+  // - Se o cliente paga a taxa: bruto = valor + taxa
+  // - Se o estabelecimento paga: bruto = valor (a taxa é absorvida pelo caixa, não pelo cliente)
+  const calculateClientAmount = async (method: string, amount: number): Promise<number> => {
     if (method !== "credito" && method !== "debito") return amount;
-    
+
     const { data: rateData } = await supabase
       .from("payment_rates")
       .select("rate_percentage")
@@ -107,7 +110,6 @@ export const useOrders = (status?: string) => {
     const rate = parseFloat(String(rateData.rate_percentage));
     const taxAmount = amount * rate / 100;
 
-    // Check who pays the tax
     const { data: taxPayerSetting } = await supabase
       .from("system_settings")
       .select("value")
@@ -115,8 +117,9 @@ export const useOrders = (status?: string) => {
       .maybeSingle();
 
     const clientePaga = (taxPayerSetting?.value || (method === "credito" ? "cliente" : "estabelecimento")) === "cliente";
-    
-    return clientePaga ? amount + taxAmount : amount - taxAmount;
+
+    // Cliente paga a taxa => valor cobrado é maior. Caso contrário, paga o valor cheio.
+    return clientePaga ? amount + taxAmount : amount;
   };
 
   const createOrder = async (
@@ -137,22 +140,23 @@ export const useOrders = (status?: string) => {
       let amountReceived: number;
 
       if (splitPayments && splitPayments.length === 2) {
-        // Calculate net for each split portion
-        const nets = await Promise.all(
-          splitPayments.map(sp => calculateNetAmount(sp.method, sp.amount))
+        // Soma o valor BRUTO (que cliente paga) de cada parte
+        const grosses = await Promise.all(
+          splitPayments.map(sp => calculateClientAmount(sp.method, sp.amount))
         );
-        amountReceived = nets[0] + nets[1];
+        amountReceived = grosses[0] + grosses[1];
       } else {
-        amountReceived = await calculateNetAmount(paymentMethod, totalAmount);
+        amountReceived = await calculateClientAmount(paymentMethod, totalAmount);
       }
 
-      // Inserir pedido com o valor líquido (descontada a taxa)
+      // Salva o valor BRUTO (o que o cliente efetivamente paga) — esse é o valor da comanda.
+      // A taxa do estabelecimento é descontada apenas no fluxo de caixa/relatórios.
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert([{
           customer_name: customerName,
           payment_method: paymentMethod,
-          total_amount: amountReceived, // Valor líquido que entra no caixa
+          total_amount: amountReceived,
           status: "novo",
           order_number: 0, // Será gerado pelo trigger
         }])
