@@ -22,7 +22,7 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
         item.complements && Array.isArray(item.complements) && item.complements.length > 0
           ? (item.complements as any[])
               .filter((c) => c.name !== "Sem Complemento")
-              .map((c: any) => `<div class="sub">+ ${c.name}${c.price > 0 ? ` (R$ ${Number(c.price).toFixed(2).replace(".", ",")})` : ""}</div>`)
+              .map((c: any) => `<div class="sub">+ ${c.name}${c.price > 0 ? ` (R$ ${formatBRLNumber(c.price)})` : ""}</div>`)
               .join("")
           : "";
 
