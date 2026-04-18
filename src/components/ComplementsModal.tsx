@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { formatBRL } from "@/lib/format";
 
 export interface Complement {
   id: string;
@@ -289,7 +290,7 @@ export const ComplementsModal = ({
                         {complement.name}
                       </span>
                       <span className="text-sm font-bold text-primary">
-                        +R$ {complement.price.toFixed(2)}
+                        +{formatBRL(complement.price)}
                       </span>
                     </label>
                   </div>
@@ -351,8 +352,7 @@ export const ComplementsModal = ({
         {/* Total */}
         <div className="flex items-center justify-between py-2">
           <span className="text-lg font-semibold">Valor Total:</span>
-          <span className="text-2xl font-bold text-primary">
-            R$ {(totalPrice * quantity).toFixed(2)}
+          <span className="text-2xl font-bold text-primary">{formatBRL((totalPrice * quantity))}
           </span>
         </div>
 

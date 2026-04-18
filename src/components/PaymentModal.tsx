@@ -157,7 +157,7 @@ export const PaymentModal = ({
           <div className="space-y-3">
             <div className="bg-muted p-4 rounded-lg text-center">
               <p className="text-sm text-muted-foreground">Valor do Pedido:</p>
-              <p className="text-2xl font-bold text-primary">R$ {totalAmount.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-primary">{formatBRL(totalAmount)}</p>
             </div>
             <Button
               variant="outline"
@@ -253,7 +253,7 @@ export const PaymentModal = ({
             <div className="bg-muted p-4 rounded-lg space-y-2">
               {isSplit && splitMethod1 && splitMethod2 ? (
                 <>
-                  <div className="text-sm font-semibold mb-2">Dividir R$ {totalAmount.toFixed(2)}:</div>
+                  <div className="text-sm font-semibold mb-2">Dividir{formatBRL(totalAmount)}:</div>
                   <div className="space-y-2">
                     <div>
                       <Label className="text-xs">{methodLabel[splitMethod1]}</Label>
@@ -286,7 +286,7 @@ export const PaymentModal = ({
                     </div>
                   </div>
                   {!splitValid() && splitAmount1 && (
-                    <p className="text-xs text-destructive">A soma dos valores deve ser igual a R$ {totalAmount.toFixed(2)}</p>
+                    <p className="text-xs text-destructive">A soma dos valores deve ser igual a{formatBRL(totalAmount)}</p>
                   )}
                   {/* Tax info for split */}
                   {[{ method: splitMethod1, amount: parseFloat(splitAmount1) || 0 }, { method: splitMethod2, amount: parseFloat(splitAmount2) || 0 }].map(({ method, amount }) => {
@@ -295,7 +295,7 @@ export const PaymentModal = ({
                     const taxAmount = amount * tax.rate / 100;
                     return (
                       <div key={method} className="text-xs text-muted-foreground border-t pt-1 mt-1">
-                        Taxa {methodLabel[method]} ({tax.rate}%): {tax.clientePaga ? "+" : "-"} R$ {taxAmount.toFixed(2)}
+                        Taxa {methodLabel[method]} ({tax.rate}%): {tax.clientePaga ? "+" : "-"}{formatBRL(taxAmount)}
                         {tax.clientePaga ? ` (cliente paga {formatBRL((amount + taxAmount))})` : ` (entra {formatBRL((amount - taxAmount))})`}
                       </div>
                     );
@@ -313,19 +313,19 @@ export const PaymentModal = ({
                       <>
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-muted-foreground">Valor do pedido:</span>
-                          <span className="font-medium">R$ {totalAmount.toFixed(2)}</span>
+                          <span className="font-medium">{formatBRL(totalAmount)}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-muted-foreground">Taxa {methodLabel[selectedPayment]} ({tax.rate}%):</span>
-                          <span className="font-medium text-destructive">{tax.clientePaga ? "+" : "-"} R$ {taxAmount.toFixed(2)}</span>
+                          <span className="font-medium text-destructive">{tax.clientePaga ? "+" : "-"}{formatBRL(taxAmount)}</span>
                         </div>
                         <div className="border-t pt-2 flex justify-between items-center">
                           <span className="font-semibold">Cliente paga:</span>
-                          <span className="text-xl font-bold text-primary">R$ {clientPays.toFixed(2)}</span>
+                          <span className="text-xl font-bold text-primary">{formatBRL(clientPays)}</span>
                         </div>
                         <div className="flex justify-between items-center text-muted-foreground">
                           <span className="text-sm">Entra no caixa:</span>
-                          <span className="text-sm font-medium">R$ {amountReceived.toFixed(2)}</span>
+                          <span className="text-sm font-medium">{formatBRL(amountReceived)}</span>
                         </div>
                       </>
                     );
@@ -333,7 +333,7 @@ export const PaymentModal = ({
                   {(selectedPayment === "pix" || selectedPayment === "dinheiro") && (
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total:</span>
-                      <span className="text-xl font-bold text-primary">R$ {totalAmount.toFixed(2)}</span>
+                      <span className="text-xl font-bold text-primary">{formatBRL(totalAmount)}</span>
                     </div>
                   )}
                 </>

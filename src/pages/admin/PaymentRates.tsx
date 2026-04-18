@@ -8,6 +8,7 @@ import { CreditCard, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { formatBRL } from "@/lib/format";
 
 const PaymentRates = () => {
   const navigate = useNavigate();
@@ -200,16 +201,16 @@ const PaymentRates = () => {
               <div className="bg-muted p-4 rounded-lg space-y-2">
                 <h3 className="font-semibold">Exemplo de Cálculo (Crédito):</h3>
                 <p className="text-sm text-muted-foreground">
-                  Pedido de R$ {exampleTotal.toFixed(2)} no crédito com taxa de {rates.credito}%:
+                  Pedido de{formatBRL(exampleTotal)} no crédito com taxa de {rates.credito}%:
                 </p>
                 <div className="space-y-1 mt-2">
-                  <p className="text-sm">Valor do pedido: <span className="font-medium">R$ {exampleTotal.toFixed(2)}</span></p>
+                  <p className="text-sm">Valor do pedido: <span className="font-medium">{formatBRL(exampleTotal)}</span></p>
                   <p className="text-sm text-destructive">
                     Taxa da maquininha ({taxPayer.credito ? "cliente paga" : "você paga"}): 
-                    <span className="font-medium"> {taxPayer.credito ? "+" : "-"} R$ {exampleTax.toFixed(2)}</span>
+                    <span className="font-medium"> {taxPayer.credito ? "+" : "-"}{formatBRL(exampleTax)}</span>
                   </p>
-                  <p className="text-sm">Cliente paga: <span className="font-medium">R$ {exampleClientPays.toFixed(2)}</span></p>
-                  <p className="text-sm font-bold text-accent border-t pt-1">Entra no caixa: R$ {exampleCaixa.toFixed(2)}</p>
+                  <p className="text-sm">Cliente paga: <span className="font-medium">{formatBRL(exampleClientPays)}</span></p>
+                  <p className="text-sm font-bold text-accent border-t pt-1">Entra no caixa:{formatBRL(exampleCaixa)}</p>
                 </div>
               </div>
 

@@ -10,6 +10,7 @@ import { ComplementsModal, Complement } from "@/components/ComplementsModal";
 import { PaymentModal } from "@/components/PaymentModal";
 import { useOrders } from "@/hooks/useOrders";
 import Footer from "@/components/Footer";
+import { formatBRL } from "@/lib/format";
 
 interface OrderItem {
   id: string;
@@ -332,8 +333,7 @@ const Orders = () => {
                       onClick={() => handleItemClick(item)}
                     >
                       <span className="font-semibold text-sm">{item.name}</span>
-                      <span className="text-lg font-bold">
-                        R$ {item.price.toFixed(2)}
+                      <span className="text-lg font-bold">{formatBRL(item.price)}
                       </span>
                     </Button>
                   ))}
@@ -370,7 +370,7 @@ const Orders = () => {
                         <div className="flex-1">
                           <p className="font-medium">{item.name}</p>
                           <p className="text-sm text-muted-foreground">
-                            {item.quantity}x R$ {item.price.toFixed(2)}
+                            {item.quantity}x{formatBRL(item.price)}
                           </p>
                            {item.complements && item.complements.length > 0 && (
                             <p className="text-xs text-muted-foreground mt-1">
@@ -384,8 +384,7 @@ const Orders = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold">
-                            R$ {(item.price * item.quantity).toFixed(2)}
+                          <span className="font-bold">{formatBRL((item.price * item.quantity))}
                           </span>
                           <Button
                             size="sm"
@@ -402,7 +401,7 @@ const Orders = () => {
                   <div className="border-t pt-4 space-y-2">
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total:</span>
-                      <span className="text-primary">R$ {getTotalPrice.toFixed(2)}</span>
+                      <span className="text-primary">{formatBRL(getTotalPrice)}</span>
                     </div>
                   </div>
 
