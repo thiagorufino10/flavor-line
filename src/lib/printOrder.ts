@@ -1,6 +1,7 @@
 import { Order } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
 import { printHtmlToSystemPrinter } from "@/lib/systemPrinter";
+import { formatBRLNumber } from "@/lib/format";
 
 const paymentMethodLabel: Record<string, string> = {
   dinheiro: "Dinheiro",
