@@ -71,7 +71,7 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
     <div><strong>ITENS:</strong></div>
     ${itemsHtml}
     <div class="divider"></div>
-    <div class="total">TOTAL: R$ ${order.total_amount.toFixed(2).replace(".", ",")}</div>
+    <div class="total">TOTAL: R$ ${formatBRLNumber(order.total_amount)}</div>
     <div>Pagamento: ${paymentMethodLabel[order.payment_method] || order.payment_method.toUpperCase()}</div>
     <div class="center" style="margin-top: 8px;">Obrigado pela preferência!</div>
   </div>
