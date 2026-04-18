@@ -1,6 +1,7 @@
 import { Order } from "@/hooks/useOrders";
 import { supabase } from "@/integrations/supabase/client";
 import { printHtmlToSystemPrinter } from "@/lib/systemPrinter";
+import { formatBRLNumber } from "@/lib/format";
 
 const paymentMethodLabel: Record<string, string> = {
   dinheiro: "Dinheiro",
@@ -21,7 +22,7 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
         item.complements && Array.isArray(item.complements) && item.complements.length > 0
           ? (item.complements as any[])
               .filter((c) => c.name !== "Sem Complemento")
-              .map((c: any) => `<div class="sub">+ ${c.name}${c.price > 0 ? ` (R$ ${Number(c.price).toFixed(2).replace(".", ",")})` : ""}</div>`)
+              .map((c: any) => `<div class="sub">+ ${c.name}${c.price > 0 ? ` (R$ ${formatBRLNumber(c.price)})` : ""}</div>`)
               .join("")
           : "";
 
@@ -30,7 +31,7 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
         : "";
 
       return `<div class="item">
-        <div class="name">${item.quantity}x ${item.product_name} - R$ ${item.total_price.toFixed(2).replace(".", ",")}</div>
+        <div class="name">${item.quantity}x ${item.product_name} - R$ ${formatBRLNumber(item.total_price)}</div>
         ${complementsHtml}
         ${obsHtml}
       </div>`;
@@ -70,7 +71,7 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
     <div><strong>ITENS:</strong></div>
     ${itemsHtml}
     <div class="divider"></div>
-    <div class="total">TOTAL: R$ ${order.total_amount.toFixed(2).replace(".", ",")}</div>
+    <div class="total">TOTAL: R$ ${formatBRLNumber(order.total_amount)}</div>
     <div>Pagamento: ${paymentMethodLabel[order.payment_method] || order.payment_method.toUpperCase()}</div>
     <div class="center" style="margin-top: 8px;">Obrigado pela preferência!</div>
   </div>

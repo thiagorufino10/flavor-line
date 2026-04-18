@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { formatBRL } from "@/lib/format";
 
 interface Complement {
   id: string;
@@ -310,7 +311,7 @@ const Complements = () => {
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {complement.isSpecial
-                          ? `R$ ${complement.price.toFixed(2)}`
+                          ? formatBRL(complement.price)
                           : "Grátis"}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">

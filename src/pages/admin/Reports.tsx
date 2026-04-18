@@ -23,6 +23,7 @@ import * as XLSX from "xlsx";
 import { ptBR } from "date-fns/locale";
 import { useSales, SaleDetail } from "@/hooks/useSales";
 import { supabase } from "@/integrations/supabase/client";
+import { formatBRL } from "@/lib/format";
 
 const paymentMethodLabel: Record<string, string> = {
   dinheiro: "Dinheiro",
@@ -245,8 +246,8 @@ const Reports = () => {
     const resumo = [
       { Métrica: "Total de Pedidos", Valor: stats.totalPedidos },
       { Métrica: "Itens Vendidos", Valor: stats.totalQuantidade },
-      { Métrica: "Faturamento Total", Valor: `R$ ${stats.totalVendas.toFixed(2)}` },
-      { Métrica: "Ticket Médio", Valor: `R$ ${stats.ticketMedio.toFixed(2)}` },
+      { Métrica: "Faturamento Total", Valor: formatBRL(stats.totalVendas) },
+      { Métrica: "Ticket Médio", Valor: formatBRL(stats.ticketMedio) },
       { Métrica: "Período", Valor: `${format(filterStartDate, "dd/MM/yyyy")} a ${format(filterEndDate, "dd/MM/yyyy")}` },
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumo), "Resumo");
@@ -380,7 +381,7 @@ const Reports = () => {
                   <DollarSign className="w-4 h-4 text-emerald-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">R$ {stats.totalVendas.toFixed(2)}</div>
+                  <div className="text-2xl font-bold">{formatBRL(stats.totalVendas)}</div>
                 </CardContent>
               </Card>
               <Card>
@@ -407,7 +408,7 @@ const Reports = () => {
                   <TrendingUp className="w-4 h-4 text-violet-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">R$ {stats.ticketMedio.toFixed(2)}</div>
+                  <div className="text-2xl font-bold">{formatBRL(stats.ticketMedio)}</div>
                 </CardContent>
               </Card>
             </div>
@@ -452,8 +453,8 @@ const Reports = () => {
                                 <Badge variant="outline" className="text-xs">{formatPaymentMethod(v.formaPagamento)}</Badge>
                               </TableCell>
                               <TableCell className="text-right">{v.quantidade}</TableCell>
-                              <TableCell className="text-right">R$ {v.valorUnitario.toFixed(2)}</TableCell>
-                              <TableCell className="text-right font-bold">R$ {v.valorTotal.toFixed(2)}</TableCell>
+                              <TableCell className="text-right">{formatBRL(v.valorUnitario)}</TableCell>
+                              <TableCell className="text-right font-bold">{formatBRL(v.valorTotal)}</TableCell>
                             </TableRow>
                           )) : (
                             <TableRow>
@@ -468,8 +469,7 @@ const Reports = () => {
                     {filteredSales.length > 0 && (
                       <div className="mt-4 p-3 bg-muted rounded-lg flex justify-between items-center">
                         <span className="font-semibold">Total:</span>
-                        <span className="text-xl font-bold text-primary">
-                          R$ {filteredSales.reduce((s, v) => s + v.valorTotal, 0).toFixed(2)}
+                        <span className="text-xl font-bold text-primary">{formatBRL(filteredSales.reduce((s, v) => s + v.valorTotal, 0))}
                         </span>
                       </div>
                     )}
@@ -510,7 +510,7 @@ const Reports = () => {
                                 <Badge variant="secondary" className="text-xs">{statusLabel[o.status] || o.status}</Badge>
                               </TableCell>
                               <TableCell className="text-right">{o.items_count}</TableCell>
-                              <TableCell className="text-right font-bold">R$ {o.total_amount.toFixed(2)}</TableCell>
+                              <TableCell className="text-right font-bold">{formatBRL(o.total_amount)}</TableCell>
                               <TableCell className="text-xs text-muted-foreground">
                                 {format(new Date(o.created_at), "dd/MM HH:mm")}
                               </TableCell>
@@ -557,7 +557,7 @@ const Reports = () => {
                               </TableCell>
                               <TableCell className="font-medium">{p.produto}</TableCell>
                               <TableCell className="text-right">{p.quantidade}</TableCell>
-                              <TableCell className="text-right font-bold">R$ {p.total.toFixed(2)}</TableCell>
+                              <TableCell className="text-right font-bold">{formatBRL(p.total)}</TableCell>
                             </TableRow>
                           )) : (
                             <TableRow>
@@ -594,7 +594,7 @@ const Reports = () => {
                                 <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
                                   <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
                                 </div>
-                                <span className="font-bold text-sm w-28 text-right">R$ {p.total.toFixed(2)}</span>
+                                <span className="font-bold text-sm w-28 text-right">{formatBRL(p.total)}</span>
                               </div>
                             </div>
                           );
@@ -652,7 +652,7 @@ const Reports = () => {
                                 </div>
                               </TableCell>
                               <TableCell className="text-right">{h.pedidos}</TableCell>
-                              <TableCell className="text-right font-bold">R$ {h.total.toFixed(2)}</TableCell>
+                              <TableCell className="text-right font-bold">{formatBRL(h.total)}</TableCell>
                             </TableRow>
                           )) : (
                             <TableRow>
@@ -693,9 +693,8 @@ const Reports = () => {
                               <TableCell className="font-medium">{d.dia}</TableCell>
                               <TableCell className="text-right">{d.pedidos}</TableCell>
                               <TableCell className="text-right">{d.itens}</TableCell>
-                              <TableCell className="text-right font-bold">R$ {d.total.toFixed(2)}</TableCell>
-                              <TableCell className="text-right text-muted-foreground">
-                                R$ {(d.total / d.pedidos).toFixed(2)}
+                              <TableCell className="text-right font-bold">{formatBRL(d.total)}</TableCell>
+                              <TableCell className="text-right text-muted-foreground">{formatBRL((d.total / d.pedidos))}
                               </TableCell>
                             </TableRow>
                           )) : (

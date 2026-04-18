@@ -25,6 +25,7 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, end
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import * as XLSX from "xlsx";
+import { formatBRL } from "@/lib/format";
 
 interface Transaction {
   id: string;
@@ -332,7 +333,7 @@ const CashFlow = () => {
             {showPayment && <TableCell>{getPaymentBadge(t.paymentMethod)}</TableCell>}
             <TableCell className="text-right font-medium">
               <span className={t.type === "entrada" ? "text-success" : "text-destructive"}>
-                {t.type === "entrada" ? "+" : "-"}R$ {t.amount.toFixed(2)}
+                {t.type === "entrada" ? "+" : "-"}{formatBRL(t.amount)}
               </span>
             </TableCell>
           </TableRow>
@@ -509,7 +510,7 @@ const CashFlow = () => {
               <TrendingUp className="w-4 h-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-success">R$ {totalEntradas.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-success">{formatBRL(totalEntradas)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -518,7 +519,7 @@ const CashFlow = () => {
               <TrendingDown className="w-4 h-4 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-destructive">R$ {totalSaidas.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-destructive">{formatBRL(totalSaidas)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -527,7 +528,7 @@ const CashFlow = () => {
               <DollarSign className="w-4 h-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${saldo >= 0 ? 'text-success' : 'text-destructive'}`}>R$ {saldo.toFixed(2)}</div>
+              <div className={`text-2xl font-bold ${saldo >= 0 ? 'text-success' : 'text-destructive'}`}>{formatBRL(saldo)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -544,7 +545,7 @@ const CashFlow = () => {
               <CardTitle className="text-xs font-medium text-muted-foreground">Ticket Médio</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">R$ {ticketMedio.toFixed(2)}</div>
+              <div className="text-2xl font-bold">{formatBRL(ticketMedio)}</div>
             </CardContent>
           </Card>
         </div>
@@ -566,7 +567,7 @@ const CashFlow = () => {
                         {getPaymentBadge(method)}
                         <span className="text-xs text-muted-foreground">({d.count})</span>
                       </div>
-                      <span className="font-medium text-sm">R$ {d.total.toFixed(2)}</span>
+                      <span className="font-medium text-sm">{formatBRL(d.total)}</span>
                     </div>
                   ))}
                 </div>
@@ -588,7 +589,7 @@ const CashFlow = () => {
                         <Badge variant="outline">{cat}</Badge>
                         <span className="text-xs text-muted-foreground">({d.count})</span>
                       </div>
-                      <span className="font-medium text-sm">R$ {d.total.toFixed(2)}</span>
+                      <span className="font-medium text-sm">{formatBRL(d.total)}</span>
                     </div>
                   ))}
                 </div>

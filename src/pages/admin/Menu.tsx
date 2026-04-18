@@ -30,6 +30,7 @@ import { UtensilsCrossed, ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { formatBRL } from "@/lib/format";
 
 type ProductCategory = "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
 
@@ -307,7 +308,7 @@ const Menu = () => {
                         </div>
                       </TableCell>
                       <TableCell>{getCategoryBadge(item.category)}</TableCell>
-                      <TableCell className="font-medium">R$ {item.price.toFixed(2)}</TableCell>
+                      <TableCell className="font-medium">{formatBRL(item.price)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button size="sm" variant="ghost" onClick={() => handleEdit(item)}>

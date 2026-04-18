@@ -7,6 +7,7 @@ import { useOrders } from "@/hooks/useOrders";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
 import Footer from "@/components/Footer";
+import { formatBRL } from "@/lib/format";
 
 const Kitchen = () => {
   const navigate = useNavigate();
@@ -159,7 +160,7 @@ const Kitchen = () => {
                                 {item.complements.map((comp: any, cIdx: number) => (
                                   <li key={cIdx} className="text-sm text-muted-foreground">
                                     • {comp.name}
-                                    {comp.price > 0 && ` (+R$ ${comp.price.toFixed(2)})`}
+                                    {comp.price > 0 && ` (+{formatBRL(comp.price)})`}
                                   </li>
                                 ))}
                               </ul>
@@ -222,7 +223,7 @@ const Kitchen = () => {
                                 {item.complements.map((comp: any, cIdx: number) => (
                                   <li key={cIdx} className="text-sm text-muted-foreground">
                                     • {comp.name}
-                                    {comp.price > 0 && ` (+R$ ${comp.price.toFixed(2)})`}
+                                    {comp.price > 0 && ` (+{formatBRL(comp.price)})`}
                                   </li>
                                 ))}
                               </ul>
@@ -285,7 +286,7 @@ const Kitchen = () => {
                                 {item.complements.map((comp: any, cIdx: number) => (
                                   <li key={cIdx} className="text-sm text-muted-foreground line-through">
                                     • {comp.name}
-                                    {comp.price > 0 && ` (+R$ ${comp.price.toFixed(2)})`}
+                                    {comp.price > 0 && ` (+{formatBRL(comp.price)})`}
                                   </li>
                                 ))}
                               </ul>
