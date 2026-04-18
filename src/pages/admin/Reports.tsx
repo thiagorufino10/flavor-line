@@ -246,8 +246,8 @@ const Reports = () => {
     const resumo = [
       { Métrica: "Total de Pedidos", Valor: stats.totalPedidos },
       { Métrica: "Itens Vendidos", Valor: stats.totalQuantidade },
-      { Métrica: "Faturamento Total", Valor: `{formatBRL(stats.totalVendas)}` },
-      { Métrica: "Ticket Médio", Valor: `{formatBRL(stats.ticketMedio)}` },
+      { Métrica: "Faturamento Total", Valor: formatBRL(stats.totalVendas) },
+      { Métrica: "Ticket Médio", Valor: formatBRL(stats.ticketMedio) },
       { Métrica: "Período", Valor: `${format(filterStartDate, "dd/MM/yyyy")} a ${format(filterEndDate, "dd/MM/yyyy")}` },
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumo), "Resumo");

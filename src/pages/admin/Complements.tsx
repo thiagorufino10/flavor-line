@@ -311,7 +311,7 @@ const Complements = () => {
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {complement.isSpecial
-                          ? `{formatBRL(complement.price)}`
+                          ? formatBRL(complement.price)
                           : "Grátis"}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
