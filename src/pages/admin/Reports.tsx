@@ -23,6 +23,7 @@ import * as XLSX from "xlsx";
 import { ptBR } from "date-fns/locale";
 import { useSales, SaleDetail } from "@/hooks/useSales";
 import { supabase } from "@/integrations/supabase/client";
+import { formatBRL } from "@/lib/format";
 
 const paymentMethodLabel: Record<string, string> = {
   dinheiro: "Dinheiro",
@@ -245,8 +246,8 @@ const Reports = () => {
     const resumo = [
       { Métrica: "Total de Pedidos", Valor: stats.totalPedidos },
       { Métrica: "Itens Vendidos", Valor: stats.totalQuantidade },
-      { Métrica: "Faturamento Total", Valor: `R$ ${stats.totalVendas.toFixed(2)}` },
-      { Métrica: "Ticket Médio", Valor: `R$ ${stats.ticketMedio.toFixed(2)}` },
+      { Métrica: "Faturamento Total", Valor: `{formatBRL(stats.totalVendas)}` },
+      { Métrica: "Ticket Médio", Valor: `{formatBRL(stats.ticketMedio)}` },
       { Métrica: "Período", Valor: `${format(filterStartDate, "dd/MM/yyyy")} a ${format(filterEndDate, "dd/MM/yyyy")}` },
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumo), "Resumo");

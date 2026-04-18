@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CreditCard, Banknote, QrCode, Split } from "lucide-react";
+import { formatBRL } from "@/lib/format";
 
 export interface SplitPaymentInfo {
   method: string;
@@ -295,7 +296,7 @@ export const PaymentModal = ({
                     return (
                       <div key={method} className="text-xs text-muted-foreground border-t pt-1 mt-1">
                         Taxa {methodLabel[method]} ({tax.rate}%): {tax.clientePaga ? "+" : "-"} R$ {taxAmount.toFixed(2)}
-                        {tax.clientePaga ? ` (cliente paga R$ ${(amount + taxAmount).toFixed(2)})` : ` (entra R$ ${(amount - taxAmount).toFixed(2)})`}
+                        {tax.clientePaga ? ` (cliente paga {formatBRL((amount + taxAmount))})` : ` (entra {formatBRL((amount - taxAmount))})`}
                       </div>
                     );
                   })}
