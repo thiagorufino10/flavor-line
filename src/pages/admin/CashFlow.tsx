@@ -79,12 +79,35 @@ const CashFlow = () => {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const [{ data: manualTx, error: e1 }, { data: orders, error: e2 }] = await Promise.all([
+      const [
+        { data: manualTx, error: e1 },
+        { data: orders, error: e2 },
+        { data: rates },
+        { data: settings },
+      ] = await Promise.all([
         supabase.from("cash_flow_transactions").select("*").order("transaction_date", { ascending: false }),
         supabase.from("orders").select("*").order("created_at", { ascending: false }),
+        supabase.from("payment_rates").select("payment_method, rate_percentage"),
+        supabase.from("system_settings").select("key, value").like("key", "tax_payer_%"),
       ]);
       if (e1) throw e1;
       if (e2) throw e2;
+
+      const rateMap: Record<string, number> = {};
+      (rates || []).forEach(r => { rateMap[r.payment_method] = parseFloat(String(r.rate_percentage)); });
+      const taxPayerMap: Record<string, string> = {};
+      (settings || []).forEach(s => { taxPayerMap[s.key.replace("tax_payer_", "")] = s.value; });
+
+      // Retorna o valor líquido (o que efetivamente entra no caixa) considerando taxa do estabelecimento
+      const netForMethod = (method: string, gross: number): number => {
+        if (method !== "credito" && method !== "debito") return gross;
+        const rate = rateMap[method] || 0;
+        const payer = taxPayerMap[method] || (method === "credito" ? "cliente" : "estabelecimento");
+        if (payer === "cliente") return gross; // cliente já pagou a taxa, valor cheio entra
+        // estabelecimento absorve a taxa: gross = valor_base + 0; precisamos extrair a taxa de gross
+        // gross é o valor base (pois o cliente não paga taxa nesse caso) → desconta a taxa
+        return gross - (gross * rate / 100);
+      };
 
       const manual: Transaction[] = (manualTx || []).map((t) => ({
         id: t.id,
@@ -97,16 +120,29 @@ const CashFlow = () => {
         source: "manual" as const,
       }));
 
-      const sales: Transaction[] = (orders || []).map((order) => ({
-        id: `order-${order.id}`,
-        rawDate: new Date(order.created_at),
-        type: "entrada" as const,
-        description: `Pedido #${order.order_number} - ${order.customer_name}`,
-        category: "Vendas",
-        amount: parseFloat(String(order.total_amount)),
-        paymentMethod: formatPaymentMethod(order.payment_method),
-        source: "venda" as const,
-      }));
+      const sales: Transaction[] = (orders || []).map((order) => {
+        const gross = parseFloat(String(order.total_amount));
+        // Calcula líquido por método (split: divide proporcionalmente, considerando que cada parte pode ter taxa diferente)
+        let net = gross;
+        if (order.payment_method.includes("/")) {
+          // Para split, conservadoramente aplica a regra do método mais "caro" — mantém compat antiga.
+          const methods = order.payment_method.split("/").map(m => m.trim());
+          const portion = gross / methods.length;
+          net = methods.reduce((sum, m) => sum + netForMethod(m, portion), 0);
+        } else {
+          net = netForMethod(order.payment_method, gross);
+        }
+        return {
+          id: `order-${order.id}`,
+          rawDate: new Date(order.created_at),
+          type: "entrada" as const,
+          description: `Pedido #${order.order_number} - ${order.customer_name}`,
+          category: "Vendas",
+          amount: net,
+          paymentMethod: formatPaymentMethod(order.payment_method),
+          source: "venda" as const,
+        };
+      });
 
       setTransactions([...manual, ...sales].sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime()));
     } catch (error) {
