@@ -31,7 +31,7 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
         : "";
 
       return `<div class="item">
-        <div class="name">${item.quantity}x ${item.product_name} - R$ ${item.total_price.toFixed(2).replace(".", ",")}</div>
+        <div class="name">${item.quantity}x ${item.product_name} - R$ ${formatBRLNumber(item.total_price)}</div>
         ${complementsHtml}
         ${obsHtml}
       </div>`;
