@@ -93,9 +93,12 @@ export const useOrders = (status?: string) => {
     };
   }, [status]);
 
-  const calculateNetAmount = async (method: string, amount: number): Promise<number> => {
+  // Calcula o valor BRUTO que o cliente efetivamente paga (o que sai impresso na comanda).
+  // - Se o cliente paga a taxa: bruto = valor + taxa
+  // - Se o estabelecimento paga: bruto = valor (a taxa é absorvida pelo caixa, não pelo cliente)
+  const calculateClientAmount = async (method: string, amount: number): Promise<number> => {
     if (method !== "credito" && method !== "debito") return amount;
-    
+
     const { data: rateData } = await supabase
       .from("payment_rates")
       .select("rate_percentage")
@@ -107,7 +110,6 @@ export const useOrders = (status?: string) => {
     const rate = parseFloat(String(rateData.rate_percentage));
     const taxAmount = amount * rate / 100;
 
-    // Check who pays the tax
     const { data: taxPayerSetting } = await supabase
       .from("system_settings")
       .select("value")
@@ -115,8 +117,9 @@ export const useOrders = (status?: string) => {
       .maybeSingle();
 
     const clientePaga = (taxPayerSetting?.value || (method === "credito" ? "cliente" : "estabelecimento")) === "cliente";
-    
-    return clientePaga ? amount + taxAmount : amount - taxAmount;
+
+    // Cliente paga a taxa => valor cobrado é maior. Caso contrário, paga o valor cheio.
+    return clientePaga ? amount + taxAmount : amount;
   };
 
   const createOrder = async (
