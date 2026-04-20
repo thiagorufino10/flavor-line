@@ -23,6 +23,7 @@ const Menu = lazy(() => import("./pages/admin/Menu"));
 const Printer = lazy(() => import("./pages/admin/Printer"));
 const OperationMode = lazy(() => import("./pages/admin/OperationMode"));
 const Branding = lazy(() => import("./pages/admin/Branding"));
+const Categories = lazy(() => import("./pages/admin/Categories"));
 const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
 
 const LazyFallback = () => (
@@ -54,6 +55,7 @@ const App = () => (
         <Route path="/admin/printer" element={<ProtectedRoute requiredRole={["admin"]}><Printer /></ProtectedRoute>} />
         <Route path="/admin/operation-mode" element={<ProtectedRoute requiredRole={["admin"]}><OperationMode /></ProtectedRoute>} />
         <Route path="/admin/branding" element={<ProtectedRoute requiredRole={["admin"]}><Branding /></ProtectedRoute>} />
+        <Route path="/admin/categories" element={<ProtectedRoute requiredRole={["admin"]}><Categories /></ProtectedRoute>} />
         <Route path="/admin/cash-flow" element={<ProtectedRoute requiredRole={["admin"]}><CashFlow /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute requiredRole={["admin"]}><Reports /></ProtectedRoute>} />
 

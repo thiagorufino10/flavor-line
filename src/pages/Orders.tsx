@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Trash2, ShoppingCart, ArrowLeft } from "lucide-react";
+import { LogOut, Trash2, ShoppingCart, ArrowLeft, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { ComplementsModal, Complement } from "@/components/ComplementsModal";
 import { PaymentModal } from "@/components/PaymentModal";
@@ -21,39 +21,31 @@ interface OrderItem {
   observations?: string;
 }
 
-type ProductCategory = "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
+interface CategoryRow {
+  id: string;
+  name: string;
+  slug: string;
+  image_url: string | null;
+  sort_order: number;
+}
 
 interface MenuItemData {
   id: string;
   name: string;
   price: number;
-  category: ProductCategory;
+  category_id: string;
 }
 
 interface MenuCategory {
-  name: string;
-  category: ProductCategory;
+  category: CategoryRow;
   items: MenuItemData[];
 }
 
-const categoryConfig: Record<string, { label: string; emoji: string }> = {
-  pasteis: { label: "Pastéis", emoji: "🥟" },
-  salgados: { label: "Salgados", emoji: "🍗" },
-  acai: { label: "Açaí", emoji: "🍇" },
-  bebidas: { label: "Bebidas", emoji: "🥤" },
-  doces: { label: "Doces", emoji: "🍰" },
-  coxinha: { label: "Coxinha", emoji: "🍗" },
-  cachorro_quente: { label: "Cachorro Quente", emoji: "🌭" },
-};
-
-const CATEGORY_KEYS = ["pasteis", "salgados", "acai", "bebidas", "doces", "coxinha", "cachorro_quente"];
-
-// Pre-fetched complement data per menu item id
 interface ComplementData {
   id: string;
   name: string;
   price: number;
-  category: string;
+  category_id: string;
 }
 
 const Orders = () => {
@@ -63,19 +55,19 @@ const Orders = () => {
   const [complementsModalOpen, setComplementsModalOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedMenuItem, setSelectedMenuItem] = useState<{
+    id: string;
     name: string;
     price: number;
-    category: ProductCategory;
+    category_id: string;
   } | null>(null);
-  const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
+  const [categories, setCategories] = useState<CategoryRow[]>([]);
+  const [menuByCat, setMenuByCat] = useState<Record<string, MenuItemData[]>>({});
   const [loading, setLoading] = useState(true);
   const [systemName, setSystemName] = useState("TARMFood");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
-  // Pre-fetched complements map: menuItemId -> complements[]
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  // menu_item_id -> complements
   const [complementsMap, setComplementsMap] = useState<Record<string, ComplementData[]>>({});
-  // Pre-fetched menu item name->id map
-  const [menuItemIdMap, setMenuItemIdMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const savedName = localStorage.getItem("systemName");
@@ -88,61 +80,55 @@ const Orders = () => {
 
   const fetchAllData = async () => {
     try {
-      // Fetch menu items, complements, and links in parallel
-      const [menuRes, compRes, linksRes] = await Promise.all([
-        supabase.from("menu_items").select("id, name, price, category").eq("active", true).order("category"),
-        supabase.from("complements").select("id, name, price, category").eq("active", true),
+      const [catRes, menuRes, compRes, linksRes] = await Promise.all([
+        supabase.from("categories").select("id, name, slug, image_url, sort_order").eq("active", true).order("sort_order"),
+        supabase.from("menu_items").select("id, name, price, category_id").eq("active", true),
+        supabase.from("complements").select("id, name, price, category_id").eq("active", true),
         supabase.from("complement_menu_items").select("menu_item_id, complement_id"),
       ]);
 
+      if (catRes.error) throw catRes.error;
       if (menuRes.error) throw menuRes.error;
       if (compRes.error) throw compRes.error;
       if (linksRes.error) throw linksRes.error;
 
-      const menuItems = menuRes.data || [];
-      const complements = compRes.data || [];
-      const links = linksRes.data || [];
+      const cats = (catRes.data || []) as CategoryRow[];
+      const menuItems = (menuRes.data || []) as any[];
+      const complements = (compRes.data || []) as any[];
+      const links = (linksRes.data || []) as any[];
 
-      // Build complements lookup
       const compById: Record<string, ComplementData> = {};
-      complements.forEach(c => {
-        compById[c.id] = { id: c.id, name: c.name, price: parseFloat(String(c.price)), category: c.category };
+      complements.forEach((c) => {
+        compById[c.id] = {
+          id: c.id,
+          name: c.name,
+          price: parseFloat(String(c.price)),
+          category_id: c.category_id,
+        };
       });
 
-      // Build complementsMap: menuItemId -> complements[]
       const cMap: Record<string, ComplementData[]> = {};
-      links.forEach(link => {
+      links.forEach((link) => {
         if (!cMap[link.menu_item_id]) cMap[link.menu_item_id] = [];
         const comp = compById[link.complement_id];
         if (comp) cMap[link.menu_item_id].push(comp);
       });
       setComplementsMap(cMap);
 
-      // Build id map and categories
-      const idMap: Record<string, string> = {};
-      const grouped: Record<string, MenuCategory> = {};
-
-      menuItems.forEach(item => {
-        const key = `${item.name}_${item.category}`;
-        idMap[key] = item.id;
-        
-        if (!grouped[item.category]) {
-          grouped[item.category] = {
-            name: categoryConfig[item.category]?.label || item.category,
-            category: item.category as ProductCategory,
-            items: [],
-          };
-        }
-        grouped[item.category].items.push({
+      const grouped: Record<string, MenuItemData[]> = {};
+      menuItems.forEach((item) => {
+        if (!item.category_id) return;
+        if (!grouped[item.category_id]) grouped[item.category_id] = [];
+        grouped[item.category_id].push({
           id: item.id,
           name: item.name,
           price: parseFloat(String(item.price)),
-          category: item.category as ProductCategory,
+          category_id: item.category_id,
         });
       });
 
-      setMenuItemIdMap(idMap);
-      setMenuCategories(Object.values(grouped));
+      setCategories(cats);
+      setMenuByCat(grouped);
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
       toast.error("Erro ao carregar cardápio");
@@ -152,36 +138,39 @@ const Orders = () => {
   };
 
   const handleItemClick = useCallback((item: MenuItemData) => {
-    setSelectedMenuItem({ name: item.name, price: item.price, category: item.category });
+    setSelectedMenuItem({ id: item.id, name: item.name, price: item.price, category_id: item.category_id });
     setComplementsModalOpen(true);
   }, []);
 
-  const addItemToOrder = useCallback((
-    item: { name: string; price: number },
-    complements: Complement[],
-    totalPrice: number,
-    observations?: string,
-    quantity?: number
-  ) => {
-    const qty = quantity || 1;
-    const newItem: OrderItem = {
-      id: Math.random().toString(),
-      name: item.name,
-      price: totalPrice,
-      quantity: qty,
-      complements,
-      observations,
-    };
-    setCurrentOrder(prev => [...prev, newItem]);
-    toast.success(`${qty}x ${item.name} adicionado ao pedido`);
-  }, []);
+  const addItemToOrder = useCallback(
+    (
+      item: { name: string; price: number },
+      complements: Complement[],
+      totalPrice: number,
+      observations?: string,
+      quantity?: number,
+    ) => {
+      const qty = quantity || 1;
+      const newItem: OrderItem = {
+        id: Math.random().toString(),
+        name: item.name,
+        price: totalPrice,
+        quantity: qty,
+        complements,
+        observations,
+      };
+      setCurrentOrder((prev) => [...prev, newItem]);
+      toast.success(`${qty}x ${item.name} adicionado ao pedido`);
+    },
+    [],
+  );
 
   const removeItem = useCallback((id: string) => {
-    setCurrentOrder(prev => prev.filter(item => item.id !== id));
+    setCurrentOrder((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
   const getTotalPrice = useMemo(() => {
-    return currentOrder.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    return currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [currentOrder]);
 
   const finishOrder = useCallback(() => {
@@ -192,62 +181,68 @@ const Orders = () => {
     setPaymentModalOpen(true);
   }, [currentOrder.length]);
 
-  const handlePaymentConfirm = useCallback(async (paymentMethod: string, customerName: string, splitPayments?: Array<{ method: string; amount: number }>) => {
-    const { data: settingData } = await supabase
-      .from("system_settings")
-      .select("value")
-      .eq("key", "operation_mode")
-      .maybeSingle();
-    const operationMode = settingData?.value || "display";
-    const destinationText = operationMode === "printer" ? "impressora" : "tela da cozinha";
-    
-    try {
-      const items = currentOrder.map(item => ({
-        product_name: item.name,
-        quantity: item.quantity,
-        unit_price: item.price / item.quantity,
-        total_price: item.price,
-        complements: item.complements || null,
-        observations: item.observations || null
-      }));
+  const handlePaymentConfirm = useCallback(
+    async (
+      paymentMethod: string,
+      customerName: string,
+      splitPayments?: Array<{ method: string; amount: number }>,
+    ) => {
+      const { data: settingData } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "operation_mode")
+        .maybeSingle();
+      const operationMode = settingData?.value || "display";
+      const destinationText = operationMode === "printer" ? "impressora" : "tela da cozinha";
 
-      const order = await createOrder(customerName, paymentMethod, getTotalPrice, items, splitPayments);
-      
-      if (operationMode === "printer" && order) {
-        const { printOrder } = await import("@/lib/printOrder");
-        const orderWithItems = {
-          ...order,
-          items: items.map((item, index) => ({
-            id: `item-${index}`,
-            ...item,
-          })),
-        };
-        printOrder(orderWithItems);
+      try {
+        const items = currentOrder.map((item) => ({
+          product_name: item.name,
+          quantity: item.quantity,
+          unit_price: item.price / item.quantity,
+          total_price: item.price,
+          complements: item.complements || null,
+          observations: item.observations || null,
+        }));
+
+        const order = await createOrder(customerName, paymentMethod, getTotalPrice, items, splitPayments);
+
+        if (operationMode === "printer" && order) {
+          const { printOrder } = await import("@/lib/printOrder");
+          const orderWithItems = {
+            ...order,
+            items: items.map((item, index) => ({ id: `item-${index}`, ...item })),
+          };
+          printOrder(orderWithItems);
+        }
+
+        toast.success(`Pedido de ${customerName} finalizado! Enviado para ${destinationText}`);
+        setCurrentOrder([]);
+      } catch (error) {
+        console.error("Erro ao criar pedido:", error);
       }
-      
-      toast.success(`Pedido de ${customerName} finalizado! Enviado para ${destinationText}`);
-      setCurrentOrder([]);
-    } catch (error) {
-      console.error("Erro ao criar pedido:", error);
-    }
-  }, [currentOrder, getTotalPrice, createOrder]);
+    },
+    [currentOrder, getTotalPrice, createOrder],
+  );
 
-  // Get pre-fetched complements for the selected item
-  const getComplementsForItem = useCallback((itemName: string, category: ProductCategory): ComplementData[] => {
-    const key = `${itemName}_${category}`;
-    const menuItemId = menuItemIdMap[key];
-    if (!menuItemId) return [];
-    return complementsMap[menuItemId] || [];
-  }, [menuItemIdMap, complementsMap]);
+  const getComplementsForItem = useCallback(
+    (menuItemId: string): ComplementData[] => {
+      return complementsMap[menuItemId] || [];
+    },
+    [complementsMap],
+  );
 
-  const activeCategory = useMemo(() => 
-    menuCategories.find(c => c.category === selectedCategory),
-    [menuCategories, selectedCategory]
+  const activeCategory = useMemo(
+    () => categories.find((c) => c.id === selectedCategoryId) || null,
+    [categories, selectedCategoryId],
+  );
+  const activeItems = useMemo(
+    () => (selectedCategoryId ? menuByCat[selectedCategoryId] || [] : []),
+    [selectedCategoryId, menuByCat],
   );
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
       <header className="bg-card border-b shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -259,20 +254,14 @@ const Orders = () => {
               <p className="text-sm text-muted-foreground">{systemName}</p>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate("/")}
-            className="gap-2"
-          >
+          <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
             <LogOut className="w-4 h-4" />
             Sair
           </Button>
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="flex-1 container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Menu */}
         <div className="lg:col-span-2 space-y-4">
           {loading ? (
             <Card>
@@ -280,52 +269,63 @@ const Orders = () => {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </CardContent>
             </Card>
-          ) : menuCategories.length === 0 ? (
+          ) : categories.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12 text-muted-foreground">
-                Nenhum item no cardápio. Configure o cardápio em Administração → Cardápio.
+                Nenhuma categoria cadastrada. Crie categorias em Administração → Categorias.
               </CardContent>
             </Card>
-          ) : !selectedCategory ? (
-            <div className="grid grid-cols-2 gap-4">
-              {CATEGORY_KEYS.map((catKey) => {
-                const cat = menuCategories.find(c => c.category === catKey);
-                const conf = categoryConfig[catKey];
-                const itemCount = cat?.items.length || 0;
+          ) : !selectedCategoryId ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {categories.map((cat) => {
+                const itemCount = menuByCat[cat.id]?.length || 0;
                 return (
-                  <Button
-                    key={catKey}
-                    variant="outline"
-                    className="h-32 flex flex-col gap-2 text-lg hover:bg-primary hover:text-primary-foreground transition-colors border-2"
-                    onClick={() => setSelectedCategory(catKey)}
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategoryId(cat.id)}
                     disabled={itemCount === 0}
+                    className="group relative aspect-square rounded-xl border-2 border-border bg-card overflow-hidden hover:border-primary hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-left"
                   >
-                    <span className="text-4xl">{conf.emoji}</span>
-                    <span className="font-bold">{conf.label}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {itemCount} {itemCount === 1 ? "item" : "itens"}
-                    </span>
-                  </Button>
+                    {cat.image_url ? (
+                      <img
+                        src={cat.image_url}
+                        alt={cat.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                        <ImagePlus className="w-12 h-12 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                      <p className="text-white font-bold text-base sm:text-lg leading-tight">{cat.name}</p>
+                      <p className="text-white/80 text-xs">
+                        {itemCount} {itemCount === 1 ? "item" : "itens"}
+                      </p>
+                    </div>
+                  </button>
                 );
               })}
             </div>
           ) : (
             <Card>
               <CardHeader className="flex flex-row items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSelectedCategory(null)}
-                >
+                <Button variant="ghost" size="icon" onClick={() => setSelectedCategoryId(null)}>
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
-                <CardTitle className="text-xl">
-                  {categoryConfig[selectedCategory]?.emoji} {activeCategory?.name}
-                </CardTitle>
+                {activeCategory?.image_url && (
+                  <img
+                    src={activeCategory.image_url}
+                    alt={activeCategory.name}
+                    className="w-10 h-10 rounded-md object-cover"
+                  />
+                )}
+                <CardTitle className="text-xl">{activeCategory?.name}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {activeCategory?.items.map((item) => (
+                  {activeItems.map((item) => (
                     <Button
                       key={item.id}
                       variant="outline"
@@ -333,8 +333,7 @@ const Orders = () => {
                       onClick={() => handleItemClick(item)}
                     >
                       <span className="font-semibold text-sm">{item.name}</span>
-                      <span className="text-lg font-bold">{formatBRL(item.price)}
-                      </span>
+                      <span className="text-lg font-bold">{formatBRL(item.price)}</span>
                     </Button>
                   ))}
                 </div>
@@ -343,54 +342,41 @@ const Orders = () => {
           )}
         </div>
 
-        {/* Order Summary */}
         <div className="lg:col-span-1">
           <Card className="sticky top-4">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 Pedido Atual
                 <Badge variant="secondary">
-                  {currentOrder.length} {currentOrder.length === 1 ? 'item' : 'itens'}
+                  {currentOrder.length} {currentOrder.length === 1 ? "item" : "itens"}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {currentOrder.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Nenhum item adicionado
-                </p>
+                <p className="text-center text-muted-foreground py-8">Nenhum item adicionado</p>
               ) : (
                 <>
                   <div className="space-y-3 max-h-96 overflow-y-auto">
                     {currentOrder.map((item) => (
-                      <div 
-                        key={item.id}
-                        className="flex items-center justify-between p-3 bg-secondary rounded-lg"
-                      >
+                      <div key={item.id} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
                         <div className="flex-1">
                           <p className="font-medium">{item.name}</p>
                           <p className="text-sm text-muted-foreground">
                             {item.quantity}x{formatBRL(item.price)}
                           </p>
-                           {item.complements && item.complements.length > 0 && (
+                          {item.complements && item.complements.length > 0 && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              + {item.complements.map(c => c.name).join(", ")}
+                              + {item.complements.map((c) => c.name).join(", ")}
                             </p>
                           )}
                           {item.observations && (
-                            <p className="text-xs text-muted-foreground mt-1 italic">
-                              Obs: {item.observations}
-                            </p>
+                            <p className="text-xs text-muted-foreground mt-1 italic">Obs: {item.observations}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold">{formatBRL((item.price * item.quantity))}
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeItem(item.id)}
-                          >
+                          <span className="font-bold">{formatBRL(item.price * item.quantity)}</span>
+                          <Button size="sm" variant="ghost" onClick={() => removeItem(item.id)}>
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
                         </div>
@@ -405,10 +391,7 @@ const Orders = () => {
                     </div>
                   </div>
 
-                  <Button 
-                    className="w-full h-12 text-lg font-semibold"
-                    onClick={finishOrder}
-                  >
+                  <Button className="w-full h-12 text-lg font-semibold" onClick={finishOrder}>
                     Finalizar Pedido
                   </Button>
                 </>
@@ -418,12 +401,11 @@ const Orders = () => {
         </div>
       </div>
 
-      {/* Modal de Complementos - now with pre-fetched data */}
       <ComplementsModal
         open={complementsModalOpen}
         onOpenChange={setComplementsModalOpen}
         item={selectedMenuItem}
-        prefetchedComplements={selectedMenuItem ? getComplementsForItem(selectedMenuItem.name, selectedMenuItem.category) : undefined}
+        prefetchedComplements={selectedMenuItem ? getComplementsForItem(selectedMenuItem.id) : undefined}
         onConfirm={(complements, totalPrice, observations, quantity) => {
           if (selectedMenuItem) {
             addItemToOrder(selectedMenuItem, complements, totalPrice, observations, quantity);
@@ -431,14 +413,13 @@ const Orders = () => {
         }}
       />
 
-      {/* Modal de Pagamento */}
       <PaymentModal
         open={paymentModalOpen}
         onOpenChange={setPaymentModalOpen}
         totalAmount={getTotalPrice}
         onConfirm={handlePaymentConfirm}
       />
-      
+
       <Footer />
     </div>
   );

@@ -32,26 +32,30 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { formatBRL } from "@/lib/format";
 
-type ProductCategory = "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
+interface CategoryRow {
+  id: string;
+  name: string;
+}
 
 interface MenuItem {
   id: string;
   name: string;
   price: number;
-  category: ProductCategory;
+  category_id: string;
   description?: string;
 }
 
 const Menu = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const emptyForm = {
     id: "",
     name: "",
     price: "",
-    category: "pasteis" as ProductCategory,
+    category_id: "",
     description: "",
   };
 
@@ -60,38 +64,40 @@ const Menu = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchMenuItems();
+    fetchAll();
   }, []);
 
-  const fetchMenuItems = async () => {
+  const fetchAll = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("menu_items")
-        .select("*")
-        .eq("active", true)
-        .order("category", { ascending: true });
+      const [catRes, itemRes] = await Promise.all([
+        supabase.from("categories").select("id, name").eq("active", true).order("sort_order"),
+        supabase.from("menu_items").select("*").eq("active", true),
+      ]);
+      if (catRes.error) throw catRes.error;
+      if (itemRes.error) throw itemRes.error;
 
-      if (error) throw error;
-
-      const formattedItems = data?.map(item => ({
+      setCategories(catRes.data || []);
+      const formatted = (itemRes.data || []).map((item: any) => ({
         id: item.id,
         name: item.name,
         price: parseFloat(String(item.price)),
-        category: item.category as ProductCategory,
+        category_id: item.category_id,
         description: item.description || undefined,
-      })) || [];
-
-      setItems(formattedItems);
+      }));
+      setItems(formatted);
     } catch (error) {
-      console.error("Erro ao buscar itens:", error);
+      console.error("Erro ao buscar dados:", error);
       toast.error("Erro ao carregar cardápio");
     } finally {
       setLoading(false);
     }
   };
 
+  const categoryName = (id: string) => categories.find((c) => c.id === id)?.name || "—";
+
   const handleCreate = async () => {
-    if (!formData.name || !formData.price || !formData.category) {
+    if (!formData.name || !formData.price || !formData.category_id) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
@@ -108,14 +114,14 @@ const Menu = () => {
         client_id,
         name: formData.name,
         price,
-        category: formData.category,
+        category_id: formData.category_id,
         description: formData.description || null,
         active: true,
       });
       if (error) throw error;
       toast.success("Item criado com sucesso!");
-      await fetchMenuItems();
-      setFormData(emptyForm);
+      await fetchAll();
+      setFormData({ ...emptyForm, category_id: formData.category_id });
     } catch (error) {
       console.error("Erro ao criar item:", error);
       toast.error("Erro ao criar item");
@@ -125,7 +131,7 @@ const Menu = () => {
   };
 
   const handleEditSave = async () => {
-    if (!editFormData.name || !editFormData.price || !editFormData.category) {
+    if (!editFormData.name || !editFormData.price || !editFormData.category_id) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
@@ -141,13 +147,13 @@ const Menu = () => {
         .update({
           name: editFormData.name,
           price,
-          category: editFormData.category,
+          category_id: editFormData.category_id,
           description: editFormData.description || null,
         })
         .eq("id", editFormData.id);
       if (error) throw error;
       toast.success("Item atualizado com sucesso!");
-      await fetchMenuItems();
+      await fetchAll();
       setEditModalOpen(false);
     } catch (error) {
       console.error("Erro ao atualizar item:", error);
@@ -162,7 +168,7 @@ const Menu = () => {
       id: item.id,
       name: item.name,
       price: item.price.toString(),
-      category: item.category,
+      category_id: item.category_id,
       description: item.description || "",
     });
     setEditModalOpen(true);
@@ -175,7 +181,7 @@ const Menu = () => {
         .update({ active: false })
         .eq("id", id);
       if (error) throw error;
-      await fetchMenuItems();
+      await fetchAll();
       toast.success("Item excluído com sucesso!");
     } catch (error) {
       console.error("Erro ao excluir item:", error);
@@ -183,22 +189,29 @@ const Menu = () => {
     }
   };
 
-  const getCategoryBadge = (category: string) => {
-    const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
-      pasteis: { variant: "default", label: "Pastéis" },
-      salgados: { variant: "secondary", label: "Salgados" },
-      acai: { variant: "destructive", label: "Açaí" },
-      bebidas: { variant: "outline", label: "Bebidas" },
-      doces: { variant: "default", label: "Doces" },
-      coxinha: { variant: "secondary", label: "Coxinha" },
-      cachorro_quente: { variant: "destructive", label: "Cachorro Quente" },
-    };
-    const config = variants[category] || variants.pasteis;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-  };
+  if (categories.length === 0 && !loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Cardápio</h1>
+          <Button variant="outline" onClick={() => navigate("/admin")} className="gap-2">
+            <ArrowLeft className="w-4 h-4" /> Voltar
+          </Button>
+        </div>
+        <Card>
+          <CardContent className="text-center py-12 space-y-4">
+            <p className="text-muted-foreground">
+              Você precisa cadastrar pelo menos uma categoria antes de criar itens do cardápio.
+            </p>
+            <Button onClick={() => navigate("/admin/categories")}>Ir para Categorias</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 container mx-auto px-4 py-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
@@ -209,14 +222,13 @@ const Menu = () => {
             <p className="text-muted-foreground">Gerencie os itens do cardápio</p>
           </div>
         </div>
-        <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
+        <Button variant="outline" onClick={() => navigate("/admin")} className="gap-2">
           <ArrowLeft className="w-4 h-4" />
           Voltar
         </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Create Form */}
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Novo Item</CardTitle>
@@ -233,18 +245,19 @@ const Menu = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Categoria *</Label>
-              <Select value={formData.category} onValueChange={(value: any) => setFormData({ ...formData, category: value })}>
+              <Select
+                value={formData.category_id}
+                onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+              >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pasteis">Pastéis</SelectItem>
-                  <SelectItem value="salgados">Salgados</SelectItem>
-                  <SelectItem value="acai">Açaí</SelectItem>
-                  <SelectItem value="bebidas">Bebidas</SelectItem>
-                  <SelectItem value="doces">Doces</SelectItem>
-                  <SelectItem value="coxinha">Coxinha</SelectItem>
-                  <SelectItem value="cachorro_quente">Cachorro Quente</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -275,7 +288,6 @@ const Menu = () => {
           </CardContent>
         </Card>
 
-        {/* Table */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Itens do Cardápio</CardTitle>
@@ -286,9 +298,7 @@ const Menu = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : items.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhum item cadastrado ainda
-              </div>
+              <div className="text-center py-8 text-muted-foreground">Nenhum item cadastrado ainda</div>
             ) : (
               <Table>
                 <TableHeader>
@@ -310,7 +320,9 @@ const Menu = () => {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{getCategoryBadge(item.category)}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{categoryName(item.category_id)}</Badge>
+                      </TableCell>
                       <TableCell className="font-medium">{formatBRL(item.price)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -331,9 +343,8 @@ const Menu = () => {
         </Card>
       </div>
 
-      {/* Edit Modal */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md">
           <DialogHeader>
             <DialogTitle>Editar Item</DialogTitle>
           </DialogHeader>
@@ -347,18 +358,19 @@ const Menu = () => {
             </div>
             <div className="space-y-2">
               <Label>Categoria *</Label>
-              <Select value={editFormData.category} onValueChange={(value: any) => setEditFormData({ ...editFormData, category: value })}>
+              <Select
+                value={editFormData.category_id}
+                onValueChange={(value) => setEditFormData({ ...editFormData, category_id: value })}
+              >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pasteis">Pastéis</SelectItem>
-                  <SelectItem value="salgados">Salgados</SelectItem>
-                  <SelectItem value="acai">Açaí</SelectItem>
-                  <SelectItem value="bebidas">Bebidas</SelectItem>
-                  <SelectItem value="doces">Doces</SelectItem>
-                  <SelectItem value="coxinha">Coxinha</SelectItem>
-                  <SelectItem value="cachorro_quente">Cachorro Quente</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -381,8 +393,12 @@ const Menu = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleEditSave} disabled={loading}>Atualizar</Button>
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleEditSave} disabled={loading}>
+              Atualizar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -62,6 +62,50 @@ export type Database = {
           },
         ]
       }
+      categories: {
+        Row: {
+          active: boolean
+          client_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          client_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          client_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           active: boolean
@@ -147,7 +191,7 @@ export type Database = {
       complements: {
         Row: {
           active: boolean
-          category: Database["public"]["Enums"]["product_category"]
+          category_id: string | null
           client_id: string
           created_at: string
           id: string
@@ -157,7 +201,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
-          category: Database["public"]["Enums"]["product_category"]
+          category_id?: string | null
           client_id: string
           created_at?: string
           id?: string
@@ -167,7 +211,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
-          category?: Database["public"]["Enums"]["product_category"]
+          category_id?: string | null
           client_id?: string
           created_at?: string
           id?: string
@@ -176,6 +220,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "complements_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "complements_client_id_fkey"
             columns: ["client_id"]
@@ -188,7 +239,7 @@ export type Database = {
       menu_items: {
         Row: {
           active: boolean
-          category: Database["public"]["Enums"]["product_category"]
+          category_id: string | null
           client_id: string
           created_at: string
           description: string | null
@@ -199,7 +250,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
-          category: Database["public"]["Enums"]["product_category"]
+          category_id?: string | null
           client_id: string
           created_at?: string
           description?: string | null
@@ -210,7 +261,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
-          category?: Database["public"]["Enums"]["product_category"]
+          category_id?: string | null
           client_id?: string
           created_at?: string
           description?: string | null
@@ -220,6 +271,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "menu_items_client_id_fkey"
             columns: ["client_id"]
@@ -554,14 +612,6 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "atendente" | "cozinha" | "super_admin"
-      product_category:
-        | "pasteis"
-        | "salgados"
-        | "acai"
-        | "bebidas"
-        | "doces"
-        | "coxinha"
-        | "cachorro_quente"
       transaction_type: "entrada" | "saida"
     }
     CompositeTypes: {
@@ -691,15 +741,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "atendente", "cozinha", "super_admin"],
-      product_category: [
-        "pasteis",
-        "salgados",
-        "acai",
-        "bebidas",
-        "doces",
-        "coxinha",
-        "cachorro_quente",
-      ],
       transaction_type: ["entrada", "saida"],
     },
   },
