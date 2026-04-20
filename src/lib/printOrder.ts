@@ -60,7 +60,7 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
 <body>
   <div class="receipt">
     <div class="center">
-      <div class="title">${(typeof localStorage !== 'undefined' && localStorage.getItem('systemName')) || 'FOODFLOW'}</div>
+      <div class="title">${(typeof localStorage !== 'undefined' && localStorage.getItem('systemName')) || 'TARMFOOD'}</div>
       <div>Comanda de Produção</div>
     </div>
     <div class="divider"></div>

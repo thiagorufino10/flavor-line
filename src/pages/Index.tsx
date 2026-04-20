@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 const Index = () => {
   const navigate = useNavigate();
   const { userRole, signOut } = useAuth();
-  const [systemName, setSystemName] = useState("FoodFlow");
+  const [systemName, setSystemName] = useState("TARMFood");
   const [logoUrl, setLogoUrl] = useState("");
 
   useEffect(() => {
