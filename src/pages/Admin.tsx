@@ -21,7 +21,7 @@ import {
 const Admin = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const [systemName, setSystemName] = useState("Pastel Favorite");
+  const [systemName, setSystemName] = useState("FoodFlow");
 
   useEffect(() => {
     const savedName = localStorage.getItem("systemName");

@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Branding = () => {
   const navigate = useNavigate();
-  const [systemName, setSystemName] = useState("Pastel Favorite");
+  const [systemName, setSystemName] = useState("FoodFlow");
   const [logoUrl, setLogoUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -136,7 +136,7 @@ const Branding = () => {
       }
     }
     
-    setSystemName("Pastel Favorite");
+    setSystemName("FoodFlow");
     setLogoUrl("");
     setSelectedFile(null);
     localStorage.removeItem("systemName");
@@ -225,7 +225,7 @@ const Branding = () => {
                   id="systemName"
                   value={systemName}
                   onChange={(e) => setSystemName(e.target.value)}
-                  placeholder="Ex: Pastel Favorite"
+                  placeholder="Ex: FoodFlow, Lanchonete do João, etc."
                 />
                 <p className="text-sm text-muted-foreground">
                   Este nome aparecerá nos cabeçalhos e títulos do sistema

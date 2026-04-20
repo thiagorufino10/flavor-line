@@ -69,7 +69,7 @@ const Orders = () => {
   } | null>(null);
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [systemName, setSystemName] = useState("Pastel Favorite");
+  const [systemName, setSystemName] = useState("FoodFlow");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   // Pre-fetched complements map: menuItemId -> complements[]

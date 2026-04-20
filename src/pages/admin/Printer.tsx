@@ -196,7 +196,7 @@ const Printer = () => {
 <body>
   <div class="receipt">
     <div class="center">
-      <div class="title">PASTEL FAVORITE</div>
+      <div class="title">${(localStorage.getItem('systemName') || 'FOODFLOW').toUpperCase()}</div>
       <div>Comanda de Produção</div>
     </div>
     <div class="divider"></div>
@@ -433,7 +433,7 @@ const Printer = () => {
           <CardContent>
             <div className="bg-white text-black p-6 rounded-lg border-2 border-dashed border-gray-300 font-mono text-sm font-bold">
               <div className="text-center mb-4">
-                <h2 className="font-bold text-lg">PASTEL FAVORITE</h2>
+                <h2 className="font-bold text-lg">{(localStorage.getItem('systemName') || 'FoodFlow').toUpperCase()}</h2>
                 <p className="text-xs">Comanda de Produção</p>
               </div>
 
