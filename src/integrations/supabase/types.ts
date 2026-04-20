@@ -522,12 +522,28 @@ export type Database = {
     }
     Functions: {
       create_admin_user: { Args: never; Returns: undefined }
+      get_user_client_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      resolve_client_login: {
+        Args: { _client_name: string; _username: string }
+        Returns: {
+          client_active: boolean
+          client_id: string
+          email: string
+        }[]
+      }
+      resolve_super_admin_login: {
+        Args: { _username: string }
+        Returns: {
+          email: string
+        }[]
       }
     }
     Enums: {
