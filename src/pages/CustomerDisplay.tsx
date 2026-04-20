@@ -10,7 +10,7 @@ const CustomerDisplay = () => {
   const navigate = useNavigate();
   const { orders, loading } = useOrders();
   const [operationMode, setOperationMode] = useState<string>("");
-  const [systemName, setSystemName] = useState("FoodFlow");
+  const [systemName, setSystemName] = useState("TARMFood");
 
   useEffect(() => {
     const mode = localStorage.getItem("operationMode") || "display";
