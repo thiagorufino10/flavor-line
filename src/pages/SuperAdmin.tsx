@@ -20,6 +20,8 @@ interface Client {
   active: boolean;
   notes: string | null;
   created_at: string;
+  monthly_fee: number;
+  due_day: number;
 }
 
 const emptyForm = {
@@ -29,6 +31,8 @@ const emptyForm = {
   adminUsername: "admin",
   adminPassword: "",
   adminFullName: "",
+  monthlyFee: "",
+  dueDay: "5",
 };
 
 const SuperAdmin = () => {
@@ -72,7 +76,14 @@ const SuperAdmin = () => {
 
   const openEdit = (c: Client) => {
     setEditing(c);
-    setForm({ ...emptyForm, name: c.name, slug: c.slug, notes: c.notes || "" });
+    setForm({
+      ...emptyForm,
+      name: c.name,
+      slug: c.slug,
+      notes: c.notes || "",
+      monthlyFee: String(c.monthly_fee ?? ""),
+      dueDay: String(c.due_day ?? 5),
+    });
     setDialogOpen(true);
   };
 
@@ -87,6 +98,9 @@ const SuperAdmin = () => {
 
     setSaving(true);
     try {
+      const monthlyFee = parseFloat(form.monthlyFee.replace(",", ".")) || 0;
+      const dueDay = Math.min(31, Math.max(1, parseInt(form.dueDay) || 5));
+
       if (editing) {
         const { data, error } = await supabase.functions.invoke("manage-clients", {
           body: {
@@ -95,6 +109,8 @@ const SuperAdmin = () => {
             name: form.name,
             slug: finalSlug,
             notes: form.notes || null,
+            monthlyFee,
+            dueDay,
           },
         });
         if (error || !data?.success) throw new Error(data?.error || error?.message);
@@ -111,6 +127,8 @@ const SuperAdmin = () => {
             adminUsername: form.adminUsername,
             adminPassword: form.adminPassword,
             adminFullName: form.adminFullName || form.adminUsername,
+            monthlyFee,
+            dueDay,
           },
         });
         if (error || !data?.success) throw new Error(data?.error || error?.message);
@@ -207,6 +225,18 @@ const SuperAdmin = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="bg-muted/40 rounded p-2">
+                      <p className="text-xs text-muted-foreground">Mensalidade</p>
+                      <p className="font-semibold">
+                        {(c.monthly_fee ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                      </p>
+                    </div>
+                    <div className="bg-muted/40 rounded p-2">
+                      <p className="text-xs text-muted-foreground">Vencimento</p>
+                      <p className="font-semibold">Dia {c.due_day ?? 5}</p>
+                    </div>
+                  </div>
                   {c.notes && <p className="text-sm text-muted-foreground line-clamp-2">{c.notes}</p>}
                   <div className="flex items-center justify-between pt-2 border-t">
                     <div className="flex items-center gap-2">
@@ -264,6 +294,29 @@ const SuperAdmin = () => {
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 rows={2}
               />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Mensalidade (R$)</Label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={form.monthlyFee}
+                  onChange={(e) => setForm({ ...form, monthlyFee: e.target.value })}
+                  placeholder="Ex: 149,90"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Dia do vencimento</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={31}
+                  value={form.dueDay}
+                  onChange={(e) => setForm({ ...form, dueDay: e.target.value })}
+                  placeholder="Ex: 5"
+                />
+              </div>
             </div>
             {!editing && (
               <div className="space-y-3 p-3 border rounded-lg bg-muted/30">

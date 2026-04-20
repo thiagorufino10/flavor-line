@@ -56,7 +56,7 @@ serve(async (req) => {
     }
 
     if (action === "create") {
-      const { name, slug, notes, adminUsername, adminPassword, adminFullName } = body;
+      const { name, slug, notes, adminUsername, adminPassword, adminFullName, monthlyFee, dueDay } = body;
       if (!name || !slug || !adminUsername || !adminPassword) {
         throw new Error("Campos obrigatórios: name, slug, adminUsername, adminPassword");
       }
@@ -64,7 +64,14 @@ serve(async (req) => {
       // 1. Cria cliente
       const { data: client, error: clientErr } = await admin
         .from("clients")
-        .insert({ name, slug: slug.toLowerCase().trim(), notes: notes ?? null, active: true })
+        .insert({
+          name,
+          slug: slug.toLowerCase().trim(),
+          notes: notes ?? null,
+          active: true,
+          monthly_fee: typeof monthlyFee === "number" ? monthlyFee : 0,
+          due_day: typeof dueDay === "number" ? dueDay : 5,
+        })
         .select()
         .single();
       if (clientErr) throw clientErr;
@@ -136,12 +143,14 @@ serve(async (req) => {
     }
 
     if (action === "update") {
-      const { clientId, name, slug, notes, active } = body;
+      const { clientId, name, slug, notes, active, monthlyFee, dueDay } = body;
       const patch: Record<string, unknown> = {};
       if (name !== undefined) patch.name = name;
       if (slug !== undefined) patch.slug = slug.toLowerCase().trim();
       if (notes !== undefined) patch.notes = notes;
       if (active !== undefined) patch.active = active;
+      if (monthlyFee !== undefined) patch.monthly_fee = monthlyFee;
+      if (dueDay !== undefined) patch.due_day = dueDay;
       const { error } = await admin.from("clients").update(patch).eq("id", clientId);
       if (error) throw error;
       return new Response(
