@@ -66,7 +66,9 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          due_day: number
           id: string
+          monthly_fee: number
           name: string
           notes: string | null
           slug: string
@@ -75,7 +77,9 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          due_day?: number
           id?: string
+          monthly_fee?: number
           name: string
           notes?: string | null
           slug: string
@@ -84,7 +88,9 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          due_day?: number
           id?: string
+          monthly_fee?: number
           name?: string
           notes?: string | null
           slug?: string

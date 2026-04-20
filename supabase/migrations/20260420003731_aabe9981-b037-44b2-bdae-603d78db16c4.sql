@@ -1,0 +1,3 @@
+ALTER TABLE public.clients
+  ADD COLUMN IF NOT EXISTS monthly_fee numeric(10,2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS due_day integer NOT NULL DEFAULT 5 CHECK (due_day BETWEEN 1 AND 31);
