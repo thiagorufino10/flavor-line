@@ -102,7 +102,10 @@ const Menu = () => {
     }
     setLoading(true);
     try {
+      const { getClientId } = await import("@/lib/getClientId");
+      const client_id = await getClientId();
       const { error } = await supabase.from("menu_items").insert({
+        client_id,
         name: formData.name,
         price,
         category: formData.category,

@@ -170,9 +170,12 @@ const Complements = () => {
           .eq("complement_id", editingComplement.id);
       } else {
         // Criar novo complemento
+        const { getClientId } = await import("@/lib/getClientId");
+        const client_id = await getClientId();
         const { data, error } = await supabase
           .from("complements")
           .insert({
+            client_id,
             name: formData.name,
             price: price,
             category: formData.category,
@@ -187,7 +190,10 @@ const Complements = () => {
 
       // Criar novos vínculos
       if (complementId && formData.linkedItems.length > 0) {
+        const { getClientId } = await import("@/lib/getClientId");
+        const client_id = await getClientId();
         const links = formData.linkedItems.map(menuItemId => ({
+          client_id,
           complement_id: complementId,
           menu_item_id: menuItemId,
         }));

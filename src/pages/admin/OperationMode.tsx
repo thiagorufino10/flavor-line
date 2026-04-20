@@ -29,9 +29,14 @@ const OperationMode = () => {
   }, []);
 
   const handleSave = async () => {
+    const { getClientId } = await import("@/lib/getClientId");
+    const client_id = await getClientId();
     const { error } = await supabase
       .from("system_settings")
-      .upsert({ key: "operation_mode", value: operationMode, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      .upsert(
+        { client_id, key: "operation_mode", value: operationMode, updated_at: new Date().toISOString() },
+        { onConflict: "client_id,key" }
+      );
 
     if (error) {
       toast.error("Erro ao salvar modo de operação");

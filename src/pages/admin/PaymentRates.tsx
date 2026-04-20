@@ -65,14 +65,17 @@ const PaymentRates = () => {
 
   const handleSave = async () => {
     try {
+      const { getClientId } = await import("@/lib/getClientId");
+      const client_id = await getClientId();
+
       const { error: creditoError } = await supabase
         .from("payment_rates")
-        .upsert({ payment_method: "credito", rate_percentage: rates.credito }, { onConflict: "payment_method" });
+        .upsert({ client_id, payment_method: "credito", rate_percentage: rates.credito }, { onConflict: "client_id,payment_method" });
       if (creditoError) throw creditoError;
 
       const { error: debitoError } = await supabase
         .from("payment_rates")
-        .upsert({ payment_method: "debito", rate_percentage: rates.debito }, { onConflict: "payment_method" });
+        .upsert({ client_id, payment_method: "debito", rate_percentage: rates.debito }, { onConflict: "client_id,payment_method" });
       if (debitoError) throw debitoError;
 
       // Salvar quem paga a taxa
@@ -80,7 +83,7 @@ const PaymentRates = () => {
         const value = taxPayer[method] ? "cliente" : "estabelecimento";
         const { error } = await supabase
           .from("system_settings")
-          .upsert({ key: `tax_payer_${method}`, value }, { onConflict: "key" });
+          .upsert({ client_id, key: `tax_payer_${method}`, value }, { onConflict: "client_id,key" });
         if (error) throw error;
       }
 
