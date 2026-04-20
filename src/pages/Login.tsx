@@ -12,7 +12,7 @@ const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [systemName, setSystemName] = useState("Pastel Favorite");
+  const [systemName, setSystemName] = useState("FoodFlow");
   const [logoUrl, setLogoUrl] = useState("");
   const navigate = useNavigate();
   const { signIn, user, userRole } = useAuth();

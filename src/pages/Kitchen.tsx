@@ -13,7 +13,7 @@ const Kitchen = () => {
   const navigate = useNavigate();
   const { orders, loading, updateOrderStatus } = useOrders();
   const [operationMode, setOperationMode] = useState<string>("");
-  const [systemName, setSystemName] = useState("Pastel Favorite");
+  const [systemName, setSystemName] = useState("FoodFlow");
 
   useEffect(() => {
     const mode = localStorage.getItem("operationMode") || "display";
