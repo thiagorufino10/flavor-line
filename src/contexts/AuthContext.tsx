@@ -65,8 +65,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setUserName(profile?.full_name ?? null);
       setClientId(profile?.client_id ?? null);
-      // @ts-expect-error - join shape
-      setClientName(profile?.clients?.name ?? null);
+      const clientsRel = (profile as any)?.clients;
+      setClientName(clientsRel?.name ?? null);
 
       // Pega o role mais "alto" do usuário neste cliente (ou super_admin global)
       const { data: roles } = await supabase

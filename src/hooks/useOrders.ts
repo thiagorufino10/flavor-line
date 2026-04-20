@@ -137,10 +137,16 @@ export const useOrders = (status?: string) => {
     splitPayments?: Array<{ method: string; amount: number }>
   ) => {
     try {
-      let amountReceived: number;
+      // Pega client_id do usuário logado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+      const { data: profile } = await supabase
+        .from("profiles").select("client_id").eq("id", user.id).maybeSingle();
+      const clientId = profile?.client_id;
+      if (!clientId) throw new Error("Usuário sem cliente vinculado");
 
+      let amountReceived: number;
       if (splitPayments && splitPayments.length === 2) {
-        // Soma o valor BRUTO (que cliente paga) de cada parte
         const grosses = await Promise.all(
           splitPayments.map(sp => calculateClientAmount(sp.method, sp.amount))
         );
@@ -149,24 +155,23 @@ export const useOrders = (status?: string) => {
         amountReceived = await calculateClientAmount(paymentMethod, totalAmount);
       }
 
-      // Salva o valor BRUTO (o que o cliente efetivamente paga) — esse é o valor da comanda.
-      // A taxa do estabelecimento é descontada apenas no fluxo de caixa/relatórios.
       const { data: order, error: orderError } = await supabase
         .from("orders")
-        .insert([{
+        .insert({
+          client_id: clientId,
           customer_name: customerName,
           payment_method: paymentMethod,
           total_amount: amountReceived,
           status: "novo",
-          order_number: 0, // Será gerado pelo trigger
-        }])
+          order_number: 0,
+        })
         .select()
         .single();
 
       if (orderError) throw orderError;
 
-      // Inserir itens
       const orderItems = items.map((item) => ({
+        client_id: clientId,
         order_id: order.id,
         product_name: item.product_name,
         quantity: item.quantity,
@@ -176,10 +181,7 @@ export const useOrders = (status?: string) => {
         observations: item.observations || null,
       }));
 
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
-
+      const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
       if (itemsError) throw itemsError;
 
       toast.success(`Pedido #${order.order_number} criado com sucesso!`);
