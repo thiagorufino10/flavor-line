@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UtensilsCrossed, Image as ImageIcon } from "lucide-react";
+import { UtensilsCrossed, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
+  const [clientName, setClientName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,40 +19,30 @@ const Login = () => {
   const { signIn, user, userRole } = useAuth();
 
   useEffect(() => {
-    // Carregar configurações de branding
     const savedName = localStorage.getItem("systemName");
     const savedLogo = localStorage.getItem("systemLogo");
-    
     if (savedName) setSystemName(savedName);
     if (savedLogo) setLogoUrl(savedLogo);
   }, []);
 
   useEffect(() => {
     if (user && userRole) {
-      if (userRole === "admin") {
-        navigate("/");
-      } else if (userRole === "atendente") {
-        navigate("/orders");
-      } else if (userRole === "cozinha") {
-        navigate("/kitchen");
-      }
+      if (userRole === "super_admin") navigate("/super-admin");
+      else if (userRole === "admin") navigate("/");
+      else if (userRole === "atendente") navigate("/orders");
+      else if (userRole === "cozinha") navigate("/kitchen");
     }
   }, [user, userRole, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
     try {
-      // Converte username para email interno
-      const email = `${username.toLowerCase()}@pastelfavorite.local`;
-      const { error } = await signIn(email, password);
-      
+      const { error } = await signIn(clientName, username, password);
       if (error) {
-        toast.error("Usuário ou senha inválidos");
+        toast.error(error.message || "Cliente, usuário ou senha inválidos");
         return;
       }
-      
       toast.success("Login realizado com sucesso!");
     } catch (error) {
       toast.error("Erro ao fazer login");
@@ -66,11 +57,7 @@ const Login = () => {
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto flex items-center justify-center">
             {logoUrl ? (
-              <img 
-                src={logoUrl} 
-                alt="Logo do sistema" 
-                className="max-h-20 max-w-[160px] object-contain"
-              />
+              <img src={logoUrl} alt="Logo" className="max-h-20 max-w-[160px] object-contain" />
             ) : (
               <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center">
                 <UtensilsCrossed className="w-8 h-8 text-primary-foreground" />
@@ -79,13 +66,25 @@ const Login = () => {
           </div>
           <div>
             <CardTitle className="text-3xl font-bold">{systemName}</CardTitle>
-            <CardDescription className="text-base mt-2">
-              Sistema de Pedidos
-            </CardDescription>
+            <CardDescription className="text-base mt-2">Sistema de Pedidos</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="client">Cliente</Label>
+              <Input
+                id="client"
+                type="text"
+                placeholder="Nome do estabelecimento"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                required
+                className="h-12"
+                disabled={loading}
+                autoComplete="organization"
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="username">Usuário</Label>
               <Input
@@ -97,6 +96,7 @@ const Login = () => {
                 required
                 className="h-12"
                 disabled={loading}
+                autoComplete="username"
               />
             </div>
             <div className="space-y-2">
@@ -110,12 +110,22 @@ const Login = () => {
                 required
                 className="h-12"
                 disabled={loading}
+                autoComplete="current-password"
               />
             </div>
             <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={loading}>
               {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
+          <div className="mt-6 text-center">
+            <Link
+              to="/super-admin/login"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Shield className="w-3 h-3" />
+              Acesso TARM Solution
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

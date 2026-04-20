@@ -17,6 +17,7 @@ export type Database = {
       cash_flow_transactions: {
         Row: {
           amount: number
+          client_id: string
           created_at: string
           created_by: string | null
           description: string
@@ -26,6 +27,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          client_id: string
           created_at?: string
           created_by?: string | null
           description: string
@@ -35,6 +37,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          client_id?: string
           created_at?: string
           created_by?: string | null
           description?: string
@@ -44,6 +47,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "cash_flow_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "cash_flow_transactions_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -52,26 +62,66 @@ export type Database = {
           },
         ]
       }
+      clients: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       complement_menu_items: {
         Row: {
+          client_id: string
           complement_id: string
           created_at: string
           id: string
           menu_item_id: string
         }
         Insert: {
+          client_id: string
           complement_id: string
           created_at?: string
           id?: string
           menu_item_id: string
         }
         Update: {
+          client_id?: string
           complement_id?: string
           created_at?: string
           id?: string
           menu_item_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "complement_menu_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "complement_menu_items_complement_id_fkey"
             columns: ["complement_id"]
@@ -92,6 +142,7 @@ export type Database = {
         Row: {
           active: boolean
           category: Database["public"]["Enums"]["product_category"]
+          client_id: string
           created_at: string
           id: string
           name: string
@@ -101,6 +152,7 @@ export type Database = {
         Insert: {
           active?: boolean
           category: Database["public"]["Enums"]["product_category"]
+          client_id: string
           created_at?: string
           id?: string
           name: string
@@ -110,18 +162,28 @@ export type Database = {
         Update: {
           active?: boolean
           category?: Database["public"]["Enums"]["product_category"]
+          client_id?: string
           created_at?: string
           id?: string
           name?: string
           price?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "complements_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       menu_items: {
         Row: {
           active: boolean
           category: Database["public"]["Enums"]["product_category"]
+          client_id: string
           created_at: string
           description: string | null
           id: string
@@ -132,6 +194,7 @@ export type Database = {
         Insert: {
           active?: boolean
           category: Database["public"]["Enums"]["product_category"]
+          client_id: string
           created_at?: string
           description?: string | null
           id?: string
@@ -142,6 +205,7 @@ export type Database = {
         Update: {
           active?: boolean
           category?: Database["public"]["Enums"]["product_category"]
+          client_id?: string
           created_at?: string
           description?: string | null
           id?: string
@@ -149,10 +213,19 @@ export type Database = {
           price?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
+          client_id: string
           complements: Json | null
           created_at: string
           id: string
@@ -164,6 +237,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          client_id: string
           complements?: Json | null
           created_at?: string
           id?: string
@@ -175,6 +249,7 @@ export type Database = {
           unit_price: number
         }
         Update: {
+          client_id?: string
           complements?: Json | null
           created_at?: string
           id?: string
@@ -187,6 +262,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "order_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "order_items_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -197,6 +279,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          client_id: string
           created_at: string
           customer_name: string
           id: string
@@ -207,6 +290,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          client_id: string
           created_at?: string
           customer_name: string
           id?: string
@@ -217,6 +301,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          client_id?: string
           created_at?: string
           customer_name?: string
           id?: string
@@ -226,31 +311,51 @@ export type Database = {
           total_amount?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_rates: {
         Row: {
+          client_id: string
           id: string
           payment_method: string
           rate_percentage: number
           updated_at: string
         }
         Insert: {
+          client_id: string
           id?: string
           payment_method: string
           rate_percentage: number
           updated_at?: string
         }
         Update: {
+          client_id?: string
           id?: string
           payment_method?: string
           rate_percentage?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payment_rates_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       printer_config: {
         Row: {
+          client_id: string
           connection_type: string
           id: string
           ip_address: string | null
@@ -263,6 +368,7 @@ export type Database = {
           usb_port: string | null
         }
         Insert: {
+          client_id: string
           connection_type?: string
           id?: string
           ip_address?: string | null
@@ -275,6 +381,7 @@ export type Database = {
           usb_port?: string | null
         }
         Update: {
+          client_id?: string
           connection_type?: string
           id?: string
           ip_address?: string | null
@@ -288,6 +395,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "printer_config_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "printer_config_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
@@ -298,66 +412,101 @@ export type Database = {
       }
       profiles: {
         Row: {
+          client_id: string | null
           created_at: string
           full_name: string
           id: string
           updated_at: string
+          username: string | null
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           full_name: string
           id: string
           updated_at?: string
+          username?: string | null
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           full_name?: string
           id?: string
           updated_at?: string
+          username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_settings: {
         Row: {
+          client_id: string
           id: string
           key: string
           updated_at: string
           value: string
         }
         Insert: {
+          client_id: string
           id?: string
           key: string
           updated_at?: string
           value: string
         }
         Update: {
+          client_id?: string
           id?: string
           key?: string
           updated_at?: string
           value?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "system_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
+          client_id: string | null
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_roles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_roles_user_id_fkey"
             columns: ["user_id"]
@@ -373,6 +522,7 @@ export type Database = {
     }
     Functions: {
       create_admin_user: { Args: never; Returns: undefined }
+      get_user_client_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -380,9 +530,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      resolve_client_login: {
+        Args: { _client_name: string; _username: string }
+        Returns: {
+          client_active: boolean
+          client_id: string
+          email: string
+        }[]
+      }
+      resolve_super_admin_login: {
+        Args: { _username: string }
+        Returns: {
+          email: string
+        }[]
+      }
     }
     Enums: {
-      app_role: "admin" | "atendente" | "cozinha"
+      app_role: "admin" | "atendente" | "cozinha" | "super_admin"
       product_category:
         | "pasteis"
         | "salgados"
@@ -519,7 +684,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "atendente", "cozinha"],
+      app_role: ["admin", "atendente", "cozinha", "super_admin"],
       product_category: [
         "pasteis",
         "salgados",

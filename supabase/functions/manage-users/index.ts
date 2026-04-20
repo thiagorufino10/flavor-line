@@ -6,6 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Gestão de usuários DENTRO de um cliente. Admin do cliente cria/edita/exclui usuários.
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -16,69 +17,63 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
+    const admin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Verificar autenticação do usuário
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      throw new Error("Não autorizado");
-    }
-
+    if (!authHeader?.startsWith("Bearer ")) throw new Error("Não autorizado");
     const accessToken = authHeader.replace("Bearer ", "").trim();
-    if (!accessToken) {
-      throw new Error("Não autorizado");
-    }
 
-    // Usar cliente com contexto do usuário para validar
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-
     const { data: { user }, error: authError } = await userClient.auth.getUser(accessToken);
+    if (authError || !user) throw new Error("Não autorizado");
 
-    if (authError || !user) {
-      console.log("Auth error:", authError?.message);
-      throw new Error("Não autorizado");
-    }
+    // Verifica role admin e pega client_id
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("client_id")
+      .eq("id", user.id)
+      .maybeSingle();
+    const clientId = profile?.client_id;
+    if (!clientId) throw new Error("Usuário sem cliente vinculado");
 
-    // Verificar se o usuário é admin
-    const { data: userRole } = await supabaseAdmin
+    const { data: roleRow } = await admin
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
+      .eq("client_id", clientId)
       .eq("role", "admin")
-      .single();
+      .maybeSingle();
+    if (!roleRow) throw new Error("Acesso negado - apenas administradores");
 
-    if (!userRole) {
-      throw new Error("Acesso negado - apenas administradores");
-    }
+    // Pega slug do cliente para construir e-mail técnico
+    const { data: client } = await admin.from("clients").select("slug").eq("id", clientId).maybeSingle();
+    const slug = client?.slug ?? "cliente";
 
     const { action, userData } = await req.json();
 
     if (action === "list") {
-      const { data: authUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-      
-      if (listError) throw listError;
-
-      const { data: profiles } = await supabaseAdmin
+      const { data: profiles } = await admin
         .from("profiles")
-        .select("id, full_name, user_roles(role)");
+        .select("id, full_name, username")
+        .eq("client_id", clientId);
 
-      const users = authUsers.users.map(authUser => {
-        const profile = profiles?.find(p => p.id === authUser.id);
-        return {
-          id: authUser.id,
-          email: authUser.email,
-          full_name: profile?.full_name || authUser.email,
-          username: authUser.email?.split('@')[0] || '',
-          role: profile?.user_roles?.[0]?.role || 'attendant',
-        };
-      });
+      const ids = (profiles ?? []).map(p => p.id);
+      const { data: roles } = await admin
+        .from("user_roles")
+        .select("user_id, role")
+        .eq("client_id", clientId)
+        .in("user_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+
+      const users = (profiles ?? []).map(p => ({
+        id: p.id,
+        full_name: p.full_name,
+        username: p.username,
+        role: roles?.find(r => r.user_id === p.id)?.role ?? "atendente",
+      }));
 
       return new Response(
         JSON.stringify({ success: true, users }),
@@ -87,29 +82,40 @@ serve(async (req) => {
     }
 
     if (action === "create") {
-      const { email, password, full_name, role } = userData;
+      const { username, password, full_name, role } = userData;
+      if (!username || !password || !role) throw new Error("Campos obrigatórios: username, password, role");
 
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      const email = `${username.toLowerCase().trim()}@${slug}.tarmfood.local`;
+
+      const { data: newUser, error: createError } = await admin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
-        user_metadata: { full_name },
+        user_metadata: { full_name: full_name || username },
       });
-
       if (createError) throw createError;
-      if (!newUser.user) throw new Error("Falha ao criar usuário");
+      const newId = newUser.user!.id;
 
-      const { error: roleError } = await supabaseAdmin
-        .from("user_roles")
-        .insert({ user_id: newUser.user.id, role });
+      const { error: profErr } = await admin.from("profiles").upsert({
+        id: newId,
+        full_name: full_name || username,
+        username: username.toLowerCase().trim(),
+        client_id: clientId,
+      });
+      if (profErr) {
+        await admin.auth.admin.deleteUser(newId);
+        throw profErr;
+      }
 
-      if (roleError) throw roleError;
-
-      const { error: profileError } = await supabaseAdmin
-        .from("profiles")
-        .upsert({ id: newUser.user.id, full_name });
-
-      if (profileError) throw profileError;
+      const { error: roleErr } = await admin.from("user_roles").insert({
+        user_id: newId,
+        role,
+        client_id: clientId,
+      });
+      if (roleErr) {
+        await admin.auth.admin.deleteUser(newId);
+        throw roleErr;
+      }
 
       return new Response(
         JSON.stringify({ success: true, user: newUser.user }),
@@ -119,11 +125,15 @@ serve(async (req) => {
 
     if (action === "delete") {
       const { userId } = userData;
-
-      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-      
-      if (deleteError) throw deleteError;
-
+      // Garante que o alvo é do mesmo cliente
+      const { data: target } = await admin
+        .from("profiles")
+        .select("client_id")
+        .eq("id", userId)
+        .maybeSingle();
+      if (target?.client_id !== clientId) throw new Error("Usuário não pertence ao seu cliente");
+      const { error } = await admin.auth.admin.deleteUser(userId);
+      if (error) throw error;
       return new Response(
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -131,16 +141,12 @@ serve(async (req) => {
     }
 
     throw new Error("Ação inválida");
-
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
-    console.error("Edge function error:", errorMessage);
+    const msg = error instanceof Error ? error.message : "Erro desconhecido";
+    console.error("manage-users error:", msg);
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ success: false, error: msg }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
