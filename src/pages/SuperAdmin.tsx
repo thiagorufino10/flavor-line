@@ -20,6 +20,8 @@ interface Client {
   active: boolean;
   notes: string | null;
   created_at: string;
+  monthly_fee: number;
+  due_day: number;
 }
 
 const emptyForm = {
@@ -29,6 +31,8 @@ const emptyForm = {
   adminUsername: "admin",
   adminPassword: "",
   adminFullName: "",
+  monthlyFee: "",
+  dueDay: "5",
 };
 
 const SuperAdmin = () => {
