@@ -76,7 +76,14 @@ const SuperAdmin = () => {
 
   const openEdit = (c: Client) => {
     setEditing(c);
-    setForm({ ...emptyForm, name: c.name, slug: c.slug, notes: c.notes || "" });
+    setForm({
+      ...emptyForm,
+      name: c.name,
+      slug: c.slug,
+      notes: c.notes || "",
+      monthlyFee: String(c.monthly_fee ?? ""),
+      dueDay: String(c.due_day ?? 5),
+    });
     setDialogOpen(true);
   };
 
@@ -91,6 +98,9 @@ const SuperAdmin = () => {
 
     setSaving(true);
     try {
+      const monthlyFee = parseFloat(form.monthlyFee.replace(",", ".")) || 0;
+      const dueDay = Math.min(31, Math.max(1, parseInt(form.dueDay) || 5));
+
       if (editing) {
         const { data, error } = await supabase.functions.invoke("manage-clients", {
           body: {
@@ -99,6 +109,8 @@ const SuperAdmin = () => {
             name: form.name,
             slug: finalSlug,
             notes: form.notes || null,
+            monthlyFee,
+            dueDay,
           },
         });
         if (error || !data?.success) throw new Error(data?.error || error?.message);
@@ -115,6 +127,8 @@ const SuperAdmin = () => {
             adminUsername: form.adminUsername,
             adminPassword: form.adminPassword,
             adminFullName: form.adminFullName || form.adminUsername,
+            monthlyFee,
+            dueDay,
           },
         });
         if (error || !data?.success) throw new Error(data?.error || error?.message);
