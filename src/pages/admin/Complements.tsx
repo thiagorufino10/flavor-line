@@ -26,11 +26,16 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatBRL } from "@/lib/format";
 
+interface CategoryRow {
+  id: string;
+  name: string;
+}
+
 interface Complement {
   id: string;
   name: string;
   price: number;
-  category: "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente";
+  category_id: string;
   isSpecial: boolean;
   linkedItems?: string[];
 }
@@ -38,77 +43,65 @@ interface Complement {
 interface MenuItem {
   id: string;
   name: string;
-  category: string;
+  category_id: string;
 }
 
 const Complements = () => {
   const navigate = useNavigate();
   const [complements, setComplements] = useState<Complement[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingComplement, setEditingComplement] = useState<Complement | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     price: "",
-    category: "pasteis" as "pasteis" | "salgados" | "acai" | "bebidas" | "doces" | "coxinha" | "cachorro_quente",
+    category_id: "",
     isSpecial: false,
     linkedItems: [] as string[],
   });
 
   useEffect(() => {
-    fetchComplements();
-    fetchMenuItems();
+    fetchAll();
   }, []);
 
-  const fetchMenuItems = async () => {
+  const fetchAll = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("menu_items")
-        .select("id, name, category")
-        .eq("active", true)
-        .order("category", { ascending: true })
-        .order("name", { ascending: true });
+      const [catRes, miRes, compRes] = await Promise.all([
+        supabase.from("categories").select("id, name").eq("active", true).order("sort_order"),
+        supabase.from("menu_items").select("id, name, category_id").eq("active", true).order("name"),
+        supabase
+          .from("complements")
+          .select(`*, complement_menu_items(menu_item_id)`)
+          .eq("active", true),
+      ]);
+      if (catRes.error) throw catRes.error;
+      if (miRes.error) throw miRes.error;
+      if (compRes.error) throw compRes.error;
 
-      if (error) throw error;
-      setMenuItems(data || []);
-    } catch (error) {
-      console.error("Erro ao buscar itens do menu:", error);
-    }
-  };
+      setCategories(catRes.data || []);
+      setMenuItems((miRes.data || []) as any);
 
-  const fetchComplements = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("complements")
-        .select(`
-          *,
-          complement_menu_items (
-            menu_item_id
-          )
-        `)
-        .eq("active", true)
-        .order("category", { ascending: true });
-
-      if (error) throw error;
-
-      const formattedComplements = data?.map(comp => ({
+      const formatted = (compRes.data || []).map((comp: any) => ({
         id: comp.id,
         name: comp.name,
         price: parseFloat(String(comp.price)),
-        category: comp.category as "pasteis" | "salgados" | "acai",
+        category_id: comp.category_id,
         isSpecial: parseFloat(String(comp.price)) > 0,
         linkedItems: comp.complement_menu_items?.map((link: any) => link.menu_item_id) || [],
-      })) || [];
-
-      setComplements(formattedComplements);
+      }));
+      setComplements(formatted);
     } catch (error) {
-      console.error("Erro ao buscar complementos:", error);
+      console.error("Erro ao buscar dados:", error);
       toast.error("Erro ao carregar complementos");
     } finally {
       setLoading(false);
     }
   };
+
+  const categoryName = (id: string) => categories.find((c) => c.id === id)?.name || "—";
 
   const handleOpenDialog = (complement?: Complement) => {
     if (complement) {
@@ -116,7 +109,7 @@ const Complements = () => {
       setFormData({
         name: complement.name,
         price: complement.price.toString(),
-        category: complement.category,
+        category_id: complement.category_id,
         isSpecial: complement.isSpecial,
         linkedItems: complement.linkedItems || [],
       });
@@ -125,7 +118,7 @@ const Complements = () => {
       setFormData({
         name: "",
         price: "",
-        category: "pasteis",
+        category_id: categories[0]?.id || "",
         isSpecial: false,
         linkedItems: [],
       });
@@ -138,7 +131,10 @@ const Complements = () => {
       toast.error("Nome do complemento é obrigatório");
       return;
     }
-
+    if (!formData.category_id) {
+      toast.error("Selecione uma categoria");
+      return;
+    }
     if (formData.linkedItems.length === 0) {
       toast.error("Selecione pelo menos um produto para vincular");
       return;
@@ -149,64 +145,49 @@ const Complements = () => {
 
     try {
       let complementId = editingComplement?.id;
+      const { getClientId } = await import("@/lib/getClientId");
+      const client_id = await getClientId();
 
       if (editingComplement) {
-        // Atualizar complemento
         const { error } = await supabase
           .from("complements")
           .update({
             name: formData.name,
             price: price,
-            category: formData.category,
+            category_id: formData.category_id,
           })
           .eq("id", editingComplement.id);
-
         if (error) throw error;
 
-        // Remover vínculos antigos
-        await supabase
-          .from("complement_menu_items")
-          .delete()
-          .eq("complement_id", editingComplement.id);
+        await supabase.from("complement_menu_items").delete().eq("complement_id", editingComplement.id);
       } else {
-        // Criar novo complemento
-        const { getClientId } = await import("@/lib/getClientId");
-        const client_id = await getClientId();
         const { data, error } = await supabase
           .from("complements")
           .insert({
             client_id,
             name: formData.name,
             price: price,
-            category: formData.category,
+            category_id: formData.category_id,
             active: true,
           })
           .select()
           .single();
-
         if (error) throw error;
         complementId = data.id;
       }
 
-      // Criar novos vínculos
       if (complementId && formData.linkedItems.length > 0) {
-        const { getClientId } = await import("@/lib/getClientId");
-        const client_id = await getClientId();
-        const links = formData.linkedItems.map(menuItemId => ({
+        const links = formData.linkedItems.map((menuItemId) => ({
           client_id,
-          complement_id: complementId,
+          complement_id: complementId!,
           menu_item_id: menuItemId,
         }));
-
-        const { error: linkError } = await supabase
-          .from("complement_menu_items")
-          .insert(links);
-
+        const { error: linkError } = await supabase.from("complement_menu_items").insert(links);
         if (linkError) throw linkError;
       }
 
       toast.success(editingComplement ? "Complemento atualizado com sucesso" : "Complemento cadastrado com sucesso");
-      await fetchComplements();
+      await fetchAll();
       setDialogOpen(false);
     } catch (error) {
       console.error("Erro ao salvar complemento:", error);
@@ -218,14 +199,9 @@ const Complements = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("complements")
-        .update({ active: false })
-        .eq("id", id);
-
+      const { error } = await supabase.from("complements").update({ active: false }).eq("id", id);
       if (error) throw error;
-
-      await fetchComplements();
+      await fetchAll();
       toast.success("Complemento removido");
     } catch (error) {
       console.error("Erro ao remover complemento:", error);
@@ -233,38 +209,34 @@ const Complements = () => {
     }
   };
 
-  const getCategoryBadge = (category: string) => {
-    const colors = {
-      pasteis: "bg-primary/10 text-primary",
-      salgados: "bg-accent/10 text-accent",
-      acai: "bg-warning/10 text-warning",
-      bebidas: "bg-secondary/10 text-secondary",
-    };
-    const labels = {
-      pasteis: "Pastéis",
-      salgados: "Salgados",
-      acai: "Açaí",
-      bebidas: "Bebidas",
-    };
+  if (categories.length === 0 && !loading) {
     return (
-      <Badge className={colors[category as keyof typeof colors]}>
-        {labels[category as keyof typeof labels]}
-      </Badge>
+      <div className="container mx-auto px-4 py-8 space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Complementos</h1>
+          <Button variant="outline" onClick={() => navigate("/admin")} className="gap-2">
+            <ArrowLeft className="w-4 h-4" /> Voltar
+          </Button>
+        </div>
+        <Card>
+          <CardContent className="text-center py-12 space-y-4">
+            <p className="text-muted-foreground">
+              Cadastre pelo menos uma categoria antes de criar complementos.
+            </p>
+            <Button onClick={() => navigate("/admin/categories")}>Ir para Categorias</Button>
+          </CardContent>
+        </Card>
+      </div>
     );
-  };
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-card border-b sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/")}
-              >
+              <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
@@ -282,14 +254,11 @@ const Complements = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Card>
           <CardHeader>
             <CardTitle>Lista de Complementos</CardTitle>
-            <CardDescription>
-              Total de {complements.length} complemento(s) cadastrado(s)
-            </CardDescription>
+            <CardDescription>Total de {complements.length} complemento(s) cadastrado(s)</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -310,33 +279,21 @@ const Complements = () => {
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-3">
                         <span className="font-semibold">{complement.name}</span>
-                        {getCategoryBadge(complement.category)}
-                        {complement.isSpecial && (
-                          <Badge variant="default">Especial</Badge>
-                        )}
+                        <Badge variant="secondary">{categoryName(complement.category_id)}</Badge>
+                        {complement.isSpecial && <Badge variant="default">Especial</Badge>}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {complement.isSpecial
-                          ? formatBRL(complement.price)
-                          : "Grátis"}
+                        {complement.isSpecial ? formatBRL(complement.price) : "Grátis"}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         Vinculado a {complement.linkedItems?.length || 0} produto(s)
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleOpenDialog(complement)}
-                      >
+                      <Button size="icon" variant="ghost" onClick={() => handleOpenDialog(complement)}>
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDelete(complement.id)}
-                      >
+                      <Button size="icon" variant="ghost" onClick={() => handleDelete(complement.id)}>
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
                     </div>
@@ -348,16 +305,11 @@ const Complements = () => {
         </Card>
       </main>
 
-      {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {editingComplement ? "Editar" : "Novo"} Complemento
-            </DialogTitle>
-            <DialogDescription>
-              Preencha os dados do complemento e vincule aos produtos
-            </DialogDescription>
+            <DialogTitle>{editingComplement ? "Editar" : "Novo"} Complemento</DialogTitle>
+            <DialogDescription>Preencha os dados e vincule aos produtos</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
@@ -374,22 +326,18 @@ const Complements = () => {
             <div className="space-y-2">
               <Label htmlFor="category">Categoria *</Label>
               <Select
-                value={formData.category}
-                onValueChange={(value: any) =>
-                  setFormData({ ...formData, category: value, linkedItems: [] })
-                }
+                value={formData.category_id}
+                onValueChange={(value) => setFormData({ ...formData, category_id: value, linkedItems: [] })}
               >
                 <SelectTrigger id="category">
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                 <SelectItem value="pasteis">Pastéis</SelectItem>
-                 <SelectItem value="salgados">Salgados</SelectItem>
-                 <SelectItem value="acai">Açaí</SelectItem>
-                 <SelectItem value="bebidas">Bebidas</SelectItem>
-                 <SelectItem value="doces">Doces</SelectItem>
-                 <SelectItem value="coxinha">Coxinha</SelectItem>
-                 <SelectItem value="cachorro_quente">Cachorro Quente</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -399,13 +347,14 @@ const Complements = () => {
                 id="isSpecial"
                 checked={formData.isSpecial}
                 onCheckedChange={(checked) =>
-                  setFormData({ ...formData, isSpecial: checked as boolean, price: checked ? formData.price : "0" })
+                  setFormData({
+                    ...formData,
+                    isSpecial: checked as boolean,
+                    price: checked ? formData.price : "0",
+                  })
                 }
               />
-              <label
-                htmlFor="isSpecial"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
+              <label htmlFor="isSpecial" className="text-sm font-medium leading-none">
                 Complemento Especial (cobra valor adicional)
               </label>
             </div>
@@ -419,9 +368,7 @@ const Complements = () => {
                   step="0.01"
                   min="0"
                   value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   placeholder="0.00"
                 />
               </div>
@@ -434,7 +381,7 @@ const Complements = () => {
               </p>
               <div className="border rounded-lg p-3 max-h-64 overflow-y-auto space-y-2">
                 {menuItems
-                  .filter(item => item.category === formData.category)
+                  .filter((item) => item.category_id === formData.category_id)
                   .map((item) => (
                     <div key={item.id} className="flex items-center space-x-2">
                       <Checkbox
@@ -449,20 +396,17 @@ const Complements = () => {
                           } else {
                             setFormData({
                               ...formData,
-                              linkedItems: formData.linkedItems.filter(id => id !== item.id),
+                              linkedItems: formData.linkedItems.filter((id) => id !== item.id),
                             });
                           }
                         }}
                       />
-                      <label
-                        htmlFor={`item-${item.id}`}
-                        className="text-sm font-medium leading-none cursor-pointer"
-                      >
+                      <label htmlFor={`item-${item.id}`} className="text-sm font-medium cursor-pointer">
                         {item.name}
                       </label>
                     </div>
                   ))}
-                {menuItems.filter(item => item.category === formData.category).length === 0 && (
+                {menuItems.filter((item) => item.category_id === formData.category_id).length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-4">
                     Nenhum produto cadastrado nesta categoria
                   </p>
