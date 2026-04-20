@@ -276,7 +276,7 @@ const Orders = () => {
               </CardContent>
             </Card>
           ) : !selectedCategoryId ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
               {categories.map((cat) => {
                 const itemCount = menuByCat[cat.id]?.length || 0;
                 return (
