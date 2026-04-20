@@ -284,23 +284,25 @@ const Orders = () => {
                     key={cat.id}
                     onClick={() => setSelectedCategoryId(cat.id)}
                     disabled={itemCount === 0}
-                    className="group relative aspect-square rounded-xl border-2 border-border bg-card overflow-hidden hover:border-primary hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                    className="group relative aspect-square rounded-xl border-2 border-border bg-card overflow-hidden hover:border-primary hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-left flex flex-col"
                   >
                     {cat.image_url ? (
-                      <img
-                        src={cat.image_url}
-                        alt={cat.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        loading="lazy"
-                      />
+                      <div className="flex-1 flex items-center justify-center p-4 bg-muted/30">
+                        <img
+                          src={cat.image_url}
+                          alt={cat.name}
+                          className="max-w-[70%] max-h-[70%] object-contain group-hover:scale-105 transition-transform"
+                          loading="lazy"
+                        />
+                      </div>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-muted">
+                      <div className="flex-1 flex items-center justify-center bg-muted">
                         <ImagePlus className="w-12 h-12 text-muted-foreground" />
                       </div>
                     )}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                      <p className="text-white font-bold text-base sm:text-lg leading-tight">{cat.name}</p>
-                      <p className="text-white/80 text-xs">
+                    <div className="bg-card border-t p-2 text-center">
+                      <p className="font-bold text-sm sm:text-base leading-tight">{cat.name}</p>
+                      <p className="text-muted-foreground text-xs">
                         {itemCount} {itemCount === 1 ? "item" : "itens"}
                       </p>
                     </div>
