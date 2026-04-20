@@ -138,9 +138,11 @@ const Printer = () => {
           .eq("id", configId);
         if (error) throw error;
       } else {
+        const { getClientId } = await import("@/lib/getClientId");
+        const client_id = await getClientId();
         const { data, error } = await supabase
           .from("printer_config")
-          .insert(payload)
+          .insert({ ...payload, client_id })
           .select("id")
           .single();
         if (error) throw error;

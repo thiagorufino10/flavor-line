@@ -240,7 +240,10 @@ const CashFlow = () => {
       return;
     }
     try {
+      const { getClientId } = await import("@/lib/getClientId");
+      const client_id = await getClientId();
       const { error } = await supabase.from("cash_flow_transactions").insert({
+        client_id,
         transaction_type: newTransaction.type,
         description: newTransaction.description,
         amount: parseFloat(newTransaction.amount),
