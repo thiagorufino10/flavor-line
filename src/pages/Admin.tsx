@@ -15,7 +15,8 @@ import {
   DollarSign,
   TrendingUp,
   Monitor,
-  Palette
+  Palette,
+  LayoutGrid
 } from "lucide-react";
 
 const Admin = () => {
@@ -42,6 +43,13 @@ const Admin = () => {
       description: "Configurar taxas de crédito e débito",
       color: "bg-warning",
       path: "/admin/payment-rates"
+    },
+    {
+      icon: LayoutGrid,
+      title: "Categorias",
+      description: "Cadastre categorias e a IA cria a imagem",
+      color: "bg-info",
+      path: "/admin/categories"
     },
     {
       icon: UtensilsCrossed,
