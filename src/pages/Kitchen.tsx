@@ -257,9 +257,7 @@ const Kitchen = () => {
           </div>
         </div>
       </main>
-      
-      <Footer />
-    </div>
+    </AppLayout>
   );
 };
 
