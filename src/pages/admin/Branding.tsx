@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Image, Type, Upload, X } from "lucide-react";
+import { Image, Type, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { AppLayout } from "@/components/AppLayout";
 
 const Branding = () => {
   const navigate = useNavigate();
@@ -145,34 +146,8 @@ const Branding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b shadow-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/admin")}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Marca e Identidade</h1>
-              <p className="text-sm text-muted-foreground">Configure a identidade visual do sistema</p>
-            </div>
-          </div>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate("/admin")}
-            className="gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar
-          </Button>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+    <AppLayout title="Marca e Identidade" subtitle="Configure a identidade visual do sistema">
+<main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="grid gap-6">
           {/* Preview Card */}
           <Card>
@@ -308,7 +283,7 @@ const Branding = () => {
           </div>
         </div>
       </main>
-    </div>
+    </AppLayout>
   );
 };
 

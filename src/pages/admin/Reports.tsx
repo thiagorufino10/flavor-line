@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, DollarSign, ShoppingCart, CalendarIcon, FileSpreadsheet, Eye, TrendingUp, Users, BarChart3, Clock } from "lucide-react";
+import { DollarSign, ShoppingCart, CalendarIcon, FileSpreadsheet, Eye, TrendingUp, Users, BarChart3, Clock } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
@@ -24,6 +24,7 @@ import { ptBR } from "date-fns/locale";
 import { useSales, SaleDetail } from "@/hooks/useSales";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL } from "@/lib/format";
+import { AppLayout } from "@/components/AppLayout";
 
 const paymentMethodLabel: Record<string, string> = {
   dinheiro: "Dinheiro",
@@ -261,22 +262,8 @@ const Reports = () => {
     pm.split("/").map(m => paymentMethodLabel[m.trim()] || m).join(" / ");
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Relatórios</h1>
-              <p className="text-sm text-muted-foreground">Análises completas do seu negócio</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-6 space-y-6">
+    <AppLayout title="Relatórios" subtitle="Análises completas do seu negócio">
+<main className="container mx-auto px-4 py-6 space-y-6">
         {/* Filtros */}
         <Card>
           <CardHeader className="pb-3">
@@ -714,7 +701,7 @@ const Reports = () => {
           </>
         )}
       </main>
-    </div>
+    </AppLayout>
   );
 };
 

@@ -15,10 +15,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Plus, Pencil, Trash2, LayoutGrid } from "lucide-react";
+import { Plus, Pencil, Trash2, LayoutGrid } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import Footer from "@/components/Footer";
+import { AppLayout } from "@/components/AppLayout";
 
 interface TableRow {
   id: string;
@@ -110,28 +111,8 @@ const TablesAdmin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="bg-card border-b shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <LayoutGrid className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Mesas</h1>
-              <p className="text-sm text-muted-foreground">Cadastre e gerencie as mesas do estabelecimento</p>
-            </div>
-          </div>
-          <Button onClick={openNew} className="gap-2">
-            <Plus className="w-4 h-4" /> Nova mesa
-          </Button>
-        </div>
-      </header>
-
-      <main className="flex-1 container mx-auto px-4 py-8">
+    <AppLayout title="Mesas" subtitle="Cadastre e gerencie as mesas do estabelecimento">
+<main className="flex-1 container mx-auto px-4 py-8">
         <Card>
           <CardHeader>
             <CardTitle>Mesas cadastradas</CardTitle>
@@ -212,7 +193,7 @@ const TablesAdmin = () => {
       </AlertDialog>
 
       <Footer />
-    </div>
+    </AppLayout>
   );
 };
 

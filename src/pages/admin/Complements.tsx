@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatBRL } from "@/lib/format";
+import { AppLayout } from "@/components/AppLayout";
 
 interface CategoryRow {
   id: string;
@@ -231,30 +232,8 @@ const Complements = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold">Gerenciar Complementos</h1>
-                <p className="text-sm text-muted-foreground">
-                  Configure complementos e vincule aos produtos
-                </p>
-              </div>
-            </div>
-            <Button onClick={() => handleOpenDialog()} className="gap-2">
-              <Plus className="w-4 h-4" />
-              Novo Complemento
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
+    <AppLayout title="Gerenciar Complementos" subtitle="Configure complementos e vincule aos produtos">
+<main className="container mx-auto px-4 py-8">
         <Card>
           <CardHeader>
             <CardTitle>Lista de Complementos</CardTitle>
@@ -425,7 +404,7 @@ const Complements = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppLayout>
   );
 };
 

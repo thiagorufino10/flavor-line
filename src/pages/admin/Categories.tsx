@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Pencil, Sparkles, ImagePlus } from "lucide-react";
+import { Plus, Trash2, Pencil, Sparkles, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getClientId } from "@/lib/getClientId";
+import { AppLayout } from "@/components/AppLayout";
 
 interface Category {
   id: string;
@@ -178,27 +179,8 @@ const Categories = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Categorias</h1>
-              <p className="text-sm text-muted-foreground">
-                Crie suas próprias categorias — a IA gera uma imagem ilustrativa para cada uma
-              </p>
-            </div>
-          </div>
-          <Button onClick={openNew} className="gap-2">
-            <Plus className="w-4 h-4" /> Nova Categoria
-          </Button>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
+    <AppLayout title="Categorias" subtitle="Crie suas próprias categorias — a IA gera uma imagem ilustrativa para cada uma">
+<main className="container mx-auto px-4 py-8">
         <Card>
           <CardHeader>
             <CardTitle>Suas categorias ({items.length})</CardTitle>
@@ -324,7 +306,7 @@ const Categories = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppLayout>
   );
 };
 

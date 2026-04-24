@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Plus, Download, CalendarIcon, Filter, RotateCcw } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Plus, Download, CalendarIcon, Filter, RotateCcw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -26,6 +26,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import * as XLSX from "xlsx";
 import { formatBRL } from "@/lib/format";
+import { AppLayout } from "@/components/AppLayout";
 
 interface Transaction {
   id: string;
@@ -346,58 +347,8 @@ const CashFlow = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/admin")}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold">Fluxo de Caixa</h1>
-                <p className="text-sm text-muted-foreground">Controle completo de entradas e saídas</p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button><Plus className="mr-2 h-4 w-4" />Nova Transação</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>Adicionar Transação</DialogTitle></DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Tipo *</Label>
-                      <Select value={newTransaction.type} onValueChange={(v: "entrada" | "saida") => setNewTransaction({ ...newTransaction, type: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="entrada">Entrada</SelectItem>
-                          <SelectItem value="saida">Saída</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Descrição *</Label>
-                      <Textarea value={newTransaction.description} onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })} />
-                    </div>
-                    <div>
-                      <Label>Valor *</Label>
-                      <Input type="number" step="0.01" value={newTransaction.amount} onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })} />
-                    </div>
-                    <Button onClick={handleAddTransaction} className="w-full">Adicionar</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-              <Button variant="outline" onClick={handleExportToExcel}>
-                <Download className="mr-2 h-4 w-4" />Exportar
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-6 space-y-6">
+    <AppLayout title="Fluxo de Caixa" subtitle="Controle completo de entradas e saídas">
+<main className="container mx-auto px-4 py-6 space-y-6">
         {/* Filtros */}
         <Card>
           <CardHeader className="pb-3">
@@ -627,7 +578,7 @@ const CashFlow = () => {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </AppLayout>
   );
 };
 
