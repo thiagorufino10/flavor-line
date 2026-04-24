@@ -14,6 +14,9 @@ import SuperAdminLogin from "./pages/SuperAdminLogin";
 
 // Lazy load admin pages (heavy deps like xlsx)
 const Admin = lazy(() => import("./pages/Admin"));
+const TablesPage = lazy(() => import("./pages/Tables"));
+const TableSession = lazy(() => import("./pages/TableSession"));
+const TablesAdmin = lazy(() => import("./pages/admin/Tables"));
 const Complements = lazy(() => import("./pages/admin/Complements"));
 const CashFlow = lazy(() => import("./pages/admin/CashFlow"));
 const Reports = lazy(() => import("./pages/admin/Reports"));
@@ -58,9 +61,12 @@ const App = () => (
         <Route path="/admin/categories" element={<ProtectedRoute requiredRole={["admin"]}><Categories /></ProtectedRoute>} />
         <Route path="/admin/cash-flow" element={<ProtectedRoute requiredRole={["admin"]}><CashFlow /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute requiredRole={["admin"]}><Reports /></ProtectedRoute>} />
+        <Route path="/admin/tables" element={<ProtectedRoute requiredRole={["admin"]}><TablesAdmin /></ProtectedRoute>} />
 
         {/* Attendant routes */}
         <Route path="/orders" element={<ProtectedRoute requiredRole={["admin", "atendente"]}><Orders /></ProtectedRoute>} />
+        <Route path="/tables" element={<ProtectedRoute requiredRole={["admin", "atendente"]}><TablesPage /></ProtectedRoute>} />
+        <Route path="/tables/:sessionId" element={<ProtectedRoute requiredRole={["admin", "atendente"]}><TableSession /></ProtectedRoute>} />
 
         {/* Kitchen routes */}
         <Route path="/kitchen" element={<ProtectedRoute requiredRole={["admin", "cozinha"]}><Kitchen /></ProtectedRoute>} />

@@ -52,6 +52,13 @@ const Admin = () => {
       path: "/admin/categories"
     },
     {
+      icon: LayoutGrid,
+      title: "Mesas",
+      description: "Cadastre as mesas do estabelecimento",
+      color: "bg-success",
+      path: "/admin/tables"
+    },
+    {
       icon: UtensilsCrossed,
       title: "Cardápio",
       description: "Gerenciar itens do cardápio",

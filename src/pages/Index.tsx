@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UtensilsCrossed, Settings, ShoppingCart, ChefHat, Tv, LogOut, Package } from "lucide-react";
+import { UtensilsCrossed, Settings, ShoppingCart, ChefHat, Tv, LogOut, Package, LayoutGrid } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import Footer from "@/components/Footer";
@@ -36,9 +36,18 @@ const Index = () => {
       roles: ["admin"]
     },
     {
+      icon: LayoutGrid,
+      title: "Atendimento por Mesa",
+      description: "Abrir mesas, lançar pedidos e receber pagamentos parciais",
+      path: "/tables",
+      color: "bg-success",
+      demo: "Atendente",
+      roles: ["admin", "atendente"]
+    },
+    {
       icon: ShoppingCart,
-      title: "Lançamento de Pedidos",
-      description: "Tela de atendimento e vendas",
+      title: "Pedido Avulso (Balcão)",
+      description: "Tela de atendimento rápido sem mesa",
       path: "/orders",
       color: "bg-warning",
       demo: "Atendente",
