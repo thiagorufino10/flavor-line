@@ -48,6 +48,7 @@ const operacao: Item[] = [
 const gestao: Item[] = [
   { title: "Cardápio", url: "/admin/menu", icon: UtensilsCrossed, roles: ["admin", "atendente"] },
   { title: "Complementos", url: "/admin/complements", icon: Package, roles: ["admin", "atendente"] },
+  { title: "Categorias", url: "/admin/categories", icon: LayoutGrid, roles: ["admin"] },
   { title: "Financeiro", url: "/admin/cash-flow", icon: DollarSign, roles: ["admin"] },
   { title: "Relatórios", url: "/admin/reports", icon: TrendingUp, roles: ["admin"] },
   { title: "Administração", url: "/admin", icon: Settings, roles: ["admin"] },
