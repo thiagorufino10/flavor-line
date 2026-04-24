@@ -180,10 +180,13 @@ const Categories = () => {
 
   return (
     <AppLayout title="Categorias" subtitle="Crie suas próprias categorias — a IA gera uma imagem ilustrativa para cada uma">
-<main className="container mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto">
         <Card>
-          <CardHeader>
-            <CardTitle>Suas categorias ({items.length})</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Suas categorias ({items.length})</CardTitle>
+            <Button onClick={openNew} size="sm" className="gap-2" disabled={busy}>
+              <Plus className="w-4 h-4" /> Nova categoria
+            </Button>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -254,7 +257,7 @@ const Categories = () => {
             )}
           </CardContent>
         </Card>
-      </main>
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={(o) => !busy && setDialogOpen(o)}>
         <DialogContent className="w-[calc(100vw-2rem)] max-w-md max-h-[90vh] overflow-y-auto">
