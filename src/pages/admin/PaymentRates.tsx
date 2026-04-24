@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatBRL } from "@/lib/format";
+import { AppLayout } from "@/components/AppLayout";
 
 const PaymentRates = () => {
   const navigate = useNavigate();
@@ -107,23 +108,9 @@ const PaymentRates = () => {
   const exampleCaixa = taxPayer.credito ? exampleTotal : exampleTotal - exampleTax;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <CreditCard className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Taxas de Pagamento</h1>
-            <p className="text-muted-foreground">Configure as taxas das maquininhas de cartão</p>
-          </div>
-        </div>
-        <Button variant="outline" onClick={() => navigate("/admin")} className="gap-2">
-          <ArrowLeft className="w-4 h-4" />
-          Voltar
-        </Button>
-      </div>
+    <AppLayout title="Taxas de Pagamento" subtitle="Configure as taxas das maquininhas de cartão">
 
+      <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Configuração de Taxas (%)</CardTitle>
@@ -224,7 +211,8 @@ const PaymentRates = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

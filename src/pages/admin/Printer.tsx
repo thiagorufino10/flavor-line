@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getSystemPrinters, printHtmlToSystemPrinter } from "@/lib/systemPrinter";
+import { AppLayout } from "@/components/AppLayout";
 
 const Printer = () => {
   const navigate = useNavigate();
@@ -248,23 +249,9 @@ const Printer = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center">
-            <PrinterIcon className="w-6 h-6 text-secondary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Configuração da Impressora</h1>
-            <p className="text-muted-foreground">Configure a impressora de pedidos</p>
-          </div>
-        </div>
-        <Button variant="outline" onClick={() => navigate("/admin")} className="gap-2">
-          <ArrowLeft className="w-4 h-4" />
-          Voltar
-        </Button>
-      </div>
+    <AppLayout title="Configuração da Impressora" subtitle="Configure a impressora de pedidos">
 
+      <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -516,7 +503,8 @@ const Printer = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

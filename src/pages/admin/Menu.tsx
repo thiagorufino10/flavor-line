@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { formatBRL } from "@/lib/format";
+import { AppLayout } from "@/components/AppLayout";
 
 interface CategoryRow {
   id: string;
@@ -211,23 +212,9 @@ const Menu = () => {
   }
 
   return (
-    <div className="space-y-6 container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
-            <UtensilsCrossed className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Cardápio</h1>
-            <p className="text-muted-foreground">Gerencie os itens do cardápio</p>
-          </div>
-        </div>
-        <Button variant="outline" onClick={() => navigate("/admin")} className="gap-2">
-          <ArrowLeft className="w-4 h-4" />
-          Voltar
-        </Button>
-      </div>
+    <AppLayout title="Cardápio" subtitle="Gerencie os itens do cardápio">
 
+      <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -402,7 +389,8 @@ const Menu = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 
