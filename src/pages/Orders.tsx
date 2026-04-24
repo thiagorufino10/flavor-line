@@ -240,26 +240,8 @@ const Orders = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="bg-card border-b shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <ShoppingCart className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Novo Pedido</h1>
-              <p className="text-sm text-muted-foreground">{systemName}</p>
-            </div>
-          </div>
-          <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
-            <LogOut className="w-4 h-4" />
-            Sair
-          </Button>
-        </div>
-      </header>
-
-      <div className="flex-1 container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <AppLayout title="Novo Pedido" subtitle="Pedido avulso para balcão e viagem">
+      <div className="container mx-auto px-0 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           {loading ? (
             <Card>
