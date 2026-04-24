@@ -1,16 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
-import { LogOut, ChefHat, Clock, Printer } from "lucide-react";
+import { Clock, Printer } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
-import Footer from "@/components/Footer";
+import { AppLayout } from "@/components/AppLayout";
 import { formatBRL } from "@/lib/format";
 
 const Kitchen = () => {
-  const navigate = useNavigate();
   const { orders, loading, updateOrderStatus } = useOrders();
   const [operationMode, setOperationMode] = useState<string>("");
   const [systemName, setSystemName] = useState("TARMFood");
