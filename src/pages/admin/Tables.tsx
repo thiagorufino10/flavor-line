@@ -15,10 +15,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, LayoutGrid } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import Footer from "@/components/Footer";
 import { AppLayout } from "@/components/AppLayout";
 
 interface TableRow {
@@ -29,7 +27,6 @@ interface TableRow {
 }
 
 const TablesAdmin = () => {
-  const navigate = useNavigate();
   const { clientId } = useAuth();
   const [tables, setTables] = useState<TableRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,18 +108,37 @@ const TablesAdmin = () => {
   };
 
   return (
-    <AppLayout title="Mesas" subtitle="Cadastre e gerencie as mesas do estabelecimento">
-<main className="flex-1 container mx-auto px-4 py-8">
+    <AppLayout
+      title="Cadastro de Mesas"
+      subtitle="Cadastre e gerencie as mesas do estabelecimento"
+      actions={
+        <Button onClick={openNew} size="sm">
+          <Plus className="w-4 h-4 mr-2" />
+          Nova mesa
+        </Button>
+      }
+    >
+      <div className="max-w-5xl mx-auto">
         <Card>
-          <CardHeader>
-            <CardTitle>Mesas cadastradas</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Mesas cadastradas</CardTitle>
+            <Button onClick={openNew} size="sm" variant="outline">
+              <Plus className="w-4 h-4 mr-2" />
+              Nova mesa
+            </Button>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="py-8 text-center text-muted-foreground">Carregando...</div>
             ) : tables.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">
-                Nenhuma mesa cadastrada ainda. Clique em "Nova mesa".
+              <div className="py-12 text-center space-y-3">
+                <p className="text-muted-foreground">
+                  Nenhuma mesa cadastrada ainda.
+                </p>
+                <Button onClick={openNew}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Cadastrar primeira mesa
+                </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -148,7 +164,7 @@ const TablesAdmin = () => {
             )}
           </CardContent>
         </Card>
-      </main>
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
@@ -191,8 +207,6 @@ const TablesAdmin = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Footer />
     </AppLayout>
   );
 };
