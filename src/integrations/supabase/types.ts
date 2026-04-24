@@ -350,6 +350,7 @@ export type Database = {
           order_number: number
           payment_method: string
           status: string
+          table_session_id: string | null
           total_amount: number
           updated_at: string
         }
@@ -361,6 +362,7 @@ export type Database = {
           order_number?: number
           payment_method: string
           status?: string
+          table_session_id?: string | null
           total_amount: number
           updated_at?: string
         }
@@ -372,6 +374,7 @@ export type Database = {
           order_number?: number
           payment_method?: string
           status?: string
+          table_session_id?: string | null
           total_amount?: number
           updated_at?: string
         }
@@ -381,6 +384,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_table_session_id_fkey"
+            columns: ["table_session_id"]
+            isOneToOne: false
+            referencedRelation: "table_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -509,6 +519,54 @@ export type Database = {
           },
         ]
       }
+      session_payments: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          net_amount: number
+          payment_method: string
+          table_session_id: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          net_amount: number
+          payment_method: string
+          table_session_id: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          net_amount?: number
+          payment_method?: string
+          table_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_payments_table_session_id_fkey"
+            columns: ["table_session_id"]
+            isOneToOne: false
+            referencedRelation: "table_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           client_id: string
@@ -534,6 +592,98 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "system_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      table_sessions: {
+        Row: {
+          client_id: string
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          customer_name: string | null
+          id: string
+          opened_at: string
+          status: string
+          table_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string | null
+          id?: string
+          opened_at?: string
+          status?: string
+          table_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string | null
+          id?: string
+          opened_at?: string
+          status?: string
+          table_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_sessions_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tables: {
+        Row: {
+          active: boolean
+          client_id: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          client_id: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          client_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tables_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
