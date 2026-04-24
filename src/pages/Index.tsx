@@ -93,14 +93,6 @@ const Index = () => {
       roles: ["admin", "atendente"],
       color: "bg-amber-50 text-amber-600",
     },
-    {
-      icon: Settings,
-      title: "Administração",
-      description: "Relatórios e ajustes",
-      path: "/admin",
-      roles: ["admin"],
-      color: "bg-slate-100 text-slate-700",
-    },
   ];
 
   const modules = allModules.filter((m) => userRole && m.roles.includes(userRole));

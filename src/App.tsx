@@ -13,7 +13,7 @@ import NotFound from "./pages/NotFound";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
 
 // Lazy load admin pages (heavy deps like xlsx)
-const Admin = lazy(() => import("./pages/Admin"));
+// Admin index page removed — items moved into sidebar groups
 const TablesPage = lazy(() => import("./pages/Tables"));
 const TableSession = lazy(() => import("./pages/TableSession"));
 const TablesAdmin = lazy(() => import("./pages/admin/Tables"));
