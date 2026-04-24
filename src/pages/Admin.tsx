@@ -1,201 +1,81 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import Footer from "@/components/Footer";
-import { useState, useEffect } from "react";
-import { 
-  LogOut, 
-  Users, 
-  CreditCard, 
-  UtensilsCrossed, 
+import { AppLayout } from "@/components/AppLayout";
+import {
+  Users,
+  CreditCard,
+  UtensilsCrossed,
   Package,
   Printer,
-  Settings,
   DollarSign,
   TrendingUp,
   Monitor,
   Palette,
-  LayoutGrid
+  LayoutGrid,
 } from "lucide-react";
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const [systemName, setSystemName] = useState("TARMFood");
-
-  useEffect(() => {
-    const savedName = localStorage.getItem("systemName");
-    if (savedName) setSystemName(savedName);
-  }, []);
 
   const adminSections = [
-    {
-      icon: Users,
-      title: "Usuários e Perfis",
-      description: "Gerenciar usuários do sistema",
-      color: "bg-primary",
-      path: "/admin/users"
-    },
-    {
-      icon: CreditCard,
-      title: "Taxas de Pagamento",
-      description: "Configurar taxas de crédito e débito",
-      color: "bg-warning",
-      path: "/admin/payment-rates"
-    },
-    {
-      icon: LayoutGrid,
-      title: "Categorias",
-      description: "Cadastre categorias e a IA cria a imagem",
-      color: "bg-info",
-      path: "/admin/categories"
-    },
-    {
-      icon: LayoutGrid,
-      title: "Mesas",
-      description: "Cadastre as mesas do estabelecimento",
-      color: "bg-success",
-      path: "/admin/tables"
-    },
-    {
-      icon: UtensilsCrossed,
-      title: "Cardápio",
-      description: "Gerenciar itens do cardápio",
-      color: "bg-accent",
-      path: "/admin/menu"
-    },
-    {
-      icon: Package,
-      title: "Complementos",
-      description: "Gerenciar complementos e adicionais",
-      color: "bg-destructive",
-      path: "/admin/complements"
-    },
-    {
-      icon: Printer,
-      title: "Impressora",
-      description: "Configurar impressora de pedidos",
-      color: "bg-secondary",
-      path: "/admin/printer"
-    },
-    {
-      icon: Monitor,
-      title: "Modo de Operação",
-      description: "Impressão ou Display Digital",
-      color: "bg-info",
-      path: "/admin/operation-mode"
-    },
-    {
-      icon: Palette,
-      title: "Marca e Identidade",
-      description: "Logo e nome do sistema",
-      color: "bg-primary",
-      path: "/admin/branding"
-    }
+    { icon: Users, title: "Usuários e Perfis", description: "Gerenciar usuários do sistema", color: "bg-blue-50 text-blue-600", path: "/admin/users" },
+    { icon: CreditCard, title: "Taxas de Pagamento", description: "Configurar taxas de crédito e débito", color: "bg-amber-50 text-amber-600", path: "/admin/payment-rates" },
+    { icon: LayoutGrid, title: "Categorias", description: "Cadastre categorias e a IA cria a imagem", color: "bg-cyan-50 text-cyan-600", path: "/admin/categories" },
+    { icon: LayoutGrid, title: "Mesas", description: "Cadastre as mesas do estabelecimento", color: "bg-emerald-50 text-emerald-600", path: "/admin/tables" },
+    { icon: UtensilsCrossed, title: "Cardápio", description: "Gerenciar itens do cardápio", color: "bg-rose-50 text-rose-600", path: "/admin/menu" },
+    { icon: Package, title: "Complementos", description: "Gerenciar complementos e adicionais", color: "bg-orange-50 text-orange-600", path: "/admin/complements" },
+    { icon: Printer, title: "Impressora", description: "Configurar impressora de pedidos", color: "bg-slate-100 text-slate-700", path: "/admin/printer" },
+    { icon: Monitor, title: "Modo de Operação", description: "Impressão ou Display Digital", color: "bg-indigo-50 text-indigo-600", path: "/admin/operation-mode" },
+    { icon: Palette, title: "Marca e Identidade", description: "Logo e nome do sistema", color: "bg-pink-50 text-pink-600", path: "/admin/branding" },
   ];
 
   const financialSections = [
-    {
-      icon: DollarSign,
-      title: "Fluxo de Caixa",
-      description: "Controle de entradas e saídas",
-      color: "bg-success",
-      path: "/admin/cash-flow"
-    },
-    {
-      icon: TrendingUp,
-      title: "Relatórios",
-      description: "Análises e insights do negócio",
-      color: "bg-info",
-      path: "/admin/reports"
-    }
+    { icon: DollarSign, title: "Fluxo de Caixa", description: "Controle de entradas e saídas", color: "bg-emerald-50 text-emerald-600", path: "/admin/cash-flow" },
+    { icon: TrendingUp, title: "Relatórios", description: "Análises e insights do negócio", color: "bg-blue-50 text-blue-600", path: "/admin/reports" },
   ];
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <Settings className="w-6 h-6 text-primary-foreground" />
+  const renderCards = (items: typeof adminSections) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {items.map((s) => (
+        <Card
+          key={s.title}
+          className="cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all border-border/60"
+          onClick={() => navigate(s.path)}
+        >
+          <CardHeader>
+            <div className={`w-11 h-11 ${s.color} rounded-xl flex items-center justify-center mb-3`}>
+              <s.icon className="w-5 h-5" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">Painel Administrativo</h1>
-              <p className="text-sm text-muted-foreground">{systemName}</p>
-            </div>
-          </div>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate("/")}
-            className="gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            Sair
-          </Button>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Configurações do Sistema */}
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Configurações do Sistema</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {adminSections.map((section) => (
-              <Card 
-                key={section.title}
-                className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1"
-                onClick={() => navigate(section.path)}
-              >
-                <CardHeader>
-                  <div className={`w-12 h-12 ${section.color} rounded-xl flex items-center justify-center mb-4`}>
-                    <section.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <CardTitle className="text-xl">{section.title}</CardTitle>
-                  <CardDescription>{section.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="secondary" className="w-full">
-                    Acessar
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {/* Financeiro e Relatórios */}
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Financeiro e Relatórios</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {financialSections.map((section) => (
-              <Card 
-                key={section.title}
-                className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1"
-                onClick={() => navigate(section.path)}
-              >
-                <CardHeader>
-                  <div className={`w-12 h-12 ${section.color} rounded-xl flex items-center justify-center mb-4`}>
-                    <section.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <CardTitle className="text-xl">{section.title}</CardTitle>
-                  <CardDescription>{section.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="secondary" className="w-full">
-                    Acessar
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </main>
-      
-      <Footer />
+            <CardTitle className="text-base">{s.title}</CardTitle>
+            <CardDescription className="text-xs">{s.description}</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <Button variant="secondary" size="sm" className="w-full">Acessar</Button>
+          </CardContent>
+        </Card>
+      ))}
     </div>
+  );
+
+  return (
+    <AppLayout title="Painel Administrativo" subtitle="Configurações e relatórios do sistema">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Configurações do Sistema
+          </h2>
+          {renderCards(adminSections)}
+        </section>
+
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Financeiro e Relatórios
+          </h2>
+          {renderCards(financialSections)}
+        </section>
+      </div>
+    </AppLayout>
   );
 };
 
