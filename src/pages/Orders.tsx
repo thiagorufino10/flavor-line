@@ -399,9 +399,7 @@ const Orders = () => {
         totalAmount={getTotalPrice}
         onConfirm={handlePaymentConfirm}
       />
-
-      <Footer />
-    </div>
+    </AppLayout>
   );
 };
 
