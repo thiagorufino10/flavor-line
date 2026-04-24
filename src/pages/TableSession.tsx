@@ -9,9 +9,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, ShoppingCart, Send, DollarSign, Trash2, Lock } from "lucide-react";
+import { ShoppingCart, Send, DollarSign, Trash2, Lock } from "lucide-react";
 import { toast } from "sonner";
-import Footer from "@/components/Footer";
+import { AppLayout } from "@/components/AppLayout";
 import { MenuPicker, AddedItem } from "@/components/MenuPicker";
 import { SessionPaymentModal } from "@/components/SessionPaymentModal";
 import { formatBRL } from "@/lib/format";
@@ -235,32 +235,21 @@ const TableSession = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="bg-card border-b shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/tables")}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">{session.table_name}</h1>
-              <p className="text-sm text-muted-foreground">
-                {session.customer_name || "Sem nome"} {session.status === "fechada" && "• Encerrada"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setPaymentOpen(true)} className="gap-2">
-              <DollarSign className="w-4 h-4" /> Pagamento
-            </Button>
-            <Button variant="default" onClick={() => setConfirmClose(true)} className="gap-2" disabled={session.status === "fechada"}>
-              <Lock className="w-4 h-4" /> Fechar mesa
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex-1 container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <AppLayout
+      title={session.table_name}
+      subtitle={`${session.customer_name || "Sem nome"}${session.status === "fechada" ? " • Encerrada" : ""}`}
+      actions={
+        <>
+          <Button variant="outline" size="sm" onClick={() => setPaymentOpen(true)} className="gap-2">
+            <DollarSign className="w-4 h-4" /> Pagamento
+          </Button>
+          <Button variant="default" size="sm" onClick={() => setConfirmClose(true)} className="gap-2" disabled={session.status === "fechada"}>
+            <Lock className="w-4 h-4" /> Fechar mesa
+          </Button>
+        </>
+      }
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Catálogo */}
         <div className="lg:col-span-2 space-y-4">
           <MenuPicker onAddItem={handleAddToCart} />
