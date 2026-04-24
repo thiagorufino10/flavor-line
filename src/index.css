@@ -148,3 +148,9 @@ All colors MUST be HSL.
     letter-spacing: -0.01em;
   }
 }
+
+@layer utilities {
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+}
