@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
+import { prefetchRoute, prefetchAllRoutes } from "@/lib/routePrefetch";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -20,6 +21,8 @@ const Index = () => {
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000 * 30);
+    // Pré-carrega todas as páginas em idle para que cliques sejam instantâneos
+    prefetchAllRoutes();
     return () => clearInterval(t);
   }, []);
 
