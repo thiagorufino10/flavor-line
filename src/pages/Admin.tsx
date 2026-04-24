@@ -5,8 +5,6 @@ import { AppLayout } from "@/components/AppLayout";
 import {
   Users,
   CreditCard,
-  UtensilsCrossed,
-  Package,
   Printer,
   Monitor,
   Palette,
@@ -21,8 +19,6 @@ const Admin = () => {
     { icon: CreditCard, title: "Taxas de Pagamento", description: "Configurar taxas de crédito e débito", color: "bg-amber-50 text-amber-600", path: "/admin/payment-rates" },
     { icon: LayoutGrid, title: "Categorias", description: "Cadastre categorias e a IA cria a imagem", color: "bg-cyan-50 text-cyan-600", path: "/admin/categories" },
     { icon: LayoutGrid, title: "Mesas", description: "Cadastre as mesas do estabelecimento", color: "bg-emerald-50 text-emerald-600", path: "/admin/tables" },
-    { icon: UtensilsCrossed, title: "Cardápio", description: "Gerenciar itens do cardápio", color: "bg-rose-50 text-rose-600", path: "/admin/menu" },
-    { icon: Package, title: "Complementos", description: "Gerenciar complementos e adicionais", color: "bg-orange-50 text-orange-600", path: "/admin/complements" },
     { icon: Printer, title: "Impressora", description: "Configurar impressora de pedidos", color: "bg-slate-100 text-slate-700", path: "/admin/printer" },
     { icon: Monitor, title: "Modo de Operação", description: "Impressão ou Display Digital", color: "bg-indigo-50 text-indigo-600", path: "/admin/operation-mode" },
     { icon: Palette, title: "Marca e Identidade", description: "Logo e nome do sistema", color: "bg-pink-50 text-pink-600", path: "/admin/branding" },
