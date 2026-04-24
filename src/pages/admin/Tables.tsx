@@ -111,12 +111,6 @@ const TablesAdmin = () => {
     <AppLayout
       title="Cadastro de Mesas"
       subtitle="Cadastre e gerencie as mesas do estabelecimento"
-      actions={
-        <Button onClick={openNew} size="sm">
-          <Plus className="w-4 h-4 mr-2" />
-          Nova mesa
-        </Button>
-      }
     >
       <div className="max-w-5xl mx-auto">
         <Card>
