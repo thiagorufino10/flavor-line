@@ -8,8 +8,6 @@ import {
   UtensilsCrossed,
   Package,
   Printer,
-  DollarSign,
-  TrendingUp,
   Monitor,
   Palette,
   LayoutGrid,
@@ -28,11 +26,6 @@ const Admin = () => {
     { icon: Printer, title: "Impressora", description: "Configurar impressora de pedidos", color: "bg-slate-100 text-slate-700", path: "/admin/printer" },
     { icon: Monitor, title: "Modo de Operação", description: "Impressão ou Display Digital", color: "bg-indigo-50 text-indigo-600", path: "/admin/operation-mode" },
     { icon: Palette, title: "Marca e Identidade", description: "Logo e nome do sistema", color: "bg-pink-50 text-pink-600", path: "/admin/branding" },
-  ];
-
-  const financialSections = [
-    { icon: DollarSign, title: "Fluxo de Caixa", description: "Controle de entradas e saídas", color: "bg-emerald-50 text-emerald-600", path: "/admin/cash-flow" },
-    { icon: TrendingUp, title: "Relatórios", description: "Análises e insights do negócio", color: "bg-blue-50 text-blue-600", path: "/admin/reports" },
   ];
 
   const renderCards = (items: typeof adminSections) => (
@@ -66,13 +59,6 @@ const Admin = () => {
             Configurações do Sistema
           </h2>
           {renderCards(adminSections)}
-        </section>
-
-        <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            Financeiro e Relatórios
-          </h2>
-          {renderCards(financialSections)}
         </section>
       </div>
     </AppLayout>
