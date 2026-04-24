@@ -373,9 +373,7 @@ const TableSession = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Footer />
-    </div>
+    </AppLayout>
   );
 };
 
