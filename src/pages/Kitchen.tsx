@@ -45,29 +45,8 @@ const Kitchen = () => {
 
   if (operationMode === "printer") {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <header className="bg-card border-b shadow-sm">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <ChefHat className="w-6 h-6 text-primary-foreground" />
-              </div>
-            <div>
-              <h1 className="text-2xl font-bold">Tela da Cozinha</h1>
-              <p className="text-sm text-muted-foreground">{systemName}</p>
-            </div>
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate("/")}
-              className="gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Sair
-            </Button>
-          </div>
-        </header>
-        <div className="flex-1 flex items-center justify-center">
+      <AppLayout title="Tela da Cozinha" subtitle={systemName}>
+        <div className="flex items-center justify-center py-16">
           <Card className="max-w-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-center justify-center">
@@ -86,7 +65,7 @@ const Kitchen = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
