@@ -10,6 +10,11 @@ import {
   LogOut,
   DollarSign,
   TrendingUp,
+  Users,
+  CreditCard,
+  Printer,
+  Monitor,
+  Palette,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -51,7 +56,15 @@ const gestao: Item[] = [
   { title: "Categorias", url: "/admin/categories", icon: LayoutGrid, roles: ["admin"] },
   { title: "Financeiro", url: "/admin/cash-flow", icon: DollarSign, roles: ["admin"] },
   { title: "Relatórios", url: "/admin/reports", icon: TrendingUp, roles: ["admin"] },
-  { title: "Administração", url: "/admin", icon: Settings, roles: ["admin"] },
+];
+
+const configuracoes: Item[] = [
+  { title: "Usuários e Perfis", url: "/admin/users", icon: Users, roles: ["admin"] },
+  { title: "Taxas de Pagamento", url: "/admin/payment-rates", icon: CreditCard, roles: ["admin"] },
+  { title: "Cadastro de Mesas", url: "/admin/tables", icon: LayoutGrid, roles: ["admin"] },
+  { title: "Impressora", url: "/admin/printer", icon: Printer, roles: ["admin"] },
+  { title: "Modo de Operação", url: "/admin/operation-mode", icon: Monitor, roles: ["admin"] },
+  { title: "Marca e Identidade", url: "/admin/branding", icon: Palette, roles: ["admin"] },
 ];
 
 export function AppSidebar() {
@@ -123,6 +136,15 @@ export function AppSidebar() {
             <SidebarGroupLabel>Gestão</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{renderItems(filter(gestao))}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {filter(configuracoes).length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Configurações</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderItems(filter(configuracoes))}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}

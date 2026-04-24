@@ -13,7 +13,7 @@ import NotFound from "./pages/NotFound";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
 
 // Lazy load admin pages (heavy deps like xlsx)
-const Admin = lazy(() => import("./pages/Admin"));
+// Admin index page removed — items moved into sidebar groups
 const TablesPage = lazy(() => import("./pages/Tables"));
 const TableSession = lazy(() => import("./pages/TableSession"));
 const TablesAdmin = lazy(() => import("./pages/admin/Tables"));
@@ -50,7 +50,7 @@ const App = () => (
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
 
         {/* Admin routes - apenas admin */}
-        <Route path="/admin" element={<ProtectedRoute requiredRole={["admin"]}><Admin /></ProtectedRoute>} />
+        
         <Route path="/admin/users" element={<ProtectedRoute requiredRole={["admin"]}><Users /></ProtectedRoute>} />
         <Route path="/admin/payment-rates" element={<ProtectedRoute requiredRole={["admin"]}><PaymentRates /></ProtectedRoute>} />
         <Route path="/admin/menu" element={<ProtectedRoute requiredRole={["admin", "atendente"]}><Menu /></ProtectedRoute>} />
