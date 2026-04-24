@@ -121,6 +121,9 @@ const Index = () => {
             <Card
               key={m.title}
               onClick={() => navigate(m.path)}
+              onMouseEnter={() => prefetchRoute(m.path)}
+              onFocus={() => prefetchRoute(m.path)}
+              tabIndex={0}
               className="cursor-pointer p-5 hover:shadow-md hover:-translate-y-0.5 transition-all border-border/60"
             >
               <div
