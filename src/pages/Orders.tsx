@@ -3,13 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
-import { LogOut, Trash2, ShoppingCart, ArrowLeft, ImagePlus } from "lucide-react";
+import { Trash2, ArrowLeft, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { ComplementsModal, Complement } from "@/components/ComplementsModal";
 import { PaymentModal } from "@/components/PaymentModal";
 import { useOrders } from "@/hooks/useOrders";
-import Footer from "@/components/Footer";
+import { AppLayout } from "@/components/AppLayout";
 import { formatBRL } from "@/lib/format";
 
 interface OrderItem {
@@ -49,7 +48,6 @@ interface ComplementData {
 }
 
 const Orders = () => {
-  const navigate = useNavigate();
   const { createOrder } = useOrders();
   const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
   const [complementsModalOpen, setComplementsModalOpen] = useState(false);
@@ -242,26 +240,8 @@ const Orders = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="bg-card border-b shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <ShoppingCart className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Novo Pedido</h1>
-              <p className="text-sm text-muted-foreground">{systemName}</p>
-            </div>
-          </div>
-          <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
-            <LogOut className="w-4 h-4" />
-            Sair
-          </Button>
-        </div>
-      </header>
-
-      <div className="flex-1 container mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <AppLayout title="Novo Pedido" subtitle="Pedido avulso para balcão e viagem">
+      <div className="container mx-auto px-0 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
           {loading ? (
             <Card>
@@ -419,9 +399,7 @@ const Orders = () => {
         totalAmount={getTotalPrice}
         onConfirm={handlePaymentConfirm}
       />
-
-      <Footer />
-    </div>
+    </AppLayout>
   );
 };
 

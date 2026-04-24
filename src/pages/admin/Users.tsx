@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { AppLayout } from "@/components/AppLayout";
 
 interface UserProfile {
   id: string;
@@ -210,23 +211,9 @@ const Users = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <UsersIcon className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Usuários e Perfis</h1>
-            <p className="text-muted-foreground">Gerencie os usuários do sistema</p>
-          </div>
-        </div>
-        <Button variant="outline" onClick={() => navigate("/admin")} className="gap-2">
-          <ArrowLeft className="w-4 h-4" />
-          Voltar
-        </Button>
-      </div>
+    <AppLayout title="Usuários e Perfis" subtitle="Gerencie os usuários do sistema">
 
+      <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form */}
         <Card className="lg:col-span-1">
@@ -334,7 +321,8 @@ const Users = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

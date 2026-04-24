@@ -9,10 +9,10 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { ArrowLeft, LayoutGrid, Users, Plus } from "lucide-react";
+import { Users, Plus } from "lucide-react";
 import { useTablesOverview, openTableSession } from "@/hooks/useTables";
 import { formatBRL } from "@/lib/format";
-import Footer from "@/components/Footer";
+import { AppLayout } from "@/components/AppLayout";
 import { toast } from "sonner";
 
 const TablesPage = () => {
@@ -50,25 +50,8 @@ const TablesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="bg-card border-b shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <LayoutGrid className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Atendimento por Mesa</h1>
-              <p className="text-sm text-muted-foreground">Selecione uma mesa para abrir ou continuar a conta</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 container mx-auto px-4 py-8">
+    <AppLayout title="Mesas" subtitle="Selecione uma mesa para abrir ou continuar a conta">
+      <div className="max-w-6xl mx-auto">
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -123,7 +106,7 @@ const TablesPage = () => {
             })}
           </div>
         )}
-      </main>
+      </div>
 
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
@@ -146,9 +129,7 @@ const TablesPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Footer />
-    </div>
+    </AppLayout>
   );
 };
 

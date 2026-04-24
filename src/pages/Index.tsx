@@ -10,21 +10,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
-import Footer from "@/components/Footer";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 
 const Index = () => {
   const navigate = useNavigate();
   const { userRole, userName } = useAuth();
-  const [systemName, setSystemName] = useState("TARMFood");
   const [now, setNow] = useState(new Date());
-
-  useEffect(() => {
-    const savedName = localStorage.getItem("systemName");
-    if (savedName) setSystemName(savedName);
-  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000 * 30);
@@ -114,62 +106,42 @@ const Index = () => {
   const modules = allModules.filter((m) => userRole && m.roles.includes(userRole));
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
+    <AppLayout>
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-semibold text-foreground">
+            {greeting},{" "}
+            <span className="text-primary">
+              {userName?.split(" ")[0] || "bem-vindo"}
+            </span>{" "}
+            👋
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {timeStr} · O que vamos fazer agora?
+          </p>
+        </div>
 
-        <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center gap-2 border-b bg-card px-4">
-            <SidebarTrigger />
-            <div className="flex-1" />
-            <span className="text-sm text-muted-foreground hidden sm:inline">
-              {systemName}
-            </span>
-          </header>
-
-          <main className="flex-1 px-6 py-8">
-            <div className="max-w-5xl mx-auto">
-              {/* Saudação simples */}
-              <div className="mb-8">
-                <h1 className="text-2xl md:text-3xl font-semibold text-foreground">
-                  {greeting},{" "}
-                  <span className="text-primary">
-                    {userName?.split(" ")[0] || "bem-vindo"}
-                  </span>{" "}
-                  👋
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {timeStr} · O que vamos fazer agora?
-                </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {modules.map((m) => (
+            <Card
+              key={m.title}
+              onClick={() => navigate(m.path)}
+              className="cursor-pointer p-5 hover:shadow-md hover:-translate-y-0.5 transition-all border-border/60"
+            >
+              <div
+                className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 ${m.color}`}
+              >
+                <m.icon className="w-5 h-5" />
               </div>
-
-              {/* Grid de cards casual */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {modules.map((m) => (
-                  <Card
-                    key={m.title}
-                    onClick={() => navigate(m.path)}
-                    className="cursor-pointer p-5 hover:shadow-md hover:-translate-y-0.5 transition-all border-border/60"
-                  >
-                    <div
-                      className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 ${m.color}`}
-                    >
-                      <m.icon className="w-5 h-5" />
-                    </div>
-                    <h3 className="font-medium text-foreground text-sm">{m.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {m.description}
-                    </p>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </main>
-
-          <Footer />
+              <h3 className="font-medium text-foreground text-sm">{m.title}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {m.description}
+              </p>
+            </Card>
+          ))}
         </div>
       </div>
-    </SidebarProvider>
+    </AppLayout>
   );
 };
 
