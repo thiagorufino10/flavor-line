@@ -3,13 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
-import { LogOut, Trash2, ShoppingCart, ArrowLeft, ImagePlus } from "lucide-react";
+import { Trash2, ArrowLeft, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { ComplementsModal, Complement } from "@/components/ComplementsModal";
 import { PaymentModal } from "@/components/PaymentModal";
 import { useOrders } from "@/hooks/useOrders";
-import Footer from "@/components/Footer";
+import { AppLayout } from "@/components/AppLayout";
 import { formatBRL } from "@/lib/format";
 
 interface OrderItem {
@@ -49,7 +48,6 @@ interface ComplementData {
 }
 
 const Orders = () => {
-  const navigate = useNavigate();
   const { createOrder } = useOrders();
   const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
   const [complementsModalOpen, setComplementsModalOpen] = useState(false);
