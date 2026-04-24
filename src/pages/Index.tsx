@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
+import { prefetchRoute, prefetchAllRoutes } from "@/lib/routePrefetch";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -20,6 +21,8 @@ const Index = () => {
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000 * 30);
+    // Pré-carrega todas as páginas em idle para que cliques sejam instantâneos
+    prefetchAllRoutes();
     return () => clearInterval(t);
   }, []);
 
@@ -118,6 +121,9 @@ const Index = () => {
             <Card
               key={m.title}
               onClick={() => navigate(m.path)}
+              onMouseEnter={() => prefetchRoute(m.path)}
+              onFocus={() => prefetchRoute(m.path)}
+              tabIndex={0}
               className="cursor-pointer p-5 hover:shadow-md hover:-translate-y-0.5 transition-all border-border/60"
             >
               <div
