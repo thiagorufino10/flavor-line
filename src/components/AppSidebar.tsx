@@ -8,6 +8,8 @@ import {
   Settings,
   Home,
   LogOut,
+  DollarSign,
+  TrendingUp,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -46,6 +48,8 @@ const operacao: Item[] = [
 const gestao: Item[] = [
   { title: "Cardápio", url: "/admin/menu", icon: UtensilsCrossed, roles: ["admin", "atendente"] },
   { title: "Complementos", url: "/admin/complements", icon: Package, roles: ["admin", "atendente"] },
+  { title: "Financeiro", url: "/admin/cash-flow", icon: DollarSign, roles: ["admin"] },
+  { title: "Relatórios", url: "/admin/reports", icon: TrendingUp, roles: ["admin"] },
   { title: "Administração", url: "/admin", icon: Settings, roles: ["admin"] },
 ];
 
