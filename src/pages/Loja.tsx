@@ -43,64 +43,7 @@ interface Product {
   prices: Record<Size, number>;
 }
 
-const PRODUCTS: Product[] = [
-  {
-    id: "frango",
-    name: "Batata Frita com Frango",
-    image: imgFrango,
-    description: "Batata fresquinha + frango crocante",
-    prices: { P: 20, M: 25, G: 32, GG: 38 },
-  },
-  {
-    id: "frango-calabresa",
-    name: "Batata Frita, Frango e Calabresa",
-    image: imgFrangoCalabresa,
-    description: "A combinação queridinha da casa",
-    prices: { P: 23, M: 27, G: 33, GG: 40 },
-  },
-  {
-    id: "frango-calabresa-bacon",
-    name: "Batata Frita, Frango, Calabresa e Bacon",
-    image: imgFrangoCalabresaBacon,
-    description: "A explosão de sabores Malukus",
-    prices: { P: 25, M: 29, G: 34, GG: 43 },
-  },
-  {
-    id: "frango-bacon",
-    name: "Batata Frita, Frango e Bacon",
-    image: imgFrangoBacon,
-    description: "Frango crocante com bacon dourado",
-    prices: { P: 24, M: 28, G: 33, GG: 39 },
-  },
-  {
-    id: "calabresa",
-    name: "Batata Frita com Calabresa",
-    image: imgCalabresa,
-    description: "Calabresa defumada na medida",
-    prices: { P: 15, M: 20, G: 25, GG: 33 },
-  },
-  {
-    id: "bacon",
-    name: "Batata Frita com Bacon",
-    image: imgBacon,
-    description: "Pra quem ama bacon dos bons",
-    prices: { P: 20, M: 24, G: 28, GG: 35 },
-  },
-  {
-    id: "bacon-calabresa",
-    name: "Batata Frita, Bacon e Calabresa",
-    image: imgBaconCalabresa,
-    description: "Bacon + calabresa, dupla imbatível",
-    prices: { P: 24, M: 26, G: 30, GG: 35 },
-  },
-  {
-    id: "tradicional",
-    name: "Batata Frita Tradicional",
-    image: imgTradicional,
-    description: "Crocante por fora, macia por dentro",
-    prices: { P: 10, M: 15, G: 21, GG: 30 },
-  },
-];
+// PRODUCTS e DRINKS são carregados do banco (delivery_menu_items)
 
 const SIZES: Size[] = ["P", "M", "G", "GG"];
 const SIZE_LABEL: Record<Size, string> = {
