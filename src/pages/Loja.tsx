@@ -639,8 +639,15 @@ const Loja = () => {
               key={d.id}
               className="bg-zinc-900 border-zinc-800 overflow-hidden hover:border-orange-500/60 transition-all flex flex-col"
             >
-              <div className="aspect-square flex items-center justify-center bg-gradient-to-br from-zinc-800 to-black text-6xl">
-                {d.emoji}
+              <div className="aspect-square overflow-hidden bg-white">
+                <img
+                  src={d.image}
+                  alt={d.name}
+                  loading="lazy"
+                  width={512}
+                  height={512}
+                  className="w-full h-full object-contain p-2"
+                />
               </div>
               <div className="p-3 flex-1 flex flex-col gap-2">
                 <h4 className="font-bold text-sm text-white leading-tight">{d.name}</h4>
