@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Bike, Printer, CheckCircle2, Clock, Phone, MapPin, Volume2, VolumeX } from "lucide-react";
+import { Bike, Printer, CheckCircle2, Clock, Phone, MapPin, Volume2, VolumeX, Truck, MessageCircle } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatBRL } from "@/lib/format";
 
 interface DeliveryItem {
