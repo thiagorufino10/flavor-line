@@ -113,17 +113,19 @@ const printOrder = (order: DeliveryOrder) => {
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Pedido Delivery</title>
 <style>
-  @page { size: 72mm auto; margin: 0; }
+  @page { size: 80mm auto; margin: 0; }
   * { font-weight: 900 !important; box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
-  body { font-family: 'Courier New', monospace; width: 72mm; max-width: 72mm; padding: 3mm 2mm; font-size: 12pt; color: #000; font-weight: 900; -webkit-font-smoothing: none; word-wrap: break-word; overflow-wrap: break-word; }
-  h1 { font-size: 17pt; text-align: center; margin: 0 0 4mm; font-weight: 900; }
+  html { margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; width: 66mm; max-width: 66mm; margin: 0 auto; padding: 3mm 1mm; font-size: 10.5pt; color: #000; font-weight: 900; -webkit-font-smoothing: none; word-wrap: break-word; overflow-wrap: anywhere; }
+  h1 { font-size: 14pt; text-align: center; margin: 0 0 3mm; font-weight: 900; }
   .center { text-align: center; }
-  .line { border-top: 2px dashed #000; margin: 3mm 0; }
-  .row { display: flex; justify-content: space-between; gap: 4mm; }
-  .sub { font-size: 12pt; padding-left: 4mm; }
-  .item { margin-bottom: 3mm; }
-  .total { font-size: 15pt; }
+  .line { border-top: 2px dashed #000; margin: 2.5mm 0; }
+  .row { display: flex; justify-content: space-between; gap: 2mm; width: 100%; }
+  .row > *:first-child { min-width: 0; overflow-wrap: anywhere; }
+  .row > *:last-child { flex-shrink: 0; text-align: right; }
+  .sub { font-size: 10.5pt; padding-left: 2mm; }
+  .item { margin-bottom: 2.5mm; }
+  .total { font-size: 12.5pt; }
   strong, b { font-weight: 900; }
 </style></head><body>
   <h1>*** PEDIDO DELIVERY ***</h1>
