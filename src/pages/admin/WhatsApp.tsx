@@ -65,7 +65,7 @@ const WhatsAppAdmin = () => {
     }
   };
 
-  const lojaUrl = `${window.location.origin}/loja`;
+  const lojaUrl = "https://tarmfood.tarmsolution.com.br/loja";
 
   return (
     <AppLayout title="WhatsApp" subtitle="Configuração da loja online">
