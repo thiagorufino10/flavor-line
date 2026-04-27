@@ -31,23 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 import logo from "@/assets/malukus-logo.jpeg";
-import imgFrango from "@/assets/malukus/batata-frango.jpeg";
-import imgFrangoCalabresa from "@/assets/malukus/batata-frango-calabresa.jpeg";
-import imgFrangoBacon from "@/assets/malukus/batata-frango-bacon.jpeg";
-import imgFrangoCalabresaBacon from "@/assets/malukus/batata-frango-calabresa-bacon.jpeg";
-import imgCalabresa from "@/assets/malukus/batata-calabresa.jpeg";
-import imgBacon from "@/assets/malukus/batata-bacon.jpeg";
-import imgBaconCalabresa from "@/assets/malukus/batata-bacon-calabresa.jpeg";
-import imgTradicional from "@/assets/malukus/batata-tradicional.jpeg";
-import imgCoca1L from "@/assets/drinks/coca-1l.jpg";
-import imgCocaLata from "@/assets/drinks/coca-lata.jpg";
-import imgH2o from "@/assets/drinks/h2o.webp";
-import imgH2oLimoneto from "@/assets/drinks/h2o-limoneto.jpg";
-import imgAguaMineral from "@/assets/drinks/agua-mineral.webp";
-import imgAguaGas from "@/assets/drinks/agua-gas.webp";
-import imgCorona from "@/assets/drinks/corona.jpg";
-import imgHeineken from "@/assets/drinks/heineken.jpg";
-import imgBudweiser from "@/assets/drinks/budweiser.jpg";
+import { getDeliveryImage } from "@/lib/deliveryImages";
 
 type Size = "P" | "M" | "G" | "GG";
 
@@ -59,64 +43,7 @@ interface Product {
   prices: Record<Size, number>;
 }
 
-const PRODUCTS: Product[] = [
-  {
-    id: "frango",
-    name: "Batata Frita com Frango",
-    image: imgFrango,
-    description: "Batata fresquinha + frango crocante",
-    prices: { P: 20, M: 25, G: 32, GG: 38 },
-  },
-  {
-    id: "frango-calabresa",
-    name: "Batata Frita, Frango e Calabresa",
-    image: imgFrangoCalabresa,
-    description: "A combinação queridinha da casa",
-    prices: { P: 23, M: 27, G: 33, GG: 40 },
-  },
-  {
-    id: "frango-calabresa-bacon",
-    name: "Batata Frita, Frango, Calabresa e Bacon",
-    image: imgFrangoCalabresaBacon,
-    description: "A explosão de sabores Malukus",
-    prices: { P: 25, M: 29, G: 34, GG: 43 },
-  },
-  {
-    id: "frango-bacon",
-    name: "Batata Frita, Frango e Bacon",
-    image: imgFrangoBacon,
-    description: "Frango crocante com bacon dourado",
-    prices: { P: 24, M: 28, G: 33, GG: 39 },
-  },
-  {
-    id: "calabresa",
-    name: "Batata Frita com Calabresa",
-    image: imgCalabresa,
-    description: "Calabresa defumada na medida",
-    prices: { P: 15, M: 20, G: 25, GG: 33 },
-  },
-  {
-    id: "bacon",
-    name: "Batata Frita com Bacon",
-    image: imgBacon,
-    description: "Pra quem ama bacon dos bons",
-    prices: { P: 20, M: 24, G: 28, GG: 35 },
-  },
-  {
-    id: "bacon-calabresa",
-    name: "Batata Frita, Bacon e Calabresa",
-    image: imgBaconCalabresa,
-    description: "Bacon + calabresa, dupla imbatível",
-    prices: { P: 24, M: 26, G: 30, GG: 35 },
-  },
-  {
-    id: "tradicional",
-    name: "Batata Frita Tradicional",
-    image: imgTradicional,
-    description: "Crocante por fora, macia por dentro",
-    prices: { P: 10, M: 15, G: 21, GG: 30 },
-  },
-];
+// PRODUCTS e DRINKS são carregados do banco (delivery_menu_items)
 
 const SIZES: Size[] = ["P", "M", "G", "GG"];
 const SIZE_LABEL: Record<Size, string> = {
@@ -153,17 +80,7 @@ interface Drink {
   image: string;
 }
 
-const DRINKS: Drink[] = [
-  { id: "coca-1l", name: "Coca Cola 1L", price: 10, image: imgCoca1L },
-  { id: "coca-lata", name: "Coca Lata", price: 6, image: imgCocaLata },
-  { id: "h2o", name: "H2O", price: 6, image: imgH2o },
-  { id: "h2o-limoneto", name: "H2O Limoneto", price: 6, image: imgH2oLimoneto },
-  { id: "agua-mineral", name: "Água Mineral", price: 2, image: imgAguaMineral },
-  { id: "agua-gas", name: "Água com Gás", price: 4, image: imgAguaGas },
-  { id: "cerveja-corona", name: "Cerveja Corona", price: 9, image: imgCorona },
-  { id: "cerveja-heineken", name: "Cerveja Heineken", price: 9, image: imgHeineken },
-  { id: "cerveja-budweiser", name: "Cerveja Budweiser", price: 9, image: imgBudweiser },
-];
+// DRINKS carregados do banco
 
 interface Neighborhood {
   id: string;
@@ -198,6 +115,8 @@ const Loja = () => {
 
   const [whatsappNumber, setWhatsappNumber] = useState<string>("");
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [drinks, setDrinks] = useState<Drink[]>([]);
 
   // SEO
   useEffect(() => {
@@ -212,10 +131,10 @@ const Loja = () => {
     m.setAttribute("content", desc);
   }, []);
 
-  // Load WhatsApp + delivery neighborhoods
+  // Load WhatsApp + delivery neighborhoods + cardápio delivery
   useEffect(() => {
     (async () => {
-      const [{ data: cfg }, { data: nb }] = await Promise.all([
+      const [{ data: cfg }, { data: nb }, { data: menu }] = await Promise.all([
         supabase
           .from("system_settings")
           .select("value")
@@ -226,9 +145,40 @@ const Loja = () => {
           .select("id,name,delivery_fee,client_id")
           .eq("active", true)
           .order("name"),
+        supabase
+          .from("delivery_menu_items")
+          .select("product_key,kind,name,description,prices,sort_order")
+          .eq("active", true)
+          .order("sort_order"),
       ]);
       if (cfg?.value) setWhatsappNumber(String(cfg.value));
       setNeighborhoods((nb as any[]) || []);
+
+      const items = (menu as any[]) || [];
+      const prods: Product[] = items
+        .filter((i) => i.kind === "pastel")
+        .map((i) => ({
+          id: i.product_key,
+          name: i.name,
+          description: i.description || "",
+          image: getDeliveryImage(i.product_key),
+          prices: {
+            P: Number(i.prices?.P ?? 0),
+            M: Number(i.prices?.M ?? 0),
+            G: Number(i.prices?.G ?? 0),
+            GG: Number(i.prices?.GG ?? 0),
+          },
+        }));
+      const drks: Drink[] = items
+        .filter((i) => i.kind === "drink")
+        .map((i) => ({
+          id: i.product_key,
+          name: i.name,
+          price: Number(i.prices?.price ?? 0),
+          image: getDeliveryImage(i.product_key),
+        }));
+      setProducts(prods);
+      setDrinks(drks);
     })();
   }, []);
 
@@ -603,7 +553,7 @@ const Loja = () => {
       <main className="container mx-auto px-4 py-8">
         <h3 className="text-2xl font-bold mb-6 text-orange-400">Cardápio</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {PRODUCTS.map((p) => (
+          {products.map((p) => (
             <Card
               key={p.id}
               className="bg-zinc-900 border-zinc-800 overflow-hidden cursor-pointer hover:border-orange-500/60 transition-all hover:scale-[1.02] group"
@@ -634,7 +584,7 @@ const Loja = () => {
         {/* Bebidas */}
         <h3 className="text-2xl font-bold mt-12 mb-6 text-orange-400">Bebidas 🥤</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {DRINKS.map((d) => (
+          {drinks.map((d) => (
             <Card
               key={d.id}
               className="bg-zinc-900 border-zinc-800 overflow-hidden hover:border-orange-500/60 transition-all flex flex-col"

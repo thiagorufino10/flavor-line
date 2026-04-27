@@ -30,6 +30,7 @@ const Categories = lazy(() => import("./pages/admin/Categories"));
 const WhatsAppAdmin = lazy(() => import("./pages/admin/WhatsApp"));
 const DeliveryAdmin = lazy(() => import("./pages/admin/Delivery"));
 const DeliveryOrders = lazy(() => import("./pages/admin/DeliveryOrders"));
+const DeliveryMenu = lazy(() => import("./pages/admin/DeliveryMenu"));
 const Loja = lazy(() => import("./pages/Loja"));
 const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
 
@@ -77,6 +78,7 @@ const App = () => (
 
         <Route path="/admin/whatsapp" element={<ProtectedRoute requiredRole={["admin"]}><WhatsAppAdmin /></ProtectedRoute>} />
         <Route path="/admin/delivery" element={<ProtectedRoute requiredRole={["admin"]}><DeliveryAdmin /></ProtectedRoute>} />
+        <Route path="/admin/delivery-menu" element={<ProtectedRoute requiredRole={["admin"]}><DeliveryMenu /></ProtectedRoute>} />
         <Route path="/delivery-orders" element={<ProtectedRoute requiredRole={["admin", "atendente", "cozinha"]}><DeliveryOrders /></ProtectedRoute>} />
 
         {/* Public routes */}
