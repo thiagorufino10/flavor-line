@@ -1,13 +1,13 @@
 // Mapa de imagens dos itens do cardápio de delivery por product_key.
 // As imagens permanecem no bundle; admin edita apenas nome/preço/descrição.
-import imgFrango from "@/assets/batata-frango.jpg";
-import imgFrangoCalabresa from "@/assets/batata-frango-calabresa.jpg";
-import imgFrangoCalabresaBacon from "@/assets/batata-frango-calabresa-bacon.jpg";
-import imgFrangoBacon from "@/assets/batata-frango-bacon.jpg";
-import imgCalabresa from "@/assets/batata-calabresa.jpg";
-import imgBacon from "@/assets/batata-bacon.jpg";
-import imgBaconCalabresa from "@/assets/batata-bacon-calabresa.jpg";
-import imgTradicional from "@/assets/batata-tradicional.jpg";
+import imgFrango from "@/assets/malukus/batata-frango.jpeg";
+import imgFrangoCalabresa from "@/assets/malukus/batata-frango-calabresa.jpeg";
+import imgFrangoCalabresaBacon from "@/assets/malukus/batata-frango-calabresa-bacon.jpeg";
+import imgFrangoBacon from "@/assets/malukus/batata-frango-bacon.jpeg";
+import imgCalabresa from "@/assets/malukus/batata-calabresa.jpeg";
+import imgBacon from "@/assets/malukus/batata-bacon.jpeg";
+import imgBaconCalabresa from "@/assets/malukus/batata-bacon-calabresa.jpeg";
+import imgTradicional from "@/assets/malukus/batata-tradicional.jpeg";
 
 import imgCoca1L from "@/assets/drinks/coca-1l.jpg";
 import imgCocaLata from "@/assets/drinks/coca-lata.jpg";
