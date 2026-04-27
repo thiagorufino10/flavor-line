@@ -564,104 +564,115 @@ const Loja = () => {
 
       {/* Product modal */}
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="bg-zinc-900 text-zinc-100 border-zinc-800 max-w-md w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:p-6">
+        <DialogContent
+          className="bg-zinc-900 text-zinc-100 border-zinc-800 max-w-md w-[calc(100vw-1rem)] sm:w-[calc(100vw-2rem)] max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] p-0 gap-0 flex flex-col overflow-hidden"
+        >
           {selected && (
             <>
-              <DialogHeader>
-                <DialogTitle className="text-orange-400">
-                  {selected.name}
-                </DialogTitle>
-                <DialogDescription className="text-zinc-400">
-                  {selected.description}
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="aspect-video rounded-lg overflow-hidden bg-black">
+              {/* Header com imagem de fundo */}
+              <div className="relative h-40 sm:h-48 shrink-0 overflow-hidden">
                 <img
                   src={selected.image}
                   alt={selected.name}
                   className="w-full h-full object-cover"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-zinc-900/40 to-transparent" />
+                <DialogHeader className="absolute inset-x-0 bottom-0 p-4 text-left space-y-1">
+                  <DialogTitle className="text-orange-400 text-xl drop-shadow">
+                    {selected.name}
+                  </DialogTitle>
+                  <DialogDescription className="text-zinc-200 text-xs drop-shadow">
+                    {selected.description}
+                  </DialogDescription>
+                </DialogHeader>
               </div>
 
-              <div>
-                <Label className="text-sm mb-2 block">Escolha o tamanho</Label>
-                <div className="grid grid-cols-4 gap-2">
-                  {SIZES.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setSelectedSize(s)}
-                      className={`rounded-lg border-2 p-3 text-center transition-all ${
-                        selectedSize === s
-                          ? "border-orange-500 bg-orange-500/10 text-orange-400"
-                          : "border-zinc-700 hover:border-zinc-600"
-                      }`}
-                    >
-                      <div className="font-bold text-lg">{s}</div>
-                      <div className="text-[10px] text-zinc-500">
-                        {SIZE_LABEL[s]}
-                      </div>
-                      <div className="text-xs font-semibold mt-1">
-                        {formatBRL(selected.prices[s])}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm mb-2 block">
-                  Escolha o molho{" "}
-                  <span className="text-zinc-500 font-normal">(opcional, pode marcar mais de um)</span>
-                </Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {SAUCES.map((s) => {
-                    const active = selectedSauces.includes(s);
-                    return (
+              {/* Corpo scrollável */}
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+                <div>
+                  <Label className="text-sm mb-2 block font-semibold">
+                    Escolha o tamanho
+                  </Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {SIZES.map((s) => (
                       <button
                         key={s}
-                        type="button"
-                        onClick={() => toggleSauce(s)}
-                        className={`rounded-lg border-2 px-3 py-2 text-sm text-left transition-all ${
-                          active
+                        onClick={() => setSelectedSize(s)}
+                        className={`rounded-lg border-2 p-2 text-center transition-all ${
+                          selectedSize === s
                             ? "border-orange-500 bg-orange-500/10 text-orange-400"
-                            : "border-zinc-700 hover:border-zinc-600 text-zinc-200"
+                            : "border-zinc-700 hover:border-zinc-600"
                         }`}
                       >
-                        {active ? "✓ " : ""}
-                        {s}
+                        <div className="font-bold text-base">{s}</div>
+                        <div className="text-[10px] text-zinc-500 leading-tight">
+                          {SIZE_LABEL[s]}
+                        </div>
+                        <div className="text-xs font-semibold mt-1">
+                          {formatBRL(selected.prices[s])}
+                        </div>
                       </button>
-                    );
-                  })}
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm mb-2 block font-semibold">
+                    Escolha o molho
+                    <span className="block text-[11px] text-zinc-500 font-normal">
+                      Opcional — pode marcar mais de um
+                    </span>
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SAUCES.map((s) => {
+                      const active = selectedSauces.includes(s);
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => toggleSauce(s)}
+                          className={`rounded-lg border-2 px-3 py-2 text-sm text-left transition-all ${
+                            active
+                              ? "border-orange-500 bg-orange-500/10 text-orange-400"
+                              : "border-zinc-700 hover:border-zinc-600 text-zinc-200"
+                          }`}
+                        >
+                          {active ? "✓ " : ""}
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold">Quantidade</Label>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-9 w-9 border-zinc-700 bg-transparent"
+                      onClick={() => setSelectedQty((q) => Math.max(1, q - 1))}
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                    <span className="font-bold w-8 text-center text-lg">
+                      {selectedQty}
+                    </span>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-9 w-9 border-zinc-700 bg-transparent"
+                      onClick={() => setSelectedQty((q) => q + 1)}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">Quantidade</Label>
-                <div className="flex items-center gap-3">
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="h-9 w-9 border-zinc-700 bg-transparent"
-                    onClick={() => setSelectedQty((q) => Math.max(1, q - 1))}
-                  >
-                    <Minus className="w-4 h-4" />
-                  </Button>
-                  <span className="font-bold w-8 text-center text-lg">
-                    {selectedQty}
-                  </span>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="h-9 w-9 border-zinc-700 bg-transparent"
-                    onClick={() => setSelectedQty((q) => q + 1)}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <DialogFooter>
+              {/* Footer fixo */}
+              <div className="shrink-0 border-t border-zinc-800 p-4 bg-zinc-900">
                 <Button
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                   size="lg"
@@ -669,7 +680,7 @@ const Loja = () => {
                 >
                   Adicionar — {formatBRL(selected.prices[selectedSize] * selectedQty)}
                 </Button>
-              </DialogFooter>
+              </div>
             </>
           )}
         </DialogContent>
