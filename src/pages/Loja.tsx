@@ -311,10 +311,9 @@ const Loja = () => {
     toast.success(`${drink.name} adicionado!`);
   };
 
+  const updateQty = (uid: string, delta: number) => {
     setCart((prev) =>
-      prev
-        .map((i) =>
-          i.uid === uid ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i
+
         )
         .filter((i) => i.quantity > 0)
     );
