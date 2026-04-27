@@ -16,6 +16,7 @@ import {
   Monitor,
   Palette,
   MessageCircle,
+  Bike,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -67,6 +68,7 @@ const configuracoes: Item[] = [
   { title: "Modo de Operação", url: "/admin/operation-mode", icon: Monitor, roles: ["admin"] },
   { title: "Marca e Identidade", url: "/admin/branding", icon: Palette, roles: ["admin"] },
   { title: "WhatsApp / Loja Online", url: "/admin/whatsapp", icon: MessageCircle, roles: ["admin"] },
+  { title: "Delivery / Bairros", url: "/admin/delivery", icon: Bike, roles: ["admin"] },
 ];
 
 export function AppSidebar() {
