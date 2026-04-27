@@ -287,7 +287,30 @@ const Loja = () => {
     setSelected(null);
   };
 
-  const updateQty = (uid: string, delta: number) => {
+  const addDrink = (drink: Drink) => {
+    setCart((prev) => {
+      const found = prev.find((i) => i.productId === drink.id);
+      if (found) {
+        return prev.map((i) =>
+          i.uid === found.uid ? { ...i, quantity: i.quantity + 1 } : i
+        );
+      }
+      return [
+        ...prev,
+        {
+          uid: `${drink.id}-${Date.now()}`,
+          productId: drink.id,
+          name: drink.name,
+          size: "M",
+          price: drink.price,
+          quantity: 1,
+          sauces: [],
+        },
+      ];
+    });
+    toast.success(`${drink.name} adicionado!`);
+  };
+
     setCart((prev) =>
       prev
         .map((i) =>
