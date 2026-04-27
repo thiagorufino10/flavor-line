@@ -180,17 +180,6 @@ const DeliveryOrdersPage = () => {
     setLoading(false);
     initialized.current = true;
   };
-    if (error) {
-      toast.error("Erro ao carregar pedidos");
-      console.error(error);
-    } else {
-      const list = (data as any[]) || [];
-      setOrders(list);
-      list.forEach((o) => seenIds.current.add(o.id));
-    }
-    setLoading(false);
-    initialized.current = true;
-  };
 
   useEffect(() => {
     load();
