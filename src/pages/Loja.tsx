@@ -564,7 +564,7 @@ const Loja = () => {
 
       {/* Product modal */}
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="bg-zinc-900 text-zinc-100 border-zinc-800 max-w-md">
+        <DialogContent className="bg-zinc-900 text-zinc-100 border-zinc-800 max-w-md w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:p-6">
           {selected && (
             <>
               <DialogHeader>
