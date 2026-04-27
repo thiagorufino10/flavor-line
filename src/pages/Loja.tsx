@@ -152,6 +152,7 @@ const Loja = () => {
   const [selected, setSelected] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<Size>("M");
   const [selectedQty, setSelectedQty] = useState(1);
+  const [selectedSauces, setSelectedSauces] = useState<string[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
