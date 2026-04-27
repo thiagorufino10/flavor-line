@@ -124,7 +124,17 @@ interface CartItem {
   size: Size;
   price: number;
   quantity: number;
+  sauces: string[];
 }
+
+const SAUCES = [
+  "Ketchup",
+  "Maionese",
+  "Barbecue",
+  "Malukus",
+  "Creme de alho",
+  "Cheddar",
+] as const;
 
 interface Neighborhood {
   id: string;
@@ -142,6 +152,7 @@ const Loja = () => {
   const [selected, setSelected] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<Size>("M");
   const [selectedQty, setSelectedQty] = useState(1);
+  const [selectedSauces, setSelectedSauces] = useState<string[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -213,14 +224,25 @@ const Loja = () => {
     setSelected(p);
     setSelectedSize("M");
     setSelectedQty(1);
+    setSelectedSauces([]);
+  };
+
+  const toggleSauce = (s: string) => {
+    setSelectedSauces((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+    );
   };
 
   const addToCart = () => {
     if (!selected) return;
     const price = selected.prices[selectedSize];
+    const saucesKey = [...selectedSauces].sort().join("|");
     setCart((prev) => {
       const found = prev.find(
-        (i) => i.productId === selected.id && i.size === selectedSize
+        (i) =>
+          i.productId === selected.id &&
+          i.size === selectedSize &&
+          [...i.sauces].sort().join("|") === saucesKey
       );
       if (found) {
         return prev.map((i) =>
@@ -236,6 +258,7 @@ const Loja = () => {
           size: selectedSize,
           price,
           quantity: selectedQty,
+          sauces: [...selectedSauces],
         },
       ];
     });
@@ -288,9 +311,13 @@ const Loja = () => {
 
     const itemLines = cart.flatMap((i) => {
       const total = i.price * i.quantity;
+      const saucesLine = i.sauces.length > 0
+        ? `  Molhos: ${i.sauces.join(", ")}`
+        : `  Molhos: nenhum`;
       return [
         `- x${i.quantity} ${i.name} - ${i.size} ${formatBRL(total)}`,
         `  Preço unitário ${formatBRL(i.price)}`,
+        saucesLine,
         ``,
       ];
     });
@@ -397,6 +424,11 @@ const Loja = () => {
                         <p className="text-xs text-zinc-400">
                           Tamanho {i.size} · {formatBRL(i.price)}
                         </p>
+                        {i.sauces.length > 0 && (
+                          <p className="text-xs text-zinc-500 mt-0.5">
+                            Molhos: {i.sauces.join(", ")}
+                          </p>
+                        )}
                         <div className="flex items-center gap-2 mt-2">
                           <Button
                             size="icon"
@@ -573,6 +605,33 @@ const Loja = () => {
                       </div>
                     </button>
                   ))}
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm mb-2 block">
+                  Escolha o molho{" "}
+                  <span className="text-zinc-500 font-normal">(opcional, pode marcar mais de um)</span>
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {SAUCES.map((s) => {
+                    const active = selectedSauces.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => toggleSauce(s)}
+                        className={`rounded-lg border-2 px-3 py-2 text-sm text-left transition-all ${
+                          active
+                            ? "border-orange-500 bg-orange-500/10 text-orange-400"
+                            : "border-zinc-700 hover:border-zinc-600 text-zinc-200"
+                        }`}
+                      >
+                        {active ? "✓ " : ""}
+                        {s}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
