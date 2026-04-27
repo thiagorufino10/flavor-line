@@ -40,8 +40,29 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   novo: { label: "Novo", color: "bg-orange-500" },
   preparando: { label: "Em Preparação", color: "bg-blue-500" },
   pronto: { label: "Pronto", color: "bg-green-500" },
+  saiu_entrega: { label: "Saiu para entrega", color: "bg-purple-500" },
   entregue: { label: "Entregue", color: "bg-zinc-500" },
   cancelado: { label: "Cancelado", color: "bg-red-500" },
+};
+
+const ACTIVE_STATUSES = ["novo", "preparando", "pronto", "saiu_entrega"];
+
+// Normaliza telefone para formato internacional (BR padrão)
+const normalizePhone = (phone: string): string => {
+  const digits = (phone || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("55")) return digits;
+  return `55${digits}`;
+};
+
+const openWhatsApp = (phone: string, message: string) => {
+  const num = normalizePhone(phone);
+  if (!num) {
+    toast.error("Telefone do cliente inválido");
+    return;
+  }
+  const url = `https://wa.me/${num}?text=${encodeURIComponent(message)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
 };
 
 const playBeep = () => {
