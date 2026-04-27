@@ -621,6 +621,36 @@ const Loja = () => {
             </Card>
           ))}
         </div>
+
+        {/* Bebidas */}
+        <h3 className="text-2xl font-bold mt-12 mb-6 text-orange-400">Bebidas 🥤</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {DRINKS.map((d) => (
+            <Card
+              key={d.id}
+              className="bg-zinc-900 border-zinc-800 overflow-hidden hover:border-orange-500/60 transition-all flex flex-col"
+            >
+              <div className="aspect-square flex items-center justify-center bg-gradient-to-br from-zinc-800 to-black text-6xl">
+                {d.emoji}
+              </div>
+              <div className="p-3 flex-1 flex flex-col gap-2">
+                <h4 className="font-bold text-sm text-white leading-tight">{d.name}</h4>
+                <div className="mt-auto flex items-center justify-between gap-2">
+                  <span className="text-orange-400 font-bold text-base">
+                    {formatBRL(d.price)}
+                  </span>
+                  <Button
+                    size="sm"
+                    onClick={() => addDrink(d)}
+                    className="bg-orange-500 hover:bg-orange-600 text-white h-8 px-3"
+                  >
+                    + Adicionar
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
       </main>
 
       {/* Footer */}
