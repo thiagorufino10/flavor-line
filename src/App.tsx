@@ -30,6 +30,7 @@ const Categories = lazy(() => import("./pages/admin/Categories"));
 const WhatsAppAdmin = lazy(() => import("./pages/admin/WhatsApp"));
 const DeliveryAdmin = lazy(() => import("./pages/admin/Delivery"));
 const DeliveryOrders = lazy(() => import("./pages/admin/DeliveryOrders"));
+const DeliveryMenu = lazy(() => import("./pages/admin/DeliveryMenu"));
 const Loja = lazy(() => import("./pages/Loja"));
 const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
 
