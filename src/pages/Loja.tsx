@@ -115,6 +115,8 @@ const Loja = () => {
 
   const [whatsappNumber, setWhatsappNumber] = useState<string>("");
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [drinks, setDrinks] = useState<Drink[]>([]);
 
   // SEO
   useEffect(() => {
