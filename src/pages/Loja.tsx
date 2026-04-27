@@ -137,6 +137,25 @@ const SAUCES = [
   "Baconeese",
 ] as const;
 
+interface Drink {
+  id: string;
+  name: string;
+  price: number;
+  emoji: string;
+}
+
+const DRINKS: Drink[] = [
+  { id: "coca-1l", name: "Coca Cola 1L", price: 10, emoji: "🥤" },
+  { id: "coca-lata", name: "Coca Lata", price: 6, emoji: "🥤" },
+  { id: "h2o", name: "H2O", price: 6, emoji: "💧" },
+  { id: "h2o-limoneto", name: "H2O Limoneto", price: 6, emoji: "💧" },
+  { id: "agua-mineral", name: "Água Mineral", price: 2, emoji: "💧" },
+  { id: "agua-gas", name: "Água com Gás", price: 4, emoji: "💧" },
+  { id: "cerveja-corona", name: "Cerveja Corona", price: 9, emoji: "🍺" },
+  { id: "cerveja-heineken", name: "Cerveja Heineken", price: 9, emoji: "🍺" },
+  { id: "cerveja-budweiser", name: "Cerveja Budweiser", price: 9, emoji: "🍺" },
+];
+
 interface Neighborhood {
   id: string;
   name: string;
