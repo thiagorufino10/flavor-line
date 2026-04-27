@@ -55,6 +55,7 @@ const operacao: Item[] = [
 
 const gestao: Item[] = [
   { title: "Cardápio", url: "/admin/menu", icon: UtensilsCrossed, roles: ["admin", "atendente"] },
+  { title: "Cardápio Delivery", url: "/admin/delivery-menu", icon: Bike, roles: ["admin"] },
   { title: "Complementos", url: "/admin/complements", icon: Package, roles: ["admin", "atendente"] },
   { title: "Categorias", url: "/admin/categories", icon: LayoutGrid, roles: ["admin"] },
   { title: "Financeiro", url: "/admin/cash-flow", icon: DollarSign, roles: ["admin"] },
