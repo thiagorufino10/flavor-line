@@ -268,20 +268,29 @@ const DeliveryOrdersPage = () => {
       }
     >
       <div className="space-y-4">
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as "ativos" | "entregues")}>
+          <TabsList>
+            <TabsTrigger value="ativos">Ativos ({activeCount})</TabsTrigger>
+            <TabsTrigger value="entregues">Entregues ({doneCount})</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {loading ? (
           <p className="text-sm text-muted-foreground">Carregando...</p>
-        ) : orders.length === 0 ? (
+        ) : filteredOrders.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Bike className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
               <p className="text-muted-foreground">
-                Nenhum pedido no momento. Quando um cliente fizer um pedido pela loja online, ele aparecerá aqui automaticamente.
+                {filter === "ativos"
+                  ? "Nenhum pedido ativo no momento. Quando um cliente fizer um pedido pela loja online, ele aparecerá aqui automaticamente."
+                  : "Nenhum pedido entregue ainda."}
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {orders.map((order) => {
+            {filteredOrders.map((order) => {
               const status = STATUS_LABELS[order.status] ?? STATUS_LABELS.novo;
               const isNew = order.status === "novo";
               return (
