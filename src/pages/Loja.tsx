@@ -131,10 +131,10 @@ const Loja = () => {
     m.setAttribute("content", desc);
   }, []);
 
-  // Load WhatsApp + delivery neighborhoods
+  // Load WhatsApp + delivery neighborhoods + cardápio delivery
   useEffect(() => {
     (async () => {
-      const [{ data: cfg }, { data: nb }] = await Promise.all([
+      const [{ data: cfg }, { data: nb }, { data: menu }] = await Promise.all([
         supabase
           .from("system_settings")
           .select("value")
@@ -145,9 +145,40 @@ const Loja = () => {
           .select("id,name,delivery_fee,client_id")
           .eq("active", true)
           .order("name"),
+        supabase
+          .from("delivery_menu_items")
+          .select("product_key,kind,name,description,prices,sort_order")
+          .eq("active", true)
+          .order("sort_order"),
       ]);
       if (cfg?.value) setWhatsappNumber(String(cfg.value));
       setNeighborhoods((nb as any[]) || []);
+
+      const items = (menu as any[]) || [];
+      const prods: Product[] = items
+        .filter((i) => i.kind === "pastel")
+        .map((i) => ({
+          id: i.product_key,
+          name: i.name,
+          description: i.description || "",
+          image: getDeliveryImage(i.product_key),
+          prices: {
+            P: Number(i.prices?.P ?? 0),
+            M: Number(i.prices?.M ?? 0),
+            G: Number(i.prices?.G ?? 0),
+            GG: Number(i.prices?.GG ?? 0),
+          },
+        }));
+      const drks: Drink[] = items
+        .filter((i) => i.kind === "drink")
+        .map((i) => ({
+          id: i.product_key,
+          name: i.name,
+          price: Number(i.prices?.price ?? 0),
+          image: getDeliveryImage(i.product_key),
+        }));
+      setProducts(prods);
+      setDrinks(drks);
     })();
   }, []);
 
