@@ -129,13 +129,13 @@ export const ComplementsModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        {availableComplements.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            Nenhum complemento vinculado a este produto.
-          </div>
-        ) : (
-          <>
-            <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4">
+          {availableComplements.length === 0 ? (
+            <div className="text-center py-4 text-sm text-muted-foreground">
+              Este item não possui complementos. Ajuste a quantidade e adicione ao pedido.
+            </div>
+          ) : (
+            <>
               {freeComplements.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-3">
@@ -218,68 +218,68 @@ export const ComplementsModal = ({
                   </div>
                 </div>
               )}
-            </div>
+            </>
+          )}
+        </div>
 
-            <Separator />
+        <Separator />
 
-            <div className="space-y-2">
-              <Label htmlFor="observations" className="text-base font-semibold">
-                Observações
-              </Label>
-              <Textarea
-                id="observations"
-                placeholder="Ex: Sem cebola, bem passado, etc..."
-                value={observations}
-                onChange={(e) => setObservations(e.target.value)}
-                className="min-h-[80px] resize-none"
-                maxLength={200}
-              />
-              <p className="text-xs text-muted-foreground text-right">{observations.length}/200 caracteres</p>
-            </div>
+        <div className="space-y-2">
+          <Label htmlFor="observations" className="text-base font-semibold">
+            Observações
+          </Label>
+          <Textarea
+            id="observations"
+            placeholder="Ex: Sem cebola, bem passado, etc..."
+            value={observations}
+            onChange={(e) => setObservations(e.target.value)}
+            className="min-h-[80px] resize-none"
+            maxLength={200}
+          />
+          <p className="text-xs text-muted-foreground text-right">{observations.length}/200 caracteres</p>
+        </div>
 
-            <Separator />
+        <Separator />
 
-            <div className="flex items-center justify-between py-2">
-              <span className="text-lg font-semibold">Quantidade:</span>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  disabled={quantity <= 1}
-                >
-                  <Minus className="w-4 h-4" />
-                </Button>
-                <span className="text-2xl font-bold w-8 text-center">{quantity}</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9"
-                  onClick={() => setQuantity((q) => q + 1)}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+        <div className="flex items-center justify-between py-2">
+          <span className="text-lg font-semibold">Quantidade:</span>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              disabled={quantity <= 1}
+            >
+              <Minus className="w-4 h-4" />
+            </Button>
+            <span className="text-2xl font-bold w-8 text-center">{quantity}</span>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setQuantity((q) => q + 1)}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
 
-            <Separator />
+        <Separator />
 
-            <div className="flex items-center justify-between py-2">
-              <span className="text-lg font-semibold">Valor Total:</span>
-              <span className="text-2xl font-bold text-primary">{formatBRL(totalPrice * quantity)}</span>
-            </div>
+        <div className="flex items-center justify-between py-2">
+          <span className="text-lg font-semibold">Valor Total:</span>
+          <span className="text-2xl font-bold text-primary">{formatBRL(totalPrice * quantity)}</span>
+        </div>
 
-            <DialogFooter className="flex gap-2">
-              <Button variant="outline" onClick={handleCancel}>
-                Cancelar
-              </Button>
-              <Button onClick={handleConfirm} className="min-w-32">
-                Adicionar ao Pedido
-              </Button>
-            </DialogFooter>
-          </>
-        )}
+        <DialogFooter className="flex gap-2">
+          <Button variant="outline" onClick={handleCancel}>
+            Cancelar
+          </Button>
+          <Button onClick={handleConfirm} className="min-w-32">
+            Adicionar ao Pedido
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
