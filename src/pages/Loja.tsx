@@ -424,6 +424,11 @@ const Loja = () => {
                         <p className="text-xs text-zinc-400">
                           Tamanho {i.size} · {formatBRL(i.price)}
                         </p>
+                        {i.sauces.length > 0 && (
+                          <p className="text-xs text-zinc-500 mt-0.5">
+                            Molhos: {i.sauces.join(", ")}
+                          </p>
+                        )}
                         <div className="flex items-center gap-2 mt-2">
                           <Button
                             size="icon"
