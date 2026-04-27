@@ -194,6 +194,16 @@ export const useOrders = (status?: string) => {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    // Atualização otimista — atualiza UI imediatamente
+    const previous = orders;
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? { ...o, status: newStatus, updated_at: new Date().toISOString() }
+          : o
+      )
+    );
+
     try {
       const { error } = await supabase
         .from("orders")
@@ -206,6 +216,8 @@ export const useOrders = (status?: string) => {
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
       toast.error("Erro ao atualizar status");
+      // Reverte caso falhe
+      setOrders(previous);
     }
   };
 
