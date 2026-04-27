@@ -269,6 +269,66 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_orders: {
+        Row: {
+          address_detail: string | null
+          client_id: string
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          delivery_fee: number
+          id: string
+          items: Json
+          neighborhood_name: string | null
+          notes: string | null
+          payment_method: string
+          printed: boolean
+          products_total: number
+          service_type: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          address_detail?: string | null
+          client_id: string
+          created_at?: string
+          customer_name: string
+          customer_phone: string
+          delivery_fee?: number
+          id?: string
+          items?: Json
+          neighborhood_name?: string | null
+          notes?: string | null
+          payment_method: string
+          printed?: boolean
+          products_total?: number
+          service_type?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          address_detail?: string | null
+          client_id?: string
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string
+          delivery_fee?: number
+          id?: string
+          items?: Json
+          neighborhood_name?: string | null
+          notes?: string | null
+          payment_method?: string
+          printed?: boolean
+          products_total?: number
+          service_type?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           active: boolean

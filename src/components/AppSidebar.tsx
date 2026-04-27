@@ -48,6 +48,7 @@ const operacao: Item[] = [
   { title: "Início", url: "/", icon: Home, roles: ["admin", "atendente", "cozinha"] },
   { title: "Mesas", url: "/tables", icon: LayoutGrid, roles: ["admin", "atendente"] },
   { title: "Pedido Avulso", url: "/orders", icon: ShoppingCart, roles: ["admin", "atendente"] },
+  { title: "Delivery", url: "/delivery-orders", icon: Bike, roles: ["admin", "atendente", "cozinha"] },
   { title: "Cozinha", url: "/kitchen", icon: ChefHat, roles: ["admin", "cozinha"] },
   { title: "Display", url: "/customer-display", icon: Tv, roles: ["admin", "atendente", "cozinha"] },
 ];

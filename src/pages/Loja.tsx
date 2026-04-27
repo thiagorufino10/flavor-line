@@ -141,6 +141,7 @@ interface Neighborhood {
   id: string;
   name: string;
   delivery_fee: number;
+  client_id: string;
 }
 
 type ServiceType = "delivery" | "retirada";
@@ -194,7 +195,7 @@ const Loja = () => {
           .maybeSingle(),
         supabase
           .from("delivery_neighborhoods")
-          .select("id,name,delivery_fee")
+          .select("id,name,delivery_fee,client_id")
           .eq("active", true)
           .order("name"),
       ]);
@@ -281,7 +282,7 @@ const Loja = () => {
     setCart((prev) => prev.filter((i) => i.uid !== uid));
   };
 
-  const sendToWhatsApp = () => {
+  const sendToWhatsApp = async () => {
     if (cart.length === 0) return toast.error("Carrinho vazio");
     if (!customerName.trim()) return toast.error("Informe seu nome");
     const phoneClean = customerPhone.replace(/\D/g, "");
@@ -353,6 +354,38 @@ const Loja = () => {
     ]
       .filter((l) => l !== null)
       .join("\n");
+
+    // Salva o pedido no banco para aparecer na tela de Delivery do estabelecimento
+    try {
+      const clientId =
+        selectedNeighborhood?.client_id ?? neighborhoods[0]?.client_id;
+      if (clientId) {
+        await supabase.from("delivery_orders").insert({
+          client_id: clientId,
+          customer_name: customerName.trim(),
+          customer_phone: phoneClean,
+          service_type: serviceType,
+          neighborhood_name: serviceType === "delivery" ? selectedNeighborhood?.name ?? null : null,
+          address_detail: serviceType === "delivery" ? addressDetail.trim() : null,
+          payment_method: paymentMethod,
+          notes: notes.trim() || null,
+          items: cart.map((i) => ({
+            name: i.name,
+            size: i.size,
+            quantity: i.quantity,
+            unit_price: i.price,
+            total_price: i.price * i.quantity,
+            sauces: i.sauces,
+          })),
+          products_total: productsTotal,
+          delivery_fee: deliveryFee,
+          total_amount: grandTotal,
+          status: "novo",
+        });
+      }
+    } catch (err) {
+      console.error("Falha ao salvar pedido delivery:", err);
+    }
 
     const phone = whatsappNumber.replace(/\D/g, "");
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(lines)}`;
