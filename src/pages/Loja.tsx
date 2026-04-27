@@ -553,7 +553,7 @@ const Loja = () => {
       <main className="container mx-auto px-4 py-8">
         <h3 className="text-2xl font-bold mb-6 text-orange-400">Cardápio</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {PRODUCTS.map((p) => (
+          {products.map((p) => (
             <Card
               key={p.id}
               className="bg-zinc-900 border-zinc-800 overflow-hidden cursor-pointer hover:border-orange-500/60 transition-all hover:scale-[1.02] group"
@@ -584,7 +584,7 @@ const Loja = () => {
         {/* Bebidas */}
         <h3 className="text-2xl font-bold mt-12 mb-6 text-orange-400">Bebidas 🥤</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {DRINKS.map((d) => (
+          {drinks.map((d) => (
             <Card
               key={d.id}
               className="bg-zinc-900 border-zinc-800 overflow-hidden hover:border-orange-500/60 transition-all flex flex-col"
