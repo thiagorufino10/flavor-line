@@ -39,6 +39,15 @@ import imgCalabresa from "@/assets/malukus/batata-calabresa.jpeg";
 import imgBacon from "@/assets/malukus/batata-bacon.jpeg";
 import imgBaconCalabresa from "@/assets/malukus/batata-bacon-calabresa.jpeg";
 import imgTradicional from "@/assets/malukus/batata-tradicional.jpeg";
+import imgCoca1L from "@/assets/drinks/coca-1l.jpg";
+import imgCocaLata from "@/assets/drinks/coca-lata.jpg";
+import imgH2o from "@/assets/drinks/h2o.jpg";
+import imgH2oLimoneto from "@/assets/drinks/h2o-limoneto.jpg";
+import imgAguaMineral from "@/assets/drinks/agua-mineral.jpg";
+import imgAguaGas from "@/assets/drinks/agua-gas.jpg";
+import imgCorona from "@/assets/drinks/corona.jpg";
+import imgHeineken from "@/assets/drinks/heineken.jpg";
+import imgBudweiser from "@/assets/drinks/budweiser.jpg";
 
 type Size = "P" | "M" | "G" | "GG";
 
@@ -141,19 +150,19 @@ interface Drink {
   id: string;
   name: string;
   price: number;
-  emoji: string;
+  image: string;
 }
 
 const DRINKS: Drink[] = [
-  { id: "coca-1l", name: "Coca Cola 1L", price: 10, emoji: "🥤" },
-  { id: "coca-lata", name: "Coca Lata", price: 6, emoji: "🥤" },
-  { id: "h2o", name: "H2O", price: 6, emoji: "💧" },
-  { id: "h2o-limoneto", name: "H2O Limoneto", price: 6, emoji: "💧" },
-  { id: "agua-mineral", name: "Água Mineral", price: 2, emoji: "💧" },
-  { id: "agua-gas", name: "Água com Gás", price: 4, emoji: "💧" },
-  { id: "cerveja-corona", name: "Cerveja Corona", price: 9, emoji: "🍺" },
-  { id: "cerveja-heineken", name: "Cerveja Heineken", price: 9, emoji: "🍺" },
-  { id: "cerveja-budweiser", name: "Cerveja Budweiser", price: 9, emoji: "🍺" },
+  { id: "coca-1l", name: "Coca Cola 1L", price: 10, image: imgCoca1L },
+  { id: "coca-lata", name: "Coca Lata", price: 6, image: imgCocaLata },
+  { id: "h2o", name: "H2O", price: 6, image: imgH2o },
+  { id: "h2o-limoneto", name: "H2O Limoneto", price: 6, image: imgH2oLimoneto },
+  { id: "agua-mineral", name: "Água Mineral", price: 2, image: imgAguaMineral },
+  { id: "agua-gas", name: "Água com Gás", price: 4, image: imgAguaGas },
+  { id: "cerveja-corona", name: "Cerveja Corona", price: 9, image: imgCorona },
+  { id: "cerveja-heineken", name: "Cerveja Heineken", price: 9, image: imgHeineken },
+  { id: "cerveja-budweiser", name: "Cerveja Budweiser", price: 9, image: imgBudweiser },
 ];
 
 interface Neighborhood {
@@ -630,8 +639,15 @@ const Loja = () => {
               key={d.id}
               className="bg-zinc-900 border-zinc-800 overflow-hidden hover:border-orange-500/60 transition-all flex flex-col"
             >
-              <div className="aspect-square flex items-center justify-center bg-gradient-to-br from-zinc-800 to-black text-6xl">
-                {d.emoji}
+              <div className="aspect-square overflow-hidden bg-white">
+                <img
+                  src={d.image}
+                  alt={d.name}
+                  loading="lazy"
+                  width={512}
+                  height={512}
+                  className="w-full h-full object-contain p-2"
+                />
               </div>
               <div className="p-3 flex-1 flex flex-col gap-2">
                 <h4 className="font-bold text-sm text-white leading-tight">{d.name}</h4>
