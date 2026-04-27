@@ -15,6 +15,7 @@ import {
   Printer,
   Monitor,
   Palette,
+  MessageCircle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -65,6 +66,7 @@ const configuracoes: Item[] = [
   { title: "Impressora", url: "/admin/printer", icon: Printer, roles: ["admin"] },
   { title: "Modo de Operação", url: "/admin/operation-mode", icon: Monitor, roles: ["admin"] },
   { title: "Marca e Identidade", url: "/admin/branding", icon: Palette, roles: ["admin"] },
+  { title: "WhatsApp / Loja Online", url: "/admin/whatsapp", icon: MessageCircle, roles: ["admin"] },
 ];
 
 export function AppSidebar() {

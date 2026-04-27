@@ -27,6 +27,8 @@ const Printer = lazy(() => import("./pages/admin/Printer"));
 const OperationMode = lazy(() => import("./pages/admin/OperationMode"));
 const Branding = lazy(() => import("./pages/admin/Branding"));
 const Categories = lazy(() => import("./pages/admin/Categories"));
+const WhatsAppAdmin = lazy(() => import("./pages/admin/WhatsApp"));
+const Loja = lazy(() => import("./pages/Loja"));
 const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
 
 const LazyFallback = () => (
@@ -71,8 +73,11 @@ const App = () => (
         {/* Kitchen routes */}
         <Route path="/kitchen" element={<ProtectedRoute requiredRole={["admin", "cozinha"]}><Kitchen /></ProtectedRoute>} />
 
+        <Route path="/admin/whatsapp" element={<ProtectedRoute requiredRole={["admin"]}><WhatsAppAdmin /></ProtectedRoute>} />
+
         {/* Public routes */}
         <Route path="/customer-display" element={<CustomerDisplay />} />
+        <Route path="/loja" element={<Loja />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
