@@ -39,6 +39,15 @@ import imgCalabresa from "@/assets/malukus/batata-calabresa.jpeg";
 import imgBacon from "@/assets/malukus/batata-bacon.jpeg";
 import imgBaconCalabresa from "@/assets/malukus/batata-bacon-calabresa.jpeg";
 import imgTradicional from "@/assets/malukus/batata-tradicional.jpeg";
+import imgCoca1L from "@/assets/drinks/coca-1l.jpg";
+import imgCocaLata from "@/assets/drinks/coca-lata.jpg";
+import imgH2o from "@/assets/drinks/h2o.jpg";
+import imgH2oLimoneto from "@/assets/drinks/h2o-limoneto.jpg";
+import imgAguaMineral from "@/assets/drinks/agua-mineral.jpg";
+import imgAguaGas from "@/assets/drinks/agua-gas.jpg";
+import imgCorona from "@/assets/drinks/corona.jpg";
+import imgHeineken from "@/assets/drinks/heineken.jpg";
+import imgBudweiser from "@/assets/drinks/budweiser.jpg";
 
 type Size = "P" | "M" | "G" | "GG";
 
