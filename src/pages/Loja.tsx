@@ -137,6 +137,25 @@ const SAUCES = [
   "Baconeese",
 ] as const;
 
+interface Drink {
+  id: string;
+  name: string;
+  price: number;
+  emoji: string;
+}
+
+const DRINKS: Drink[] = [
+  { id: "coca-1l", name: "Coca Cola 1L", price: 10, emoji: "🥤" },
+  { id: "coca-lata", name: "Coca Lata", price: 6, emoji: "🥤" },
+  { id: "h2o", name: "H2O", price: 6, emoji: "💧" },
+  { id: "h2o-limoneto", name: "H2O Limoneto", price: 6, emoji: "💧" },
+  { id: "agua-mineral", name: "Água Mineral", price: 2, emoji: "💧" },
+  { id: "agua-gas", name: "Água com Gás", price: 4, emoji: "💧" },
+  { id: "cerveja-corona", name: "Cerveja Corona", price: 9, emoji: "🍺" },
+  { id: "cerveja-heineken", name: "Cerveja Heineken", price: 9, emoji: "🍺" },
+  { id: "cerveja-budweiser", name: "Cerveja Budweiser", price: 9, emoji: "🍺" },
+];
+
 interface Neighborhood {
   id: string;
   name: string;
@@ -266,6 +285,30 @@ const Loja = () => {
     });
     toast.success(`${selectedQty}x ${selected.name} (${selectedSize}) adicionado!`);
     setSelected(null);
+  };
+
+  const addDrink = (drink: Drink) => {
+    setCart((prev) => {
+      const found = prev.find((i) => i.productId === drink.id);
+      if (found) {
+        return prev.map((i) =>
+          i.uid === found.uid ? { ...i, quantity: i.quantity + 1 } : i
+        );
+      }
+      return [
+        ...prev,
+        {
+          uid: `${drink.id}-${Date.now()}`,
+          productId: drink.id,
+          name: drink.name,
+          size: "M",
+          price: drink.price,
+          quantity: 1,
+          sauces: [],
+        },
+      ];
+    });
+    toast.success(`${drink.name} adicionado!`);
   };
 
   const updateQty = (uid: string, delta: number) => {
@@ -573,6 +616,36 @@ const Loja = () => {
                   <span className="text-orange-400 font-bold text-lg">
                     {formatBRL(p.prices.P)}
                   </span>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Bebidas */}
+        <h3 className="text-2xl font-bold mt-12 mb-6 text-orange-400">Bebidas 🥤</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {DRINKS.map((d) => (
+            <Card
+              key={d.id}
+              className="bg-zinc-900 border-zinc-800 overflow-hidden hover:border-orange-500/60 transition-all flex flex-col"
+            >
+              <div className="aspect-square flex items-center justify-center bg-gradient-to-br from-zinc-800 to-black text-6xl">
+                {d.emoji}
+              </div>
+              <div className="p-3 flex-1 flex flex-col gap-2">
+                <h4 className="font-bold text-sm text-white leading-tight">{d.name}</h4>
+                <div className="mt-auto flex items-center justify-between gap-2">
+                  <span className="text-orange-400 font-bold text-base">
+                    {formatBRL(d.price)}
+                  </span>
+                  <Button
+                    size="sm"
+                    onClick={() => addDrink(d)}
+                    className="bg-orange-500 hover:bg-orange-600 text-white h-8 px-3"
+                  >
+                    + Adicionar
+                  </Button>
                 </div>
               </div>
             </Card>
