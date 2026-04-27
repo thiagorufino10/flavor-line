@@ -124,7 +124,17 @@ interface CartItem {
   size: Size;
   price: number;
   quantity: number;
+  sauces: string[];
 }
+
+const SAUCES = [
+  "Ketchup",
+  "Maionese",
+  "Barbecue",
+  "Malukus",
+  "Creme de alho",
+  "Cheddar",
+] as const;
 
 interface Neighborhood {
   id: string;
