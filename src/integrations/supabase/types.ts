@@ -236,6 +236,39 @@ export type Database = {
           },
         ]
       }
+      delivery_neighborhoods: {
+        Row: {
+          active: boolean
+          client_id: string
+          created_at: string
+          delivery_fee: number
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          client_id: string
+          created_at?: string
+          delivery_fee?: number
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          client_id?: string
+          created_at?: string
+          delivery_fee?: number
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           active: boolean
