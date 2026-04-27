@@ -134,6 +134,7 @@ const SAUCES = [
   "Malukus",
   "Creme de alho",
   "Cheddar",
+  "Baconeese",
 ] as const;
 
 interface Neighborhood {
