@@ -206,11 +206,7 @@ const DeliveryOrdersPage = () => {
         { event: "UPDATE", schema: "public", table: "delivery_orders" },
         (payload) => {
           const updated = payload.new as DeliveryOrder;
-          setOrders((prev) =>
-            prev
-              .map((o) => (o.id === updated.id ? updated : o))
-              .filter((o) => ["novo", "preparando", "pronto"].includes(o.status))
-          );
+          setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
         }
       )
       .subscribe();
