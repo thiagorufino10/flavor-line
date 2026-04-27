@@ -226,10 +226,31 @@ const DeliveryOrdersPage = () => {
     else toast.success("Atualizado");
   };
 
+  const markReady = (order: DeliveryOrder) => {
+    updateStatus(order.id, "pronto");
+    const msg =
+      order.service_type === "delivery"
+        ? `Olá ${order.customer_name}! 🎉\n\nSeu pedido está *PRONTO* e em breve sairá para entrega.\n\nObrigado pela preferência! 🍴`
+        : `Olá ${order.customer_name}! 🎉\n\nSeu pedido está *PRONTO* para retirada.\n\nObrigado pela preferência! 🍴`;
+    openWhatsApp(order.customer_phone, msg);
+  };
+
+  const markOut = (order: DeliveryOrder) => {
+    updateStatus(order.id, "saiu_entrega");
+    const msg = `Olá ${order.customer_name}! 🛵\n\nSeu pedido *SAIU PARA ENTREGA* e logo chegará até você.\n\nObrigado pela preferência! 🍴`;
+    openWhatsApp(order.customer_phone, msg);
+  };
+
   const handlePrint = async (order: DeliveryOrder) => {
     printOrder(order);
     await supabase.from("delivery_orders").update({ printed: true }).eq("id", order.id);
   };
+
+  const filteredOrders = orders.filter((o) =>
+    filter === "ativos" ? ACTIVE_STATUSES.includes(o.status) : ["entregue", "cancelado"].includes(o.status),
+  );
+  const activeCount = orders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length;
+  const doneCount = orders.filter((o) => ["entregue", "cancelado"].includes(o.status)).length;
 
   return (
     <AppLayout
