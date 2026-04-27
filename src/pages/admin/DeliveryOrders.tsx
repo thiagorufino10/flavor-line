@@ -157,15 +157,29 @@ const DeliveryOrdersPage = () => {
   const [orders, setOrders] = useState<DeliveryOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [soundOn, setSoundOn] = useState(true);
+  const [filter, setFilter] = useState<"ativos" | "entregues">("ativos");
   const seenIds = useRef<Set<string>>(new Set());
   const initialized = useRef(false);
 
   const load = async () => {
+    // Carrega ativos + entregues/cancelados das últimas 24h
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await supabase
       .from("delivery_orders")
       .select("*")
-      .in("status", ["novo", "preparando", "pronto"])
+      .or(`status.in.(${ACTIVE_STATUSES.join(",")}),created_at.gte.${since}`)
       .order("created_at", { ascending: false });
+    if (error) {
+      toast.error("Erro ao carregar pedidos");
+      console.error(error);
+    } else {
+      const list = (data as any[]) || [];
+      setOrders(list);
+      list.forEach((o) => seenIds.current.add(o.id));
+    }
+    setLoading(false);
+    initialized.current = true;
+  };
     if (error) {
       toast.error("Erro ao carregar pedidos");
       console.error(error);
