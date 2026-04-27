@@ -311,9 +311,13 @@ const Loja = () => {
 
     const itemLines = cart.flatMap((i) => {
       const total = i.price * i.quantity;
+      const saucesLine = i.sauces.length > 0
+        ? `  Molhos: ${i.sauces.join(", ")}`
+        : `  Molhos: nenhum`;
       return [
         `- x${i.quantity} ${i.name} - ${i.size} ${formatBRL(total)}`,
         `  Preço unitário ${formatBRL(i.price)}`,
+        saucesLine,
         ``,
       ];
     });
