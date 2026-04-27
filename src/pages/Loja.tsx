@@ -19,7 +19,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ShoppingBag, Plus, Minus, Trash2, MessageCircle, Instagram } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ShoppingBag, Plus, Minus, Trash2, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -119,6 +126,15 @@ interface CartItem {
   quantity: number;
 }
 
+interface Neighborhood {
+  id: string;
+  name: string;
+  delivery_fee: number;
+}
+
+type ServiceType = "delivery" | "retirada";
+type PaymentMethod = "Dinheiro" | "Pix" | "Cartão" | "";
+
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -129,10 +145,18 @@ const Loja = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+
+  // Customer fields
   const [customerName, setCustomerName] = useState("");
-  const [customerAddress, setCustomerAddress] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [serviceType, setServiceType] = useState<ServiceType>("delivery");
+  const [neighborhoodId, setNeighborhoodId] = useState<string>("");
+  const [addressDetail, setAddressDetail] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("");
   const [notes, setNotes] = useState("");
+
   const [whatsappNumber, setWhatsappNumber] = useState<string>("");
+  const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
 
   // SEO
   useEffect(() => {
@@ -147,19 +171,27 @@ const Loja = () => {
     m.setAttribute("content", desc);
   }, []);
 
-  // Load WhatsApp number from system_settings (any client — public read)
+  // Load WhatsApp + delivery neighborhoods
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("system_settings")
-        .select("value")
-        .eq("key", "whatsapp_orders_number")
-        .maybeSingle();
-      if (data?.value) setWhatsappNumber(String(data.value));
+      const [{ data: cfg }, { data: nb }] = await Promise.all([
+        supabase
+          .from("system_settings")
+          .select("value")
+          .eq("key", "whatsapp_orders_number")
+          .maybeSingle(),
+        supabase
+          .from("delivery_neighborhoods")
+          .select("id,name,delivery_fee")
+          .eq("active", true)
+          .order("name"),
+      ]);
+      if (cfg?.value) setWhatsappNumber(String(cfg.value));
+      setNeighborhoods((nb as any[]) || []);
     })();
   }, []);
 
-  const total = useMemo(
+  const productsTotal = useMemo(
     () => cart.reduce((s, i) => s + i.price * i.quantity, 0),
     [cart]
   );
@@ -167,6 +199,15 @@ const Loja = () => {
     () => cart.reduce((s, i) => s + i.quantity, 0),
     [cart]
   );
+  const selectedNeighborhood = useMemo(
+    () => neighborhoods.find((n) => n.id === neighborhoodId),
+    [neighborhoodId, neighborhoods]
+  );
+  const deliveryFee =
+    serviceType === "delivery" && selectedNeighborhood
+      ? Number(selectedNeighborhood.delivery_fee)
+      : 0;
+  const grandTotal = productsTotal + deliveryFee;
 
   const openProduct = (p: Product) => {
     setSelected(p);
@@ -183,9 +224,7 @@ const Loja = () => {
       );
       if (found) {
         return prev.map((i) =>
-          i.uid === found.uid
-            ? { ...i, quantity: i.quantity + selectedQty }
-            : i
+          i.uid === found.uid ? { ...i, quantity: i.quantity + selectedQty } : i
         );
       }
       return [
@@ -219,45 +258,86 @@ const Loja = () => {
   };
 
   const sendToWhatsApp = () => {
-    if (!customerName.trim()) {
-      toast.error("Informe seu nome");
-      return;
-    }
-    if (cart.length === 0) {
-      toast.error("Carrinho vazio");
-      return;
+    if (cart.length === 0) return toast.error("Carrinho vazio");
+    if (!customerName.trim()) return toast.error("Informe seu nome");
+    const phoneClean = customerPhone.replace(/\D/g, "");
+    if (phoneClean.length < 10) return toast.error("Informe um telefone válido com DDD");
+    if (!paymentMethod) return toast.error("Selecione o método de pagamento");
+    if (serviceType === "delivery") {
+      if (!neighborhoodId) return toast.error("Selecione o bairro de entrega");
+      if (!addressDetail.trim()) return toast.error("Informe o endereço (rua, número)");
     }
     if (!whatsappNumber) {
-      toast.error("Número de WhatsApp da loja não configurado. Avise o estabelecimento.");
-      return;
+      return toast.error("Número de WhatsApp da loja não configurado. Avise o estabelecimento.");
     }
 
+    const now = new Date();
+    const data = now.toLocaleDateString("pt-BR");
+    const hora = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+    const tipoServico = serviceType === "delivery" ? "Delivery" : "Retirada no local";
+    const enderecoLinha =
+      serviceType === "delivery"
+        ? `${selectedNeighborhood?.name ?? ""}, ${addressDetail}`
+        : "Retirada no local";
+
+    const metodoPagamentoLinha =
+      serviceType === "delivery"
+        ? `${paymentMethod} - Para delivery`
+        : `${paymentMethod} - Na retirada`;
+
+    const itemLines = cart.flatMap((i) => {
+      const total = i.price * i.quantity;
+      return [
+        `- x${i.quantity} ${i.name} - ${i.size} ${formatBRL(total)}`,
+        `  Preço unitário ${formatBRL(i.price)}`,
+        ``,
+      ];
+    });
+
     const lines = [
-      `*🍟 Novo Pedido — Malukus Batata*`,
+      `Novo Pedido — Malukus Batata`,
       ``,
-      `*Cliente:* ${customerName}`,
-      customerAddress.trim() ? `*Endereço:* ${customerAddress}` : null,
+      `🗓️ ${data} ⏰ ${hora}`,
       ``,
-      `*Itens:*`,
-      ...cart.map(
-        (i) =>
-          `• ${i.quantity}x ${i.name} (${i.size}) — ${formatBRL(i.price * i.quantity)}`
-      ),
+      `*Tipo de serviço: ${tipoServico}*`,
       ``,
-      `*Total: ${formatBRL(total)}*`,
-      notes.trim() ? `\n*Observações:* ${notes}` : null,
+      `Nome: ${customerName}`,
+      `Telefone: ${phoneClean}`,
+      `Endereço: ${enderecoLinha}`,
+      ``,
+      `Método de pagamento: ${metodoPagamentoLinha}`,
+      ``,
+      `Status de pagamento: Não pago`,
+      ``,
+      `💲 Custos`,
+      ``,
+      `Preço dos produtos: ${formatBRL(productsTotal)}`,
+      `Preço de entrega: ${formatBRL(deliveryFee)}`,
+      `Total a pagar: ${formatBRL(grandTotal)}`,
+      ``,
+      `📝 Pedido`,
+      ``,
+      ...itemLines,
+      notes.trim() ? `*Observações:* ${notes}` : null,
+      notes.trim() ? `` : null,
+      `👆 Após enviar o pedido, aguarde que já iremos lhe atender..`,
     ]
-      .filter(Boolean)
+      .filter((l) => l !== null)
       .join("\n");
 
     const phone = whatsappNumber.replace(/\D/g, "");
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(lines)}`;
     window.open(url, "_blank");
+
     setCheckoutOpen(false);
     setCartOpen(false);
     setCart([]);
     setCustomerName("");
-    setCustomerAddress("");
+    setCustomerPhone("");
+    setAddressDetail("");
+    setNeighborhoodId("");
+    setPaymentMethod("");
     setNotes("");
     toast.success("Pedido enviado para o WhatsApp!");
   };
@@ -360,8 +440,8 @@ const Loja = () => {
               {cart.length > 0 && (
                 <div className="border-t border-zinc-800 pt-4 space-y-3">
                   <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
-                    <span className="text-orange-400">{formatBRL(total)}</span>
+                    <span>Subtotal</span>
+                    <span className="text-orange-400">{formatBRL(productsTotal)}</span>
                   </div>
                   <Button
                     className="w-full bg-green-600 hover:bg-green-700 text-white"
@@ -449,7 +529,7 @@ const Loja = () => {
         </div>
       </footer>
 
-      {/* Product modal — size + qty */}
+      {/* Product modal */}
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="bg-zinc-900 text-zinc-100 border-zinc-800 max-w-md">
           {selected && (
@@ -537,33 +617,101 @@ const Loja = () => {
 
       {/* Checkout modal */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="bg-zinc-900 text-zinc-100 border-zinc-800">
+        <DialogContent className="bg-zinc-900 text-zinc-100 border-zinc-800 max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-orange-400">Seus dados</DialogTitle>
+            <DialogTitle className="text-orange-400">Finalizar pedido</DialogTitle>
             <DialogDescription className="text-zinc-400">
-              Vamos enviar seu pedido pelo WhatsApp da Malukus.
+              Preencha seus dados — vamos enviar para o WhatsApp da loja.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
             <div>
-              <Label>Seu nome *</Label>
+              <Label>Nome *</Label>
               <Input
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 className="bg-zinc-800 border-zinc-700"
-                placeholder="Nome completo"
+                placeholder="Seu nome"
+                maxLength={80}
               />
             </div>
+
             <div>
-              <Label>Endereço (se for entrega)</Label>
+              <Label>Telefone (WhatsApp) *</Label>
               <Input
-                value={customerAddress}
-                onChange={(e) => setCustomerAddress(e.target.value)}
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
                 className="bg-zinc-800 border-zinc-700"
-                placeholder="Rua, número, bairro"
+                placeholder="Ex: 55 81 98711-8762"
+                inputMode="tel"
+                maxLength={20}
               />
             </div>
+
+            <div>
+              <Label>Tipo de serviço *</Label>
+              <Select value={serviceType} onValueChange={(v) => setServiceType(v as ServiceType)}>
+                <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="delivery">Delivery (entrega)</SelectItem>
+                  <SelectItem value="retirada">Retirada no local</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {serviceType === "delivery" && (
+              <>
+                <div>
+                  <Label>Bairro *</Label>
+                  <Select value={neighborhoodId} onValueChange={setNeighborhoodId}>
+                    <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                      <SelectValue placeholder={
+                        neighborhoods.length === 0
+                          ? "Nenhum bairro cadastrado pela loja"
+                          : "Selecione seu bairro"
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {neighborhoods.map((n) => (
+                        <SelectItem key={n.id} value={n.id}>
+                          {n.name} — {formatBRL(n.delivery_fee)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Endereço (rua, número, referência) *</Label>
+                  <Textarea
+                    value={addressDetail}
+                    onChange={(e) => setAddressDetail(e.target.value)}
+                    className="bg-zinc-800 border-zinc-700"
+                    placeholder="Ex: Rua Sete, 147 — em frente à igreja"
+                    maxLength={200}
+                    rows={2}
+                  />
+                </div>
+              </>
+            )}
+
+            <div>
+              <Label>Método de pagamento *</Label>
+              <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+                <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="Pix">Pix</SelectItem>
+                  <SelectItem value="Cartão">Cartão</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <Label>Observações</Label>
               <Textarea
@@ -572,12 +720,23 @@ const Loja = () => {
                 className="bg-zinc-800 border-zinc-700"
                 placeholder="Ex: sem cebola, troco para R$ 50..."
                 maxLength={200}
+                rows={2}
               />
             </div>
 
-            <div className="bg-zinc-800/60 rounded-lg p-3 flex justify-between text-lg font-bold">
-              <span>Total</span>
-              <span className="text-orange-400">{formatBRL(total)}</span>
+            <div className="bg-zinc-800/60 rounded-lg p-3 space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Produtos</span>
+                <span>{formatBRL(productsTotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Entrega</span>
+                <span>{formatBRL(deliveryFee)}</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold pt-1 border-t border-zinc-700">
+                <span>Total</span>
+                <span className="text-orange-400">{formatBRL(grandTotal)}</span>
+              </div>
             </div>
           </div>
 
