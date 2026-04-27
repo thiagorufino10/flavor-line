@@ -214,7 +214,7 @@ const DeliveryOrdersPage = () => {
     <AppLayout
       title="Delivery"
       subtitle="Pedidos da loja online em tempo real"
-      headerExtra={
+      actions={
         <Button
           variant="outline"
           size="sm"
