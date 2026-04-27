@@ -608,6 +608,33 @@ const Loja = () => {
                 </div>
               </div>
 
+              <div>
+                <Label className="text-sm mb-2 block">
+                  Escolha o molho{" "}
+                  <span className="text-zinc-500 font-normal">(opcional, pode marcar mais de um)</span>
+                </Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {SAUCES.map((s) => {
+                    const active = selectedSauces.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => toggleSauce(s)}
+                        className={`rounded-lg border-2 px-3 py-2 text-sm text-left transition-all ${
+                          active
+                            ? "border-orange-500 bg-orange-500/10 text-orange-400"
+                            : "border-zinc-700 hover:border-zinc-600 text-zinc-200"
+                        }`}
+                      >
+                        {active ? "✓ " : ""}
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
                 <Label className="text-sm">Quantidade</Label>
                 <div className="flex items-center gap-3">
