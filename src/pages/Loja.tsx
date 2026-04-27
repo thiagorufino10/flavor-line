@@ -419,7 +419,7 @@ const Loja = () => {
                 />
               </div>
               <div className="p-4">
-                <h4 className="font-bold text-base mb-1">{p.name}</h4>
+                <h4 className="font-bold text-base mb-1 text-white">{p.name}</h4>
                 <p className="text-xs text-zinc-400 mb-3">{p.description}</p>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-zinc-500">A partir de</span>
