@@ -379,36 +379,58 @@ const DeliveryOrdersPage = () => {
                         <Printer className="w-4 h-4 mr-1" />
                         Imprimir
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openWhatsApp(order.customer_phone, `Olá ${order.customer_name}!`)}
+                        title="Abrir conversa no WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-1" />
+                        WhatsApp
+                      </Button>
                       {order.status === "novo" && (
                         <Button size="sm" onClick={() => updateStatus(order.id, "preparando")}>
                           Aceitar
                         </Button>
                       )}
                       {order.status === "preparando" && (
-                        <Button size="sm" onClick={() => updateStatus(order.id, "pronto")}>
+                        <Button size="sm" onClick={() => markReady(order)}>
                           Marcar pronto
                         </Button>
                       )}
-                      {order.status === "pronto" && (
+                      {order.status === "pronto" && order.service_type === "delivery" && (
+                        <Button
+                          size="sm"
+                          className="bg-purple-600 hover:bg-purple-700"
+                          onClick={() => markOut(order)}
+                        >
+                          <Truck className="w-4 h-4 mr-1" />
+                          Saiu para entrega
+                        </Button>
+                      )}
+                      {(order.status === "saiu_entrega" ||
+                        (order.status === "pronto" && order.service_type !== "delivery")) && (
                         <Button
                           size="sm"
                           className="bg-green-600 hover:bg-green-700"
                           onClick={() => updateStatus(order.id, "entregue")}
                         >
                           <CheckCircle2 className="w-4 h-4 mr-1" />
-                          Entregue
+                          {order.service_type === "delivery" ? "Entregue" : "Retirado"}
                         </Button>
                       )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive ml-auto"
-                        onClick={() => {
-                          if (confirm("Cancelar este pedido?")) updateStatus(order.id, "cancelado");
-                        }}
-                      >
-                        Cancelar
-                      </Button>
+                      {!["entregue", "cancelado"].includes(order.status) && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive ml-auto"
+                          onClick={() => {
+                            if (confirm("Cancelar este pedido?")) updateStatus(order.id, "cancelado");
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
