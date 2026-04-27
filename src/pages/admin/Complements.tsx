@@ -235,9 +235,14 @@ const Complements = () => {
     <AppLayout title="Gerenciar Complementos" subtitle="Configure complementos e vincule aos produtos">
 <main className="container mx-auto px-4 py-8">
         <Card>
-          <CardHeader>
-            <CardTitle>Lista de Complementos</CardTitle>
-            <CardDescription>Total de {complements.length} complemento(s) cadastrado(s)</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <div>
+              <CardTitle>Lista de Complementos</CardTitle>
+              <CardDescription>Total de {complements.length} complemento(s) cadastrado(s)</CardDescription>
+            </div>
+            <Button onClick={() => handleOpenDialog()} className="gap-2">
+              <Plus className="w-4 h-4" /> Novo Complemento
+            </Button>
           </CardHeader>
           <CardContent>
             {loading ? (
