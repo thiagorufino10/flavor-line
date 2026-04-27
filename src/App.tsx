@@ -78,6 +78,7 @@ const App = () => (
 
         <Route path="/admin/whatsapp" element={<ProtectedRoute requiredRole={["admin"]}><WhatsAppAdmin /></ProtectedRoute>} />
         <Route path="/admin/delivery" element={<ProtectedRoute requiredRole={["admin"]}><DeliveryAdmin /></ProtectedRoute>} />
+        <Route path="/admin/delivery-menu" element={<ProtectedRoute requiredRole={["admin"]}><DeliveryMenu /></ProtectedRoute>} />
         <Route path="/delivery-orders" element={<ProtectedRoute requiredRole={["admin", "atendente", "cozinha"]}><DeliveryOrders /></ProtectedRoute>} />
 
         {/* Public routes */}
