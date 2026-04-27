@@ -113,9 +113,10 @@ const printOrder = (order: DeliveryOrder) => {
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Pedido Delivery</title>
 <style>
-  @page { size: 80mm auto; margin: 0; }
-  * { font-weight: 900 !important; }
-  body { font-family: 'Courier New', monospace; width: 80mm; padding: 6mm 4mm; font-size: 13pt; color: #000; font-weight: 900; -webkit-font-smoothing: none; }
+  @page { size: 72mm auto; margin: 0; }
+  * { font-weight: 900 !important; box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; width: 72mm; max-width: 72mm; padding: 3mm 2mm; font-size: 12pt; color: #000; font-weight: 900; -webkit-font-smoothing: none; word-wrap: break-word; overflow-wrap: break-word; }
   h1 { font-size: 17pt; text-align: center; margin: 0 0 4mm; font-weight: 900; }
   .center { text-align: center; }
   .line { border-top: 2px dashed #000; margin: 3mm 0; }
