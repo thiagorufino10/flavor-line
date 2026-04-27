@@ -80,17 +80,7 @@ interface Drink {
   image: string;
 }
 
-const DRINKS: Drink[] = [
-  { id: "coca-1l", name: "Coca Cola 1L", price: 10, image: imgCoca1L },
-  { id: "coca-lata", name: "Coca Lata", price: 6, image: imgCocaLata },
-  { id: "h2o", name: "H2O", price: 6, image: imgH2o },
-  { id: "h2o-limoneto", name: "H2O Limoneto", price: 6, image: imgH2oLimoneto },
-  { id: "agua-mineral", name: "Água Mineral", price: 2, image: imgAguaMineral },
-  { id: "agua-gas", name: "Água com Gás", price: 4, image: imgAguaGas },
-  { id: "cerveja-corona", name: "Cerveja Corona", price: 9, image: imgCorona },
-  { id: "cerveja-heineken", name: "Cerveja Heineken", price: 9, image: imgHeineken },
-  { id: "cerveja-budweiser", name: "Cerveja Budweiser", price: 9, image: imgBudweiser },
-];
+// DRINKS carregados do banco
 
 interface Neighborhood {
   id: string;
