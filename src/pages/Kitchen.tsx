@@ -113,7 +113,7 @@ const Kitchen = () => {
                                 {item.complements.map((comp: any, cIdx: number) => (
                                   <li key={cIdx} className="text-sm text-muted-foreground">
                                     • {comp.name}
-                                    {comp.price > 0 && ` (+{formatBRL(comp.price)})`}
+                                    {comp.price > 0 && ` (+${formatBRL(comp.price)})`}
                                   </li>
                                 ))}
                               </ul>
@@ -176,7 +176,7 @@ const Kitchen = () => {
                                 {item.complements.map((comp: any, cIdx: number) => (
                                   <li key={cIdx} className="text-sm text-muted-foreground">
                                     • {comp.name}
-                                    {comp.price > 0 && ` (+{formatBRL(comp.price)})`}
+                                    {comp.price > 0 && ` (+${formatBRL(comp.price)})`}
                                   </li>
                                 ))}
                               </ul>
@@ -239,7 +239,7 @@ const Kitchen = () => {
                                 {item.complements.map((comp: any, cIdx: number) => (
                                   <li key={cIdx} className="text-sm text-muted-foreground line-through">
                                     • {comp.name}
-                                    {comp.price > 0 && ` (+{formatBRL(comp.price)})`}
+                                    {comp.price > 0 && ` (+${formatBRL(comp.price)})`}
                                   </li>
                                 ))}
                               </ul>
