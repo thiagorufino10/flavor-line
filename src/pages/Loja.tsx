@@ -31,23 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 import logo from "@/assets/malukus-logo.jpeg";
-import imgFrango from "@/assets/malukus/batata-frango.jpeg";
-import imgFrangoCalabresa from "@/assets/malukus/batata-frango-calabresa.jpeg";
-import imgFrangoBacon from "@/assets/malukus/batata-frango-bacon.jpeg";
-import imgFrangoCalabresaBacon from "@/assets/malukus/batata-frango-calabresa-bacon.jpeg";
-import imgCalabresa from "@/assets/malukus/batata-calabresa.jpeg";
-import imgBacon from "@/assets/malukus/batata-bacon.jpeg";
-import imgBaconCalabresa from "@/assets/malukus/batata-bacon-calabresa.jpeg";
-import imgTradicional from "@/assets/malukus/batata-tradicional.jpeg";
-import imgCoca1L from "@/assets/drinks/coca-1l.jpg";
-import imgCocaLata from "@/assets/drinks/coca-lata.jpg";
-import imgH2o from "@/assets/drinks/h2o.webp";
-import imgH2oLimoneto from "@/assets/drinks/h2o-limoneto.jpg";
-import imgAguaMineral from "@/assets/drinks/agua-mineral.webp";
-import imgAguaGas from "@/assets/drinks/agua-gas.webp";
-import imgCorona from "@/assets/drinks/corona.jpg";
-import imgHeineken from "@/assets/drinks/heineken.jpg";
-import imgBudweiser from "@/assets/drinks/budweiser.jpg";
+import { getDeliveryImage } from "@/lib/deliveryImages";
 
 type Size = "P" | "M" | "G" | "GG";
 
