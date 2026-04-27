@@ -224,14 +224,25 @@ const Loja = () => {
     setSelected(p);
     setSelectedSize("M");
     setSelectedQty(1);
+    setSelectedSauces([]);
+  };
+
+  const toggleSauce = (s: string) => {
+    setSelectedSauces((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+    );
   };
 
   const addToCart = () => {
     if (!selected) return;
     const price = selected.prices[selectedSize];
+    const saucesKey = [...selectedSauces].sort().join("|");
     setCart((prev) => {
       const found = prev.find(
-        (i) => i.productId === selected.id && i.size === selectedSize
+        (i) =>
+          i.productId === selected.id &&
+          i.size === selectedSize &&
+          [...i.sauces].sort().join("|") === saucesKey
       );
       if (found) {
         return prev.map((i) =>
@@ -247,6 +258,7 @@ const Loja = () => {
           size: selectedSize,
           price,
           quantity: selectedQty,
+          sauces: [...selectedSauces],
         },
       ];
     });
