@@ -30,6 +30,7 @@ import imgFrangoBacon from "@/assets/malukus/batata-frango-bacon.jpeg";
 import imgFrangoCalabresaBacon from "@/assets/malukus/batata-frango-calabresa-bacon.jpeg";
 import imgCalabresa from "@/assets/malukus/batata-calabresa.jpeg";
 import imgBacon from "@/assets/malukus/batata-bacon.jpeg";
+import imgBaconCalabresa from "@/assets/malukus/batata-bacon-calabresa.jpeg";
 import imgTradicional from "@/assets/malukus/batata-tradicional.jpeg";
 
 type Size = "P" | "M" | "G" | "GG";
@@ -88,7 +89,7 @@ const PRODUCTS: Product[] = [
   {
     id: "bacon-calabresa",
     name: "Batata Frita, Bacon e Calabresa",
-    image: imgBacon,
+    image: imgBaconCalabresa,
     description: "Bacon + calabresa, dupla imbatível",
     prices: { P: 24, M: 26, G: 30, GG: 35 },
   },
