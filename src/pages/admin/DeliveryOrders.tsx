@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Bike, Printer, CheckCircle2, Clock, Phone, MapPin, Volume2, VolumeX } from "lucide-react";
+import { Bike, Printer, CheckCircle2, Clock, Phone, MapPin, Volume2, VolumeX, Truck, MessageCircle } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatBRL } from "@/lib/format";
 
 interface DeliveryItem {
@@ -39,8 +40,29 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   novo: { label: "Novo", color: "bg-orange-500" },
   preparando: { label: "Em Preparação", color: "bg-blue-500" },
   pronto: { label: "Pronto", color: "bg-green-500" },
+  saiu_entrega: { label: "Saiu para entrega", color: "bg-purple-500" },
   entregue: { label: "Entregue", color: "bg-zinc-500" },
   cancelado: { label: "Cancelado", color: "bg-red-500" },
+};
+
+const ACTIVE_STATUSES = ["novo", "preparando", "pronto", "saiu_entrega"];
+
+// Normaliza telefone para formato internacional (BR padrão)
+const normalizePhone = (phone: string): string => {
+  const digits = (phone || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("55")) return digits;
+  return `55${digits}`;
+};
+
+const openWhatsApp = (phone: string, message: string) => {
+  const num = normalizePhone(phone);
+  if (!num) {
+    toast.error("Telefone do cliente inválido");
+    return;
+  }
+  const url = `https://wa.me/${num}?text=${encodeURIComponent(message)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
 };
 
 const playBeep = () => {
@@ -135,14 +157,17 @@ const DeliveryOrdersPage = () => {
   const [orders, setOrders] = useState<DeliveryOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [soundOn, setSoundOn] = useState(true);
+  const [filter, setFilter] = useState<"ativos" | "entregues">("ativos");
   const seenIds = useRef<Set<string>>(new Set());
   const initialized = useRef(false);
 
   const load = async () => {
+    // Carrega ativos + entregues/cancelados das últimas 24h
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await supabase
       .from("delivery_orders")
       .select("*")
-      .in("status", ["novo", "preparando", "pronto"])
+      .or(`status.in.(${ACTIVE_STATUSES.join(",")}),created_at.gte.${since}`)
       .order("created_at", { ascending: false });
     if (error) {
       toast.error("Erro ao carregar pedidos");
@@ -181,11 +206,7 @@ const DeliveryOrdersPage = () => {
         { event: "UPDATE", schema: "public", table: "delivery_orders" },
         (payload) => {
           const updated = payload.new as DeliveryOrder;
-          setOrders((prev) =>
-            prev
-              .map((o) => (o.id === updated.id ? updated : o))
-              .filter((o) => ["novo", "preparando", "pronto"].includes(o.status))
-          );
+          setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
         }
       )
       .subscribe();
@@ -205,10 +226,31 @@ const DeliveryOrdersPage = () => {
     else toast.success("Atualizado");
   };
 
+  const markReady = (order: DeliveryOrder) => {
+    updateStatus(order.id, "pronto");
+    const msg =
+      order.service_type === "delivery"
+        ? `Olá ${order.customer_name}! 🎉\n\nSeu pedido está *PRONTO* e em breve sairá para entrega.\n\nObrigado pela preferência! 🍴`
+        : `Olá ${order.customer_name}! 🎉\n\nSeu pedido está *PRONTO* para retirada.\n\nObrigado pela preferência! 🍴`;
+    openWhatsApp(order.customer_phone, msg);
+  };
+
+  const markOut = (order: DeliveryOrder) => {
+    updateStatus(order.id, "saiu_entrega");
+    const msg = `Olá ${order.customer_name}! 🛵\n\nSeu pedido *SAIU PARA ENTREGA* e logo chegará até você.\n\nObrigado pela preferência! 🍴`;
+    openWhatsApp(order.customer_phone, msg);
+  };
+
   const handlePrint = async (order: DeliveryOrder) => {
     printOrder(order);
     await supabase.from("delivery_orders").update({ printed: true }).eq("id", order.id);
   };
+
+  const filteredOrders = orders.filter((o) =>
+    filter === "ativos" ? ACTIVE_STATUSES.includes(o.status) : ["entregue", "cancelado"].includes(o.status),
+  );
+  const activeCount = orders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length;
+  const doneCount = orders.filter((o) => ["entregue", "cancelado"].includes(o.status)).length;
 
   return (
     <AppLayout
@@ -226,20 +268,29 @@ const DeliveryOrdersPage = () => {
       }
     >
       <div className="space-y-4">
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as "ativos" | "entregues")}>
+          <TabsList>
+            <TabsTrigger value="ativos">Ativos ({activeCount})</TabsTrigger>
+            <TabsTrigger value="entregues">Entregues ({doneCount})</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {loading ? (
           <p className="text-sm text-muted-foreground">Carregando...</p>
-        ) : orders.length === 0 ? (
+        ) : filteredOrders.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Bike className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
               <p className="text-muted-foreground">
-                Nenhum pedido no momento. Quando um cliente fizer um pedido pela loja online, ele aparecerá aqui automaticamente.
+                {filter === "ativos"
+                  ? "Nenhum pedido ativo no momento. Quando um cliente fizer um pedido pela loja online, ele aparecerá aqui automaticamente."
+                  : "Nenhum pedido entregue ainda."}
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {orders.map((order) => {
+            {filteredOrders.map((order) => {
               const status = STATUS_LABELS[order.status] ?? STATUS_LABELS.novo;
               const isNew = order.status === "novo";
               return (
@@ -328,36 +379,58 @@ const DeliveryOrdersPage = () => {
                         <Printer className="w-4 h-4 mr-1" />
                         Imprimir
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openWhatsApp(order.customer_phone, `Olá ${order.customer_name}!`)}
+                        title="Abrir conversa no WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4 mr-1" />
+                        WhatsApp
+                      </Button>
                       {order.status === "novo" && (
                         <Button size="sm" onClick={() => updateStatus(order.id, "preparando")}>
                           Aceitar
                         </Button>
                       )}
                       {order.status === "preparando" && (
-                        <Button size="sm" onClick={() => updateStatus(order.id, "pronto")}>
+                        <Button size="sm" onClick={() => markReady(order)}>
                           Marcar pronto
                         </Button>
                       )}
-                      {order.status === "pronto" && (
+                      {order.status === "pronto" && order.service_type === "delivery" && (
+                        <Button
+                          size="sm"
+                          className="bg-purple-600 hover:bg-purple-700"
+                          onClick={() => markOut(order)}
+                        >
+                          <Truck className="w-4 h-4 mr-1" />
+                          Saiu para entrega
+                        </Button>
+                      )}
+                      {(order.status === "saiu_entrega" ||
+                        (order.status === "pronto" && order.service_type !== "delivery")) && (
                         <Button
                           size="sm"
                           className="bg-green-600 hover:bg-green-700"
                           onClick={() => updateStatus(order.id, "entregue")}
                         >
                           <CheckCircle2 className="w-4 h-4 mr-1" />
-                          Entregue
+                          {order.service_type === "delivery" ? "Entregue" : "Retirado"}
                         </Button>
                       )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive ml-auto"
-                        onClick={() => {
-                          if (confirm("Cancelar este pedido?")) updateStatus(order.id, "cancelado");
-                        }}
-                      >
-                        Cancelar
-                      </Button>
+                      {!["entregue", "cancelado"].includes(order.status) && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive ml-auto"
+                          onClick={() => {
+                            if (confirm("Cancelar este pedido?")) updateStatus(order.id, "cancelado");
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
