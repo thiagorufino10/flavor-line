@@ -310,11 +310,10 @@ const Orders = () => {
                     <Button
                       key={item.id}
                       variant="outline"
-                      className="h-24 flex flex-col gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+                      className="h-24 flex items-center justify-center text-center hover:bg-primary hover:text-primary-foreground transition-colors"
                       onClick={() => handleItemClick(item)}
                     >
                       <span className="font-semibold text-sm">{item.name}</span>
-                      <span className="text-lg font-bold">{formatBRL(item.price)}</span>
                     </Button>
                   ))}
                 </div>
