@@ -233,7 +233,7 @@ const DeliveryMenu = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  Pastéis / Batatas
+                  Cardápio Delivery
                   <Badge variant="secondary">{pasteis.length}</Badge>
                 </CardTitle>
               </CardHeader>
