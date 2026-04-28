@@ -82,21 +82,22 @@ const Kitchen = () => {
     );
   }
 
-  return (
-    <AppLayout title="Tela da Cozinha" subtitle="Kitchen Display System">
-      <main className={`container mx-auto px-2 sm:px-4 ${isFullscreen ? "max-w-none" : ""}`}>
-        <div className="flex justify-end mb-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleFullscreen}
-            className="gap-2"
-          >
-            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-            {isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+  const headerBar = (
+    <div className="flex justify-end mb-3">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={toggleFullscreen}
+        className="gap-2"
+      >
+        {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+        {isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+      </Button>
+    </div>
+  );
+
+  const gridContent = (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           {/* Novos Pedidos */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
