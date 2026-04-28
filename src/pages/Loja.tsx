@@ -382,11 +382,11 @@ const Loja = () => {
 
     // Salva o pedido no banco para aparecer na tela de Delivery do estabelecimento
     try {
-      const clientId =
-        selectedNeighborhood?.client_id ?? neighborhoods[0]?.client_id;
-      if (clientId) {
+      // Usa SEMPRE o client_id da loja (resolvido pelo slug fixo)
+      const orderClientId = clientId;
+      if (orderClientId) {
         await supabase.from("delivery_orders").insert({
-          client_id: clientId,
+          client_id: orderClientId,
           customer_name: customerName.trim(),
           customer_phone: phoneClean,
           service_type: serviceType,
