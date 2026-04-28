@@ -64,7 +64,7 @@ const OperationMode = () => {
             </div>
           ) : (
             <>
-            <RadioGroup value={operationMode || "display"} onValueChange={(value) => setOperationMode(value as "printer" | "display")}>
+            <RadioGroup value={operationMode || "display"} onValueChange={(value) => setOperationMode(value as "printer" | "display" | "printer_display")}>
               {/* Modo Impressão */}
               <Card className={`cursor-pointer transition-all ${operationMode === "printer" ? "border-primary border-2 shadow-md" : "hover:border-muted-foreground/30"}`}>
                 <CardContent className="pt-6">
