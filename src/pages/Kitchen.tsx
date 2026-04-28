@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Printer } from "lucide-react";
+import { Clock, Printer, Maximize, Minimize } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
@@ -12,6 +12,7 @@ const Kitchen = () => {
   const { orders, loading, updateOrderStatus } = useOrders();
   const [operationMode, setOperationMode] = useState<string>("");
   const [systemName, setSystemName] = useState("TARMFood");
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const mode = localStorage.getItem("operationMode") || "display";
@@ -20,6 +21,24 @@ const Kitchen = () => {
     const savedName = localStorage.getItem("systemName");
     if (savedName) setSystemName(savedName);
   }, []);
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (e) {
+      console.error("Fullscreen error:", e);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline"; color: string }> = {
