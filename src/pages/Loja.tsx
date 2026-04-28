@@ -135,26 +135,6 @@ const Loja = () => {
     m.setAttribute("content", desc);
   }, []);
 
-  // Load WhatsApp + delivery neighborhoods + cardápio delivery
-  useEffect(() => {
-    (async () => {
-      const [{ data: cfg }, { data: nb }, { data: menu }] = await Promise.all([
-        supabase
-          .from("system_settings")
-          .select("value")
-          .eq("key", "whatsapp_orders_number")
-          .maybeSingle(),
-        supabase
-          .from("delivery_neighborhoods")
-          .select("id,name,delivery_fee,client_id")
-          .eq("active", true)
-          .order("name"),
-        supabase
-          .from("delivery_menu_items")
-          .select("product_key,kind,name,description,prices,sort_order")
-          .eq("active", true)
-          .order("sort_order"),
-      ]);
   // Load WhatsApp + delivery neighborhoods + cardápio delivery — APENAS do cliente dono da loja
   useEffect(() => {
     (async () => {
