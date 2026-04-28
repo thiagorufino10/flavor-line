@@ -8,6 +8,21 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { formatBRL } from "@/lib/format";
 
+const isDocumentFullscreen = () =>
+  Boolean(document.fullscreenElement || (document as any).webkitFullscreenElement);
+
+const requestDocumentFullscreen = async () => {
+  const root = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> | void };
+  if (root.requestFullscreen) return root.requestFullscreen();
+  if (root.webkitRequestFullscreen) return root.webkitRequestFullscreen();
+};
+
+const exitDocumentFullscreen = async () => {
+  const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> | void };
+  if (document.exitFullscreen) return document.exitFullscreen();
+  if (doc.webkitExitFullscreen) return doc.webkitExitFullscreen();
+};
+
 const Kitchen = () => {
   const { orders, loading, updateOrderStatus } = useOrders();
   const [operationMode, setOperationMode] = useState<string>("");
@@ -32,7 +47,33 @@ const Kitchen = () => {
     }
   }, [isFullscreen]);
 
-  const toggleFullscreen = () => setIsFullscreen((v) => !v);
+  useEffect(() => {
+    const syncFullscreenState = () => {
+      if (!isDocumentFullscreen()) setIsFullscreen(false);
+    };
+
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+    document.addEventListener("webkitfullscreenchange", syncFullscreenState as EventListener);
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreenState);
+      document.removeEventListener("webkitfullscreenchange", syncFullscreenState as EventListener);
+    };
+  }, []);
+
+  const toggleFullscreen = async () => {
+    if (isFullscreen) {
+      if (isDocumentFullscreen()) await exitDocumentFullscreen();
+      setIsFullscreen(false);
+      return;
+    }
+
+    setIsFullscreen(true);
+    try {
+      await requestDocumentFullscreen();
+    } catch (error) {
+      console.warn("Tela cheia nativa indisponível, usando modo expandido.", error);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline"; color: string }> = {
@@ -83,12 +124,18 @@ const Kitchen = () => {
   }
 
   const headerBar = (
-    <div className="flex justify-end mb-3">
+    <div className="flex items-center justify-between gap-3 mb-3">
+      {isFullscreen && (
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl font-bold leading-tight truncate">Tela da Cozinha</h1>
+          <p className="text-xs text-muted-foreground truncate">{systemName}</p>
+        </div>
+      )}
       <Button
         variant="outline"
         size="sm"
         onClick={toggleFullscreen}
-        className="gap-2"
+        className="gap-2 shrink-0 ml-auto"
       >
         {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
         {isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
@@ -97,12 +144,12 @@ const Kitchen = () => {
   );
 
   const gridContent = (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4 w-full">
           {/* Novos Pedidos */}
-          <div className="space-y-4">
+          <div className="space-y-3 min-w-0">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-              <h2 className="text-xl font-bold">Novos Pedidos</h2>
+              <h2 className="text-lg lg:text-xl font-bold">Novos Pedidos</h2>
               <Badge variant="secondary">{filterOrders("novo").length}</Badge>
             </div>
             
@@ -162,10 +209,10 @@ const Kitchen = () => {
           </div>
 
           {/* Em Preparação */}
-          <div className="space-y-4">
+          <div className="space-y-3 min-w-0">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-warning" />
-              <h2 className="text-xl font-bold">Em Preparação</h2>
+              <h2 className="text-lg lg:text-xl font-bold">Em Preparação</h2>
               <Badge variant="secondary">{filterOrders("preparando").length}</Badge>
             </div>
             
@@ -225,10 +272,10 @@ const Kitchen = () => {
           </div>
 
           {/* Finalizados */}
-          <div className="space-y-4">
+          <div className="space-y-3 min-w-0">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-success" />
-              <h2 className="text-xl font-bold">Finalizados</h2>
+              <h2 className="text-lg lg:text-xl font-bold">Finalizados</h2>
               <Badge variant="secondary">{filterOrders("finalizado").length}</Badge>
             </div>
             
