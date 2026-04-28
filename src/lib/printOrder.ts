@@ -13,8 +13,9 @@ const paymentMethodLabel: Record<string, string> = {
 export const buildOrderHtml = (order: Order, paperWidth: string): string => {
   const items = order.items || [];
   const now = new Date(order.created_at).toLocaleString("pt-BR");
-  const paperWidthMm = paperWidth === "58mm" ? "58mm" : "80mm";
-  const paperWidthPx = paperWidth === "58mm" ? "164px" : "226px";
+  const is58 = paperWidth === "58mm";
+  const pageMm = is58 ? "58mm" : "80mm";
+  const bodyMm = is58 ? "54mm" : "66mm";
 
   const itemsHtml = items
     .map((item) => {
@@ -27,11 +28,11 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
           : "";
 
       const obsHtml = item.observations
-        ? `<div class="obs">OBS: ${item.observations}</div>`
+        ? `<div class="sub"><strong>OBS:</strong> ${item.observations}</div>`
         : "";
 
       return `<div class="item">
-        <div class="name">${item.quantity}x ${item.product_name} - R$ ${formatBRLNumber(item.total_price)}</div>
+        <div class="row"><strong>${item.quantity}x ${item.product_name}</strong> <span>R$ ${formatBRLNumber(item.total_price)}</span></div>
         ${complementsHtml}
         ${obsHtml}
       </div>`;
@@ -39,44 +40,38 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
     .join("");
 
   return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <style>
-    @page { size: ${paperWidthMm} auto; margin: 2mm; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Courier New', monospace; color: #000; width: ${paperWidthPx}; font-size: 17px; font-weight: 700; }
-    .receipt { width: 100%; }
-    .center { text-align: center; }
-    .title { font-size: 20px; font-weight: 700; }
-    .divider { border-top: 1px dashed #000; margin: 6px 0; }
-    .item { margin-bottom: 6px; }
-    .name { font-weight: 700; font-size: 17px; }
-    .sub { font-size: 15px; margin-left: 8px; }
-    .obs { font-size: 15px; margin-left: 8px; font-weight: 700; }
-    .total { font-weight: 700; margin-top: 6px; }
-  </style>
-</head>
-<body>
-  <div class="receipt">
-    <div class="center">
-      <div class="title">${(typeof localStorage !== 'undefined' && localStorage.getItem('systemName')) || 'TARMFOOD'}</div>
-      <div>Comanda de Produção</div>
-    </div>
-    <div class="divider"></div>
-    <div><strong>Pedido:</strong> #${order.order_number}</div>
-    <div><strong>Cliente:</strong> ${order.customer_name.toUpperCase()}</div>
-    <div><strong>Data/Hora:</strong> ${now}</div>
-    <div class="divider"></div>
-    <div><strong>ITENS:</strong></div>
-    ${itemsHtml}
-    <div class="divider"></div>
-    <div class="total">TOTAL: R$ ${formatBRLNumber(order.total_amount)}</div>
-    <div>Pagamento: ${paymentMethodLabel[order.payment_method] || order.payment_method.toUpperCase()}</div>
-    <div class="center" style="margin-top: 8px;">Obrigado pela preferência!</div>
-  </div>
-</body>
-</html>`;
+<html><head><meta charset="utf-8"><title>Comanda</title>
+<style>
+  @page { size: ${pageMm} auto; margin: 0; }
+  * { font-weight: 900 !important; box-sizing: border-box; }
+  html { margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; width: ${bodyMm}; max-width: ${bodyMm}; margin: 0 auto; padding: 3mm 1mm; font-size: 10.5pt; color: #000; font-weight: 900; -webkit-font-smoothing: none; word-wrap: break-word; overflow-wrap: anywhere; text-align: center; }
+  h1 { font-size: 14pt; text-align: center; margin: 0 0 3mm; font-weight: 900; }
+  .center { text-align: center; }
+  .left { text-align: left; }
+  .line { border-top: 2px dashed #000; margin: 2.5mm 0; }
+  .row { display: flex; justify-content: space-between; gap: 2mm; width: 100%; text-align: left; }
+  .row > *:first-child { min-width: 0; overflow-wrap: anywhere; }
+  .row > *:last-child { flex-shrink: 0; text-align: right; }
+  .sub { font-size: 10.5pt; padding-left: 2mm; text-align: left; }
+  .item { margin-bottom: 2.5mm; text-align: left; }
+  .total { font-size: 12.5pt; }
+  strong, b { font-weight: 900; }
+</style></head><body>
+  <h1>MALUKUS BATATA</h1>
+  <div class="center">*** COMANDA DE PRODUÇÃO ***</div>
+  <div class="center">${now}</div>
+  <div class="line"></div>
+  <div class="left"><strong>Pedido:</strong> #${order.order_number}</div>
+  <div class="left"><strong>Cliente:</strong> ${order.customer_name.toUpperCase()}</div>
+  <div class="left"><strong>Pagamento:</strong> ${paymentMethodLabel[order.payment_method] || order.payment_method.toUpperCase()}</div>
+  <div class="line"></div>
+  ${itemsHtml}
+  <div class="line"></div>
+  <div class="row total"><span>TOTAL:</span><span>R$ ${formatBRLNumber(order.total_amount)}</span></div>
+  <div class="line"></div>
+  <div class="center">Obrigado pela preferência!</div>
+</body></html>`;
 };
 
 export const printOrder = async (order: Order) => {
