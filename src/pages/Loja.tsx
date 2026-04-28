@@ -155,6 +155,45 @@ const Loja = () => {
           .eq("active", true)
           .order("sort_order"),
       ]);
+  // Load WhatsApp + delivery neighborhoods + cardápio delivery — APENAS do cliente dono da loja
+  useEffect(() => {
+    (async () => {
+      // 1. Resolve o client_id da loja a partir do slug fixo
+      const { data: client } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("slug", STORE_CLIENT_SLUG)
+        .eq("active", true)
+        .maybeSingle();
+
+      const cid = client?.id;
+      if (!cid) {
+        console.warn("Cliente da loja não encontrado para slug:", STORE_CLIENT_SLUG);
+        return;
+      }
+      setClientId(cid);
+
+      // 2. Carrega tudo já filtrado por client_id
+      const [{ data: cfg }, { data: nb }, { data: menu }] = await Promise.all([
+        supabase
+          .from("system_settings")
+          .select("value")
+          .eq("client_id", cid)
+          .eq("key", "whatsapp_orders_number")
+          .maybeSingle(),
+        supabase
+          .from("delivery_neighborhoods")
+          .select("id,name,delivery_fee,client_id")
+          .eq("client_id", cid)
+          .eq("active", true)
+          .order("name"),
+        supabase
+          .from("delivery_menu_items")
+          .select("product_key,kind,name,description,prices,sort_order")
+          .eq("client_id", cid)
+          .eq("active", true)
+          .order("sort_order"),
+      ]);
       if (cfg?.value) setWhatsappNumber(String(cfg.value));
       setNeighborhoods((nb as any[]) || []);
 
