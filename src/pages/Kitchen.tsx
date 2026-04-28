@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Printer } from "lucide-react";
+import { Clock, Printer, Maximize, Minimize } from "lucide-react";
 import { useOrders } from "@/hooks/useOrders";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
@@ -12,6 +12,7 @@ const Kitchen = () => {
   const { orders, loading, updateOrderStatus } = useOrders();
   const [operationMode, setOperationMode] = useState<string>("");
   const [systemName, setSystemName] = useState("TARMFood");
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const mode = localStorage.getItem("operationMode") || "display";
@@ -20,6 +21,24 @@ const Kitchen = () => {
     const savedName = localStorage.getItem("systemName");
     if (savedName) setSystemName(savedName);
   }, []);
+
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (e) {
+      console.error("Fullscreen error:", e);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline"; color: string }> = {
@@ -71,8 +90,19 @@ const Kitchen = () => {
 
   return (
     <AppLayout title="Tela da Cozinha" subtitle="Kitchen Display System">
-      <main className="container mx-auto px-0">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <main className={`container mx-auto px-2 sm:px-4 ${isFullscreen ? "max-w-none" : ""}`}>
+        <div className="flex justify-end mb-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleFullscreen}
+            className="gap-2"
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+            {isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           {/* Novos Pedidos */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
