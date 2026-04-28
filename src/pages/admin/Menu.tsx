@@ -132,12 +132,12 @@ const Menu = () => {
   };
 
   const handleEditSave = async () => {
-    if (!editFormData.name || !editFormData.price || !editFormData.category_id) {
+    if (!editFormData.name || editFormData.price === "" || !editFormData.category_id) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
     const price = parseFloat(editFormData.price);
-    if (isNaN(price) || price <= 0) {
+    if (isNaN(price) || price < 0) {
       toast.error("Preço inválido");
       return;
     }
