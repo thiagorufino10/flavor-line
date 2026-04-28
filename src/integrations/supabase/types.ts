@@ -871,6 +871,15 @@ export type Database = {
     }
     Functions: {
       create_admin_user: { Args: never; Returns: undefined }
+      ensure_client_initial_admin: {
+        Args: {
+          _client_id: string
+          _full_name?: string
+          _user_id: string
+          _username: string
+        }
+        Returns: undefined
+      }
       get_user_client_id: { Args: never; Returns: string }
       has_role: {
         Args: {
