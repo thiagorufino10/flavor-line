@@ -129,6 +129,39 @@ const OperationMode = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Modo Híbrido: Display + Impressora */}
+              <Card className={`cursor-pointer transition-all ${operationMode === "printer_display" ? "border-primary border-2 shadow-md" : "hover:border-muted-foreground/30"}`}>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <RadioGroupItem value="printer_display" id="printer_display" />
+                    <div className="flex-1">
+                      <Label htmlFor="printer_display" className="cursor-pointer">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center gap-1">
+                            <Monitor className="w-4 h-4" />
+                            <Printer className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold">Modo Display + Impressora</h3>
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground ml-13">
+                          Modo híbrido: pedidos de mesa vão para a tela da cozinha (KDS) e pedidos avulsos são impressos automaticamente.
+                        </p>
+                        <div className="mt-3 ml-13 p-3 bg-muted rounded-lg">
+                          <p className="text-sm font-medium mb-2">Características:</p>
+                          <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                            <li>Pedidos de mesa → Tela da Cozinha (KDS)</li>
+                            <li>Pedidos avulsos (balcão) → Impressora térmica</li>
+                            <li>Ideal para quem atende salão e balcão</li>
+                          </ul>
+                        </div>
+                      </Label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </RadioGroup>
 
             <div className="flex justify-end">
