@@ -191,7 +191,8 @@ const Orders = () => {
         .eq("key", "operation_mode")
         .maybeSingle();
       const operationMode = settingData?.value || "display";
-      const destinationText = operationMode === "printer" ? "impressora" : "tela da cozinha";
+      const shouldPrint = operationMode === "printer" || operationMode === "printer_display";
+      const destinationText = shouldPrint ? "impressora" : "tela da cozinha";
 
       try {
         const items = currentOrder.map((item) => ({
@@ -205,7 +206,7 @@ const Orders = () => {
 
         const order = await createOrder(customerName, paymentMethod, getTotalPrice, items, splitPayments);
 
-        if (operationMode === "printer" && order) {
+        if (shouldPrint && order) {
           const { printOrder } = await import("@/lib/printOrder");
           const orderWithItems = {
             ...order,
