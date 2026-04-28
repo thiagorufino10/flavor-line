@@ -117,6 +117,10 @@ const Loja = () => {
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [drinks, setDrinks] = useState<Drink[]>([]);
+  const [clientId, setClientId] = useState<string>("");
+
+  // Slug do cliente dono desta loja. Esta página /loja é exclusiva da Malukus Batata.
+  const STORE_CLIENT_SLUG = "malukusbatata";
 
   // SEO
   useEffect(() => {
@@ -131,23 +135,42 @@ const Loja = () => {
     m.setAttribute("content", desc);
   }, []);
 
-  // Load WhatsApp + delivery neighborhoods + cardápio delivery
+  // Load WhatsApp + delivery neighborhoods + cardápio delivery — APENAS do cliente dono da loja
   useEffect(() => {
     (async () => {
+      // 1. Resolve o client_id da loja a partir do slug fixo
+      const { data: client } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("slug", STORE_CLIENT_SLUG)
+        .eq("active", true)
+        .maybeSingle();
+
+      const cid = client?.id;
+      if (!cid) {
+        console.warn("Cliente da loja não encontrado para slug:", STORE_CLIENT_SLUG);
+        return;
+      }
+      setClientId(cid);
+
+      // 2. Carrega tudo já filtrado por client_id
       const [{ data: cfg }, { data: nb }, { data: menu }] = await Promise.all([
         supabase
           .from("system_settings")
           .select("value")
+          .eq("client_id", cid)
           .eq("key", "whatsapp_orders_number")
           .maybeSingle(),
         supabase
           .from("delivery_neighborhoods")
           .select("id,name,delivery_fee,client_id")
+          .eq("client_id", cid)
           .eq("active", true)
           .order("name"),
         supabase
           .from("delivery_menu_items")
           .select("product_key,kind,name,description,prices,sort_order")
+          .eq("client_id", cid)
           .eq("active", true)
           .order("sort_order"),
       ]);
@@ -359,11 +382,11 @@ const Loja = () => {
 
     // Salva o pedido no banco para aparecer na tela de Delivery do estabelecimento
     try {
-      const clientId =
-        selectedNeighborhood?.client_id ?? neighborhoods[0]?.client_id;
-      if (clientId) {
+      // Usa SEMPRE o client_id da loja (resolvido pelo slug fixo)
+      const orderClientId = clientId;
+      if (orderClientId) {
         await supabase.from("delivery_orders").insert({
-          client_id: clientId,
+          client_id: orderClientId,
           customer_name: customerName.trim(),
           customer_phone: phoneClean,
           service_type: serviceType,
