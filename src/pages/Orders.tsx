@@ -305,15 +305,17 @@ const Orders = () => {
                 <CardTitle className="text-xl">{activeCategory?.name}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-3">
                   {activeItems.map((item) => (
                     <Button
                       key={item.id}
                       variant="outline"
-                      className="h-24 flex items-center justify-center text-center hover:bg-primary hover:text-primary-foreground transition-colors"
+                      className="h-20 sm:h-24 w-full p-2 flex items-center justify-center text-center hover:bg-primary hover:text-primary-foreground transition-colors whitespace-normal"
                       onClick={() => handleItemClick(item)}
                     >
-                      <span className="font-semibold text-sm">{item.name}</span>
+                      <span className="font-semibold text-xs sm:text-sm leading-tight break-words line-clamp-3">
+                        {item.name}
+                      </span>
                     </Button>
                   ))}
                 </div>
