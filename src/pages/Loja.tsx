@@ -117,6 +117,10 @@ const Loja = () => {
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [drinks, setDrinks] = useState<Drink[]>([]);
+  const [clientId, setClientId] = useState<string>("");
+
+  // Slug do cliente dono desta loja. Esta página /loja é exclusiva da Malukus Batata.
+  const STORE_CLIENT_SLUG = "malukusbatata";
 
   // SEO
   useEffect(() => {
