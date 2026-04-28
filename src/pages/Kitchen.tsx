@@ -280,7 +280,25 @@ const Kitchen = () => {
               </Card>
             ))}
           </div>
+    </div>
+  );
+
+  if (isFullscreen) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-background overflow-auto">
+        <div className="px-2 sm:px-4 py-3">
+          {headerBar}
+          {gridContent}
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <AppLayout title="Tela da Cozinha" subtitle="Kitchen Display System">
+      <main className="container mx-auto px-2 sm:px-4">
+        {headerBar}
+        {gridContent}
       </main>
     </AppLayout>
   );
