@@ -11,7 +11,7 @@ import { AppLayout } from "@/components/AppLayout";
 
 const OperationMode = () => {
   const navigate = useNavigate();
-  const [operationMode, setOperationMode] = useState<"printer" | "display" | null>(null);
+  const [operationMode, setOperationMode] = useState<"printer" | "display" | "printer_display" | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,8 +21,8 @@ const OperationMode = () => {
         .select("value")
         .eq("key", "operation_mode")
         .maybeSingle();
-      if (data && (data.value === "printer" || data.value === "display")) {
-        setOperationMode(data.value);
+      if (data && (data.value === "printer" || data.value === "display" || data.value === "printer_display")) {
+        setOperationMode(data.value as any);
       }
       setLoading(false);
     };
