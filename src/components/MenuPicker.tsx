@@ -173,7 +173,7 @@ export const MenuPicker = ({ onAddItem }: MenuPickerProps) => {
                   onClick={() => { setSelectedMenuItem(item); setComplementsModalOpen(true); }}
                 >
                   <span className="font-semibold text-sm">{item.name}</span>
-                  <span className="text-lg font-bold">{formatBRL(item.price)}</span>
+                  <span className="text-lg font-bold">{item.price > 0 ? formatBRL(item.price) : "A definir"}</span>
                 </Button>
               ))}
             </div>
