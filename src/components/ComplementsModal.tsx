@@ -136,6 +136,38 @@ export const ComplementsModal = ({
             </div>
           ) : (
             <>
+              {specialComplements.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    Complementos Especiais
+                    <Badge variant="default">Adicional</Badge>
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {specialComplements.map((complement) => (
+                      <div
+                        key={complement.id}
+                        className="flex items-center space-x-2 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+                      >
+                        <Checkbox
+                          id={complement.id}
+                          checked={selectedComplements.has(complement.id)}
+                          onCheckedChange={() => toggleComplement(complement.id)}
+                        />
+                        <label
+                          htmlFor={complement.id}
+                          className="flex-1 flex items-center justify-between cursor-pointer"
+                        >
+                          <span className="text-sm font-medium leading-none">{complement.name}</span>
+                          <span className="text-sm font-bold text-primary">+{formatBRL(complement.price)}</span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {freeComplements.length > 0 && specialComplements.length > 0 && <Separator />}
+
               {freeComplements.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-3">
@@ -180,38 +212,6 @@ export const ComplementsModal = ({
                           className="flex-1 text-sm font-medium leading-none cursor-pointer"
                         >
                           {complement.name}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {freeComplements.length > 0 && specialComplements.length > 0 && <Separator />}
-
-              {specialComplements.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                    Complementos Especiais
-                    <Badge variant="default">Adicional</Badge>
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {specialComplements.map((complement) => (
-                      <div
-                        key={complement.id}
-                        className="flex items-center space-x-2 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
-                      >
-                        <Checkbox
-                          id={complement.id}
-                          checked={selectedComplements.has(complement.id)}
-                          onCheckedChange={() => toggleComplement(complement.id)}
-                        />
-                        <label
-                          htmlFor={complement.id}
-                          className="flex-1 flex items-center justify-between cursor-pointer"
-                        >
-                          <span className="text-sm font-medium leading-none">{complement.name}</span>
-                          <span className="text-sm font-bold text-primary">+{formatBRL(complement.price)}</span>
                         </label>
                       </div>
                     ))}
