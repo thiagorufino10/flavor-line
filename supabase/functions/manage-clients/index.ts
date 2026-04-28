@@ -91,32 +91,20 @@ serve(async (req) => {
       }
       const userId = newUser.user!.id;
 
-      // 3. Profile
-      const { error: profErr } = await admin.from("profiles").upsert({
-        id: userId,
-        full_name: adminFullName || adminUsername,
-        username: adminUsername.toLowerCase().trim(),
-        client_id: client.id,
+      // 3. Garante profile + role admin do cliente em uma rotina transacional do banco
+      const { error: initialAdminErr } = await admin.rpc("ensure_client_initial_admin", {
+        _client_id: client.id,
+        _user_id: userId,
+        _username: adminUsername,
+        _full_name: adminFullName || adminUsername,
       });
-      if (profErr) {
+      if (initialAdminErr) {
         await admin.auth.admin.deleteUser(userId);
         await admin.from("clients").delete().eq("id", client.id);
-        throw profErr;
+        throw initialAdminErr;
       }
 
-      // 4. Role admin
-      const { error: roleErr } = await admin.from("user_roles").insert({
-        user_id: userId,
-        role: "admin",
-        client_id: client.id,
-      });
-      if (roleErr) {
-        await admin.auth.admin.deleteUser(userId);
-        await admin.from("clients").delete().eq("id", client.id);
-        throw roleErr;
-      }
-
-      // 5. Seed de configurações padrão (taxas / modo / impressora)
+      // 4. Seed de configurações padrão (taxas / modo / impressora)
       await admin.from("payment_rates").insert([
         { client_id: client.id, payment_method: "credito", rate_percentage: 3.5 },
         { client_id: client.id, payment_method: "debito", rate_percentage: 1.5 },
