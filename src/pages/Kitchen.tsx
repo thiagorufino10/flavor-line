@@ -146,10 +146,10 @@ const Kitchen = () => {
   const gridContent = (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4 w-full">
           {/* Novos Pedidos */}
-          <div className="space-y-4">
+          <div className="space-y-3 min-w-0">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
-              <h2 className="text-xl font-bold">Novos Pedidos</h2>
+              <h2 className="text-lg lg:text-xl font-bold">Novos Pedidos</h2>
               <Badge variant="secondary">{filterOrders("novo").length}</Badge>
             </div>
             
@@ -209,10 +209,10 @@ const Kitchen = () => {
           </div>
 
           {/* Em Preparação */}
-          <div className="space-y-4">
+          <div className="space-y-3 min-w-0">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-warning" />
-              <h2 className="text-xl font-bold">Em Preparação</h2>
+              <h2 className="text-lg lg:text-xl font-bold">Em Preparação</h2>
               <Badge variant="secondary">{filterOrders("preparando").length}</Badge>
             </div>
             
@@ -272,10 +272,10 @@ const Kitchen = () => {
           </div>
 
           {/* Finalizados */}
-          <div className="space-y-4">
+          <div className="space-y-3 min-w-0">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-success" />
-              <h2 className="text-xl font-bold">Finalizados</h2>
+              <h2 className="text-lg lg:text-xl font-bold">Finalizados</h2>
               <Badge variant="secondary">{filterOrders("finalizado").length}</Badge>
             </div>
             
