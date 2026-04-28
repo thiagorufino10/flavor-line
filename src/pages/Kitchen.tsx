@@ -23,22 +23,16 @@ const Kitchen = () => {
   }, []);
 
   useEffect(() => {
-    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", onFsChange);
-    return () => document.removeEventListener("fullscreenchange", onFsChange);
-  }, []);
-
-  const toggleFullscreen = async () => {
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
-      } else {
-        await document.exitFullscreen();
-      }
-    } catch (e) {
-      console.error("Fullscreen error:", e);
+    if (isFullscreen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prev;
+      };
     }
-  };
+  }, [isFullscreen]);
+
+  const toggleFullscreen = () => setIsFullscreen((v) => !v);
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline"; color: string }> = {
@@ -88,21 +82,22 @@ const Kitchen = () => {
     );
   }
 
-  return (
-    <AppLayout title="Tela da Cozinha" subtitle="Kitchen Display System">
-      <main className={`container mx-auto px-2 sm:px-4 ${isFullscreen ? "max-w-none" : ""}`}>
-        <div className="flex justify-end mb-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleFullscreen}
-            className="gap-2"
-          >
-            {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-            {isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+  const headerBar = (
+    <div className="flex justify-end mb-3">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={toggleFullscreen}
+        className="gap-2"
+      >
+        {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+        {isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+      </Button>
+    </div>
+  );
+
+  const gridContent = (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           {/* Novos Pedidos */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -285,7 +280,25 @@ const Kitchen = () => {
               </Card>
             ))}
           </div>
+    </div>
+  );
+
+  if (isFullscreen) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-background overflow-auto">
+        <div className="px-2 sm:px-4 py-3">
+          {headerBar}
+          {gridContent}
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <AppLayout title="Tela da Cozinha" subtitle="Kitchen Display System">
+      <main className="container mx-auto px-2 sm:px-4">
+        {headerBar}
+        {gridContent}
       </main>
     </AppLayout>
   );
