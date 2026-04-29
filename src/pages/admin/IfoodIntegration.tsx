@@ -122,56 +122,50 @@ export default function IfoodIntegration() {
 
   if (loadingFlag) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout title="Integração iFood">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
   if (!enabled) {
     return (
-      <div className="container max-w-2xl mx-auto p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Integração indisponível</CardTitle>
-            <CardDescription>
-              A integração com marketplaces externos não está habilitada para este cliente.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/")}>Voltar</Button>
-          </CardContent>
-        </Card>
-      </div>
+      <AppLayout title="Integração iFood">
+        <div className="max-w-2xl mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle>Integração indisponível</CardTitle>
+              <CardDescription>
+                A integração com marketplaces externos não está habilitada para este cliente.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate("/")}>Voltar</Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="container max-w-5xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Plug className="w-6 h-6" /> Integração iFood
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Sandbox de homologação — pedidos chegam na tela de aprovação manual
-            </p>
-          </div>
-        </div>
+    <AppLayout
+      title="Integração iFood"
+      subtitle="Sandbox de homologação — pedidos chegam na tela de aprovação manual"
+      actions={
         <Badge variant={environment === "production" ? "default" : "secondary"}>
           {environment === "production" ? "Produção" : "Sandbox"}
         </Badge>
-      </div>
-
-      <Tabs defaultValue="config">
-        <TabsList>
-          <TabsTrigger value="config">Configuração</TabsTrigger>
-          <TabsTrigger value="logs">Eventos recebidos</TabsTrigger>
-        </TabsList>
+      }
+    >
+      <div className="space-y-6">
+        <Tabs defaultValue="config">
+          <TabsList>
+            <TabsTrigger value="config">Configuração</TabsTrigger>
+            <TabsTrigger value="logs">Eventos recebidos</TabsTrigger>
+          </TabsList>
 
         <TabsContent value="config" className="space-y-4">
           <Card>
