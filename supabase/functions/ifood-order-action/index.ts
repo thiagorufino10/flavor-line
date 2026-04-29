@@ -138,7 +138,15 @@ Deno.serve(async (req) => {
     const environment = cred?.environment ?? "sandbox";
     const token = await getIfoodToken(admin, environment);
 
-    const url = `${IFOOD_BASE}/order/v1.0/orders/${order.external_order_id}/statuses/${action}`;
+    // Mapeia para o endpoint correto da Order API v1.0
+    const endpointMap: Record<string, string> = {
+      confirm: "confirm",
+      dispatch: "dispatch",
+      readyToPickup: "readyToPickup",
+      cancel: "requestCancellation",
+    };
+    const endpoint = endpointMap[action];
+    const url = `${IFOOD_BASE}/order/v1.0/orders/${order.external_order_id}/${endpoint}`;
     const reqBody: any = {};
     if (action === "cancel") {
       reqBody.reason = cancellationReason ?? "Cancelado pelo estabelecimento";
