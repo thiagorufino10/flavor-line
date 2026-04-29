@@ -33,6 +33,8 @@ const DeliveryOrders = lazy(() => import("./pages/admin/DeliveryOrders"));
 const DeliveryMenu = lazy(() => import("./pages/admin/DeliveryMenu"));
 const Loja = lazy(() => import("./pages/Loja"));
 const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
+const IfoodIntegration = lazy(() => import("./pages/admin/IfoodIntegration"));
+const IfoodOrders = lazy(() => import("./pages/IfoodOrders"));
 
 const LazyFallback = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -80,6 +82,10 @@ const App = () => (
         <Route path="/admin/delivery" element={<ProtectedRoute requiredRole={["admin"]}><DeliveryAdmin /></ProtectedRoute>} />
         <Route path="/admin/delivery-menu" element={<ProtectedRoute requiredRole={["admin"]}><DeliveryMenu /></ProtectedRoute>} />
         <Route path="/delivery-orders" element={<ProtectedRoute requiredRole={["admin", "atendente", "cozinha"]}><DeliveryOrders /></ProtectedRoute>} />
+
+        {/* iFood (apenas para clientes com ifood_enabled=true) */}
+        <Route path="/admin/ifood" element={<ProtectedRoute requiredRole={["admin"]}><IfoodIntegration /></ProtectedRoute>} />
+        <Route path="/orders/ifood" element={<ProtectedRoute requiredRole={["admin", "atendente"]}><IfoodOrders /></ProtectedRoute>} />
 
         {/* Public routes */}
         <Route path="/customer-display" element={<CustomerDisplay />} />

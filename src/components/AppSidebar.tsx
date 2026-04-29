@@ -17,7 +17,9 @@ import {
   Palette,
   MessageCircle,
   Bike,
+  Plug,
 } from "lucide-react";
+import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -78,8 +80,17 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const navigate = useNavigate();
   const { userRole, signOut } = useAuth();
+  const { enabled: ifoodEnabled } = useIfoodEnabled();
   const [systemName, setSystemName] = useState("TARMFood");
   const [logoUrl, setLogoUrl] = useState("");
+
+  // Itens iFood — só aparecem se a flag ifood_enabled estiver ligada para o cliente
+  const ifoodOperacao: Item[] = ifoodEnabled
+    ? [{ title: "Pedidos iFood", url: "/orders/ifood", icon: Plug, roles: ["admin", "atendente"] }]
+    : [];
+  const ifoodConfig: Item[] = ifoodEnabled
+    ? [{ title: "Integração iFood", url: "/admin/ifood", icon: Plug, roles: ["admin"] }]
+    : [];
 
   useEffect(() => {
     const n = localStorage.getItem("systemName");
@@ -131,7 +142,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Operação</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>{renderItems(filter(operacao))}</SidebarMenu>
+            <SidebarMenu>{renderItems(filter([...operacao, ...ifoodOperacao]))}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
@@ -144,11 +155,11 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {filter(configuracoes).length > 0 && (
+        {filter([...configuracoes, ...ifoodConfig]).length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>Configurações</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>{renderItems(filter(configuracoes))}</SidebarMenu>
+              <SidebarMenu>{renderItems(filter([...configuracoes, ...ifoodConfig]))}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
