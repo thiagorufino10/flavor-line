@@ -214,6 +214,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Modo opcional: ?reprocess=1 → re-busca pedidos PLC já logados que ainda não viraram orders
+    const url = new URL(req.url);
+    const reprocess = url.searchParams.get("reprocess") === "1";
+
     // Busca clientes com iFood habilitado
     const { data: enabledClients, error: clientsErr } = await supabase
       .from("clients")
