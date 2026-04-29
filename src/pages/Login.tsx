@@ -14,17 +14,8 @@ const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [systemName, setSystemName] = useState("TARMFood");
-  const [logoUrl, setLogoUrl] = useState("");
   const navigate = useNavigate();
   const { signIn, user, userRole } = useAuth();
-
-  useEffect(() => {
-    const savedName = localStorage.getItem("systemName");
-    const savedLogo = localStorage.getItem("systemLogo");
-    if (savedName) setSystemName(savedName);
-    if (savedLogo) setLogoUrl(savedLogo);
-  }, []);
 
   useEffect(() => {
     if (user && userRole) {
@@ -58,8 +49,8 @@ const Login = () => {
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto flex items-center justify-center">
             <img
-              src={logoUrl || tarmfoodLogo}
-              alt={systemName}
+              src={tarmfoodLogo}
+              alt="TARMFood"
               className="max-h-28 max-w-[220px] object-contain"
             />
           </div>
