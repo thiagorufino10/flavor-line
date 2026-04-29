@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, X, RefreshCw, Loader2, Truck, Package } from "lucide-react";
+import { Check, X, RefreshCw, Loader2, Truck, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
 import { formatBRL } from "@/lib/format";
+import { AppLayout } from "@/components/AppLayout";
 
 type IfoodOrder = {
   id: string;
@@ -82,24 +83,28 @@ export default function IfoodOrders() {
 
   if (loadingFlag) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+      <AppLayout title="Pedidos iFood">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
     );
   }
 
   if (!enabled) {
     return (
-      <div className="container max-w-2xl mx-auto p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Integração indisponível</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/")}>Voltar</Button>
-          </CardContent>
-        </Card>
-      </div>
+      <AppLayout title="Pedidos iFood">
+        <div className="max-w-2xl mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle>Integração indisponível</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate("/")}>Voltar</Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
     );
   }
 
@@ -110,24 +115,17 @@ export default function IfoodOrders() {
   );
 
   return (
-    <div className="container max-w-6xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Pedidos iFood</h1>
-            <p className="text-sm text-muted-foreground">
-              Aprove manualmente antes de enviar para a cozinha
-            </p>
-          </div>
-        </div>
+    <AppLayout
+      title="Pedidos iFood"
+      subtitle="Aprove manualmente antes de enviar para a cozinha"
+      actions={
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
           Atualizar
         </Button>
-      </div>
+      }
+    >
+      <div className="space-y-6">
 
       {/* Aguardando aprovação */}
       <section>
@@ -253,6 +251,7 @@ export default function IfoodOrders() {
           ))}
         </div>
       </section>
-    </div>
+      </div>
+    </AppLayout>
   );
 }
