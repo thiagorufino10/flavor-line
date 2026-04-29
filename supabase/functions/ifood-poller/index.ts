@@ -213,12 +213,26 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Busca clientes com iFood ativado e credenciais
+    // Busca clientes com iFood habilitado
+    const { data: enabledClients, error: clientsErr } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("ifood_enabled", true);
+    if (clientsErr) throw clientsErr;
+
+    const enabledIds = (enabledClients ?? []).map((c: any) => c.id);
+    if (enabledIds.length === 0) {
+      return new Response(JSON.stringify({ ok: true, results: [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Busca credenciais ativas desses clientes
     const { data: creds, error } = await supabase
       .from("ifood_credentials")
-      .select("id, client_id, merchant_id, environment, active, clients!inner(ifood_enabled)")
+      .select("id, client_id, merchant_id, environment, active")
       .eq("active", true)
-      .eq("clients.ifood_enabled", true);
+      .in("client_id", enabledIds);
 
     if (error) throw error;
 
