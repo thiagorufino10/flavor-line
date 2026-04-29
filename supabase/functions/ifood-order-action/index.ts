@@ -161,10 +161,19 @@ Deno.serve(async (req) => {
 
     if (!ifoodResp.ok && ifoodResp.status !== 202) {
       const errText = await ifoodResp.text();
-      return new Response(JSON.stringify({ error: `iFood [${ifoodResp.status}]: ${errText}` }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const lower = errText.toLowerCase();
+      // iFood já está no estado desejado — sincroniza local e retorna ok
+      const alreadyInState =
+        lower.includes("already cancelled") ||
+        lower.includes("already confirmed") ||
+        lower.includes("already dispatched") ||
+        lower.includes("already concluded");
+      if (!alreadyInState) {
+        return new Response(JSON.stringify({ error: `iFood [${ifoodResp.status}]: ${errText}` }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Atualiza status local
