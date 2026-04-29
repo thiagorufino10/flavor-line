@@ -119,8 +119,9 @@ async function processClient(supabase: any, cred: any) {
 
     ackIds.push(String(eventId));
 
-    // Processa eventos de pedido novo
-    if (eventType === "PLACED" && orderExternalId) {
+    // Processa eventos de pedido novo (PLC = código curto, PLACED = código longo)
+    const isPlaced = eventType === "PLC" || eventType === "PLACED";
+    if (isPlaced && orderExternalId) {
       try {
         const details = await fetchOrderDetails(base, token, orderExternalId);
         if (details) {
@@ -204,6 +205,76 @@ async function processClient(supabase: any, cred: any) {
   return { events: processed };
 }
 
+async function reprocessPlacedEvents(supabase: any, cred: any) {
+  const base = cred.environment === "production" ? IFOOD_BASE_PROD : IFOOD_BASE_SANDBOX;
+  const token = await getIfoodToken(supabase, cred.environment);
+
+  // Pega todos os order_external_id dos eventos PLC/PLACED desse cliente
+  const { data: plcEvents } = await supabase
+    .from("ifood_event_log")
+    .select("order_external_id")
+    .eq("client_id", cred.client_id)
+    .in("event_type", ["PLC", "PLACED"])
+    .not("order_external_id", "is", null);
+
+  const uniqueIds = Array.from(
+    new Set((plcEvents ?? []).map((e: any) => e.order_external_id).filter(Boolean))
+  );
+
+  let created = 0;
+  for (const orderExternalId of uniqueIds) {
+    const { data: existing } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("client_id", cred.client_id)
+      .eq("external_order_id", orderExternalId)
+      .maybeSingle();
+    if (existing) continue;
+
+    const details = await fetchOrderDetails(base, token, orderExternalId as string);
+    if (!details) continue;
+
+    const items = (details.items ?? []).map((it: any) => ({
+      product_name: it.name,
+      quantity: it.quantity ?? 1,
+      unit_price: Number(it.unitPrice ?? it.price ?? 0),
+      total_price: Number(it.totalPrice ?? it.price ?? 0),
+      observations: it.observations ?? null,
+      complements: it.options ?? null,
+    }));
+
+    const { data: newOrder, error: ordErr } = await supabase
+      .from("orders")
+      .insert({
+        client_id: cred.client_id,
+        customer_name: details.customer?.name ?? "Cliente iFood",
+        total_amount: Number(details.total?.orderAmount ?? details.totalPrice ?? 0),
+        payment_method: details.payments?.methods?.[0]?.method ?? "ifood",
+        status: "novo",
+        origin: "ifood",
+        external_order_id: orderExternalId,
+        ifood_status: "PLACED",
+        approval_status: "pendente",
+      })
+      .select()
+      .single();
+
+    if (ordErr) {
+      console.error("Erro ao criar pedido (reprocess):", ordErr);
+      continue;
+    }
+
+    if (items.length > 0 && newOrder) {
+      await supabase.from("order_items").insert(
+        items.map((it: any) => ({ ...it, order_id: newOrder.id, client_id: cred.client_id }))
+      );
+    }
+    created++;
+  }
+
+  return created;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -212,6 +283,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Modo opcional: ?reprocess=1 → re-busca pedidos PLC já logados que ainda não viraram orders
+    const url = new URL(req.url);
+    const reprocess = url.searchParams.get("reprocess") === "1";
 
     // Busca clientes com iFood habilitado
     const { data: enabledClients, error: clientsErr } = await supabase
@@ -239,8 +314,13 @@ Deno.serve(async (req) => {
     const results: any[] = [];
     for (const cred of creds ?? []) {
       try {
-        const r = await processClient(supabase, cred);
-        results.push({ client_id: cred.client_id, ...r });
+        if (reprocess) {
+          const r = await reprocessPlacedEvents(supabase, cred);
+          results.push({ client_id: cred.client_id, reprocessed: r });
+        } else {
+          const r = await processClient(supabase, cred);
+          results.push({ client_id: cred.client_id, ...r });
+        }
       } catch (e) {
         console.error(`Erro processando cliente ${cred.client_id}:`, e);
         results.push({ client_id: cred.client_id, error: String(e) });
