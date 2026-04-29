@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import tarmfoodLogo from "@/assets/tarmfood-logo.png";
 
 type Item = {
   title: string;
@@ -115,13 +116,11 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b">
         <div className="flex items-center gap-2 px-2 py-1">
-          {logoUrl ? (
-            <img src={logoUrl} alt={systemName} className="h-8 w-8 rounded-md object-contain" />
-          ) : (
-            <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
-              <UtensilsCrossed className="w-4 h-4 text-primary" />
-            </div>
-          )}
+          <img
+            src={logoUrl || tarmfoodLogo}
+            alt={systemName}
+            className="h-8 w-8 rounded-md object-contain"
+          />
           {!collapsed && (
             <span className="font-semibold text-sm truncate">{systemName}</span>
           )}

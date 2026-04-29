@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UtensilsCrossed, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import tarmfoodLogo from "@/assets/tarmfood-logo.png";
 
 const Login = () => {
   const [clientName, setClientName] = useState("");
@@ -56,17 +57,14 @@ const Login = () => {
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto flex items-center justify-center">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="max-h-20 max-w-[160px] object-contain" />
-            ) : (
-              <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center">
-                <UtensilsCrossed className="w-8 h-8 text-primary-foreground" />
-              </div>
-            )}
+            <img
+              src={logoUrl || tarmfoodLogo}
+              alt={systemName}
+              className="max-h-28 max-w-[220px] object-contain"
+            />
           </div>
           <div>
-            <CardTitle className="text-3xl font-bold">{systemName}</CardTitle>
-            <CardDescription className="text-base mt-2">Sistema de Pedidos</CardDescription>
+            <CardDescription className="text-base mt-2">Sistema de Gestão de Pedidos</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
