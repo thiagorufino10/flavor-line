@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, X, RefreshCw, Loader2, Truck, Package } from "lucide-react";
+import { Check, X, RefreshCw, Loader2, Truck, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
 import { formatBRL } from "@/lib/format";
+import { AppLayout } from "@/components/AppLayout";
 
 type IfoodOrder = {
   id: string;
