@@ -244,8 +244,13 @@ Deno.serve(async (req) => {
     const results: any[] = [];
     for (const cred of creds ?? []) {
       try {
-        const r = await processClient(supabase, cred);
-        results.push({ client_id: cred.client_id, ...r });
+        if (reprocess) {
+          const r = await reprocessPlacedEvents(supabase, cred);
+          results.push({ client_id: cred.client_id, reprocessed: r });
+        } else {
+          const r = await processClient(supabase, cred);
+          results.push({ client_id: cred.client_id, ...r });
+        }
       } catch (e) {
         console.error(`Erro processando cliente ${cred.client_id}:`, e);
         results.push({ client_id: cred.client_id, error: String(e) });
