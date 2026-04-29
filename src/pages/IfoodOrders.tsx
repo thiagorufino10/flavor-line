@@ -251,6 +251,7 @@ export default function IfoodOrders() {
           ))}
         </div>
       </section>
-    </div>
+      </div>
+    </AppLayout>
   );
 }
