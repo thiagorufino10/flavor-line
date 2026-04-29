@@ -119,8 +119,9 @@ async function processClient(supabase: any, cred: any) {
 
     ackIds.push(String(eventId));
 
-    // Processa eventos de pedido novo
-    if (eventType === "PLACED" && orderExternalId) {
+    // Processa eventos de pedido novo (PLC = código curto, PLACED = código longo)
+    const isPlaced = eventType === "PLC" || eventType === "PLACED";
+    if (isPlaced && orderExternalId) {
       try {
         const details = await fetchOrderDetails(base, token, orderExternalId);
         if (details) {
