@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
     const environment = cred?.environment ?? "sandbox";
     const token = await getIfoodToken(admin, environment);
 
-    const url = `${IFOOD_BASE}/order/v1.0/orders/${order.external_order_id}/${action}`;
+    const url = `${IFOOD_BASE}/order/v1.0/orders/${order.external_order_id}/statuses/${action}`;
     const reqBody: any = {};
     if (action === "cancel") {
       reqBody.reason = cancellationReason ?? "Cancelado pelo estabelecimento";
