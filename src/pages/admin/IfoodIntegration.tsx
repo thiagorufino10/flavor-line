@@ -286,6 +286,7 @@ export default function IfoodIntegration() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </AppLayout>
   );
 }
