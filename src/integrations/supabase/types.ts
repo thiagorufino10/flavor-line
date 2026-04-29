@@ -112,6 +112,7 @@ export type Database = {
           created_at: string
           due_day: number
           id: string
+          ifood_enabled: boolean
           monthly_fee: number
           name: string
           notes: string | null
@@ -123,6 +124,7 @@ export type Database = {
           created_at?: string
           due_day?: number
           id?: string
+          ifood_enabled?: boolean
           monthly_fee?: number
           name: string
           notes?: string | null
@@ -134,6 +136,7 @@ export type Database = {
           created_at?: string
           due_day?: number
           id?: string
+          ifood_enabled?: boolean
           monthly_fee?: number
           name?: string
           notes?: string | null
@@ -371,6 +374,102 @@ export type Database = {
         }
         Relationships: []
       }
+      ifood_credentials: {
+        Row: {
+          active: boolean
+          client_id: string
+          created_at: string
+          environment: string
+          id: string
+          last_polling_at: string | null
+          merchant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          client_id: string
+          created_at?: string
+          environment?: string
+          id?: string
+          last_polling_at?: string | null
+          merchant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          client_id?: string
+          created_at?: string
+          environment?: string
+          id?: string
+          last_polling_at?: string | null
+          merchant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ifood_event_log: {
+        Row: {
+          client_id: string
+          created_at: string
+          error_message: string | null
+          event_id: string
+          event_type: string
+          id: string
+          order_external_id: string | null
+          payload: Json
+          processed: boolean
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          error_message?: string | null
+          event_id: string
+          event_type: string
+          id?: string
+          order_external_id?: string | null
+          payload?: Json
+          processed?: boolean
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          error_message?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          order_external_id?: string | null
+          payload?: Json
+          processed?: boolean
+        }
+        Relationships: []
+      }
+      ifood_token_cache: {
+        Row: {
+          access_token: string
+          created_at: string
+          environment: string
+          expires_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          environment: string
+          expires_at: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          environment?: string
+          expires_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           active: boolean
@@ -478,11 +577,15 @@ export type Database = {
       }
       orders: {
         Row: {
+          approval_status: string | null
           client_id: string
           created_at: string
           customer_name: string
+          external_order_id: string | null
           id: string
+          ifood_status: string | null
           order_number: number
+          origin: string
           payment_method: string
           status: string
           table_session_id: string | null
@@ -490,11 +593,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approval_status?: string | null
           client_id: string
           created_at?: string
           customer_name: string
+          external_order_id?: string | null
           id?: string
+          ifood_status?: string | null
           order_number?: number
+          origin?: string
           payment_method: string
           status?: string
           table_session_id?: string | null
@@ -502,11 +609,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approval_status?: string | null
           client_id?: string
           created_at?: string
           customer_name?: string
+          external_order_id?: string | null
           id?: string
+          ifood_status?: string | null
           order_number?: number
+          origin?: string
           payment_method?: string
           status?: string
           table_session_id?: string | null
