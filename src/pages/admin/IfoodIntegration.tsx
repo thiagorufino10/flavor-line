@@ -227,8 +227,11 @@ export default function IfoodIntegration() {
                   Rodar polling agora
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground pt-2">
+                ⚡ Polling automático ativo: o sistema verifica novos pedidos do iFood a cada 30 segundos.
+              </p>
               {cred?.last_polling_at && (
-                <p className="text-xs text-muted-foreground pt-2">
+                <p className="text-xs text-muted-foreground">
                   Último polling: {new Date(cred.last_polling_at).toLocaleString()}
                 </p>
               )}
@@ -250,7 +253,7 @@ export default function IfoodIntegration() {
             <CardContent>
               {events.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  Nenhum evento ainda. Use "Rodar polling agora" ou aguarde o cron de 30s.
+                  Nenhum evento ainda. O polling automático roda a cada 30s — assim que o iFood enviar um pedido, ele aparecerá aqui.
                 </p>
               ) : (
                 <div className="space-y-2">
