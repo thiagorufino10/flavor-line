@@ -110,9 +110,17 @@ export default function IfoodOrders() {
   }
 
   const pendentes = orders.filter((o) => o.approval_status === "pendente");
-  const ativos = orders.filter((o) => o.approval_status === "aprovado" && o.status !== "cancelado");
+  const ativos = orders.filter(
+    (o) =>
+      o.approval_status === "aprovado" &&
+      o.status !== "cancelado" &&
+      o.ifood_status !== "DISPATCHED"
+  );
   const finalizados = orders.filter(
-    (o) => o.approval_status === "rejeitado" || o.status === "cancelado" || o.ifood_status === "DISPATCHED"
+    (o) => o.ifood_status === "DISPATCHED" || o.status === "finalizado"
+  );
+  const cancelados = orders.filter(
+    (o) => o.approval_status === "rejeitado" || o.status === "cancelado" || o.ifood_status === "CANCELLED"
   );
 
   return (
