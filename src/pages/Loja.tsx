@@ -410,6 +410,7 @@ const Loja = () => {
             unit_price: i.price,
             total_price: i.price * i.quantity,
             sauces: i.sauces,
+            observations: i.observations || null,
           })),
           products_total: productsTotal,
           delivery_fee: deliveryFee,
