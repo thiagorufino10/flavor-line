@@ -241,7 +241,7 @@ const DeliveryOrdersPage = () => {
         .from("orders")
         .select("id")
         .eq("external_order_id", order.id)
-        .eq("origin", "delivery")
+        .eq("origin", "loja")
         .maybeSingle();
 
       if (!existing) {
@@ -260,7 +260,7 @@ const DeliveryOrdersPage = () => {
             total_amount: order.total_amount,
             status: "novo",
             order_number: 0,
-            origin: "delivery",
+            origin: "loja",
             external_order_id: order.id,
           })
           .select()
