@@ -246,20 +246,47 @@ export default function IfoodOrders() {
         )}
       </section>
 
-      {/* Finalizados/cancelados */}
+      {/* Histórico */}
       <section>
-        <h2 className="text-lg font-semibold mb-3 text-muted-foreground">
-          Finalizados / Cancelados ({finalizados.length})
-        </h2>
-        <div className="space-y-2">
-          {finalizados.slice(0, 10).map((o) => (
-            <div key={o.id} className="flex items-center justify-between p-3 border rounded text-sm">
-              <span>#{o.order_number} · {o.customer_name}</span>
-              <Badge variant="secondary">{o.ifood_status ?? o.status}</Badge>
-              <span>{formatBRL(Number(o.total_amount))}</span>
-            </div>
-          ))}
-        </div>
+        <h2 className="text-lg font-semibold mb-3 text-muted-foreground">Histórico</h2>
+        <Tabs defaultValue="finalizados" className="w-full">
+          <TabsList>
+            <TabsTrigger value="finalizados">
+              Finalizados / Despachados ({finalizados.length})
+            </TabsTrigger>
+            <TabsTrigger value="cancelados">
+              Cancelados ({cancelados.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="finalizados" className="space-y-2 mt-3">
+            {finalizados.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum pedido finalizado.</p>
+            ) : (
+              finalizados.slice(0, 20).map((o) => (
+                <div key={o.id} className="flex items-center justify-between p-3 border rounded text-sm">
+                  <span>#{o.order_number} · {o.customer_name}</span>
+                  <Badge variant="secondary">{o.ifood_status ?? o.status}</Badge>
+                  <span>{formatBRL(Number(o.total_amount))}</span>
+                </div>
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="cancelados" className="space-y-2 mt-3">
+            {cancelados.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum pedido cancelado.</p>
+            ) : (
+              cancelados.slice(0, 20).map((o) => (
+                <div key={o.id} className="flex items-center justify-between p-3 border rounded text-sm">
+                  <span>#{o.order_number} · {o.customer_name}</span>
+                  <Badge variant="destructive">{o.ifood_status ?? o.status}</Badge>
+                  <span>{formatBRL(Number(o.total_amount))}</span>
+                </div>
+              ))
+            )}
+          </TabsContent>
+        </Tabs>
       </section>
       </div>
     </AppLayout>
