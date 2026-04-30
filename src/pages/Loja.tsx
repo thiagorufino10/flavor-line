@@ -230,6 +230,7 @@ const Loja = () => {
     setSelectedSize("M");
     setSelectedQty(1);
     setSelectedSauces([]);
+    setSelectedObservations("");
   };
 
   const toggleSauce = (s: string) => {
