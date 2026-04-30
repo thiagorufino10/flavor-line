@@ -241,13 +241,15 @@ const Loja = () => {
   const addToCart = () => {
     if (!selected) return;
     const price = selected.prices[selectedSize];
+    const obs = selectedObservations.trim();
     const saucesKey = [...selectedSauces].sort().join("|");
     setCart((prev) => {
       const found = prev.find(
         (i) =>
           i.productId === selected.id &&
           i.size === selectedSize &&
-          [...i.sauces].sort().join("|") === saucesKey
+          [...i.sauces].sort().join("|") === saucesKey &&
+          (i.observations || "") === obs
       );
       if (found) {
         return prev.map((i) =>
@@ -264,6 +266,7 @@ const Loja = () => {
           price,
           quantity: selectedQty,
           sauces: [...selectedSauces],
+          observations: obs,
         },
       ];
     });
