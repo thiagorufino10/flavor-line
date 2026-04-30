@@ -495,6 +495,11 @@ const Loja = () => {
                             Molhos: {i.sauces.join(", ")}
                           </p>
                         )}
+                        {i.observations && (
+                          <p className="text-xs text-amber-400 mt-0.5">
+                            Obs: {i.observations}
+                          </p>
+                        )}
                         <div className="flex items-center gap-2 mt-2">
                           <Button
                             size="icon"
