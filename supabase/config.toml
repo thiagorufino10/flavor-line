@@ -1,1 +1,4 @@
 project_id = "fficgvfnyfccynplhkyz"
+
+[functions.food99-webhook]
+verify_jwt = false
