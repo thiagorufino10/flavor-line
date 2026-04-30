@@ -18,13 +18,20 @@ const WhatsAppAdmin = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("system_settings")
-        .select("value")
-        .eq("key", SETTING_KEY)
-        .maybeSingle();
-      if (data?.value) setNumber(String(data.value));
-      setLoading(false);
+      try {
+        const client_id = await getClientId();
+        const { data } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("client_id", client_id)
+          .eq("key", SETTING_KEY)
+          .maybeSingle();
+        if (data?.value) setNumber(String(data.value));
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
@@ -40,6 +47,7 @@ const WhatsAppAdmin = () => {
       const { data: existing } = await supabase
         .from("system_settings")
         .select("id")
+        .eq("client_id", client_id)
         .eq("key", SETTING_KEY)
         .maybeSingle();
 
