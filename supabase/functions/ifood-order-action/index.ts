@@ -181,7 +181,8 @@ Deno.serve(async (req) => {
     if (action === "confirm") {
       updates.ifood_status = "CONFIRMED";
       updates.approval_status = "aprovado";
-      updates.status = "preparando";
+      // Mantém como "novo" para aparecer na coluna "Novos Pedidos" do KDS
+      updates.status = "novo";
     } else if (action === "dispatch") {
       updates.ifood_status = "DISPATCHED";
       updates.status = "finalizado";

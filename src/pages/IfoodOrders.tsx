@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
 import { formatBRL } from "@/lib/format";
+import { printOrder } from "@/lib/printOrder";
 import { AppLayout } from "@/components/AppLayout";
 
 type IfoodOrder = {
@@ -78,6 +79,35 @@ export default function IfoodOrders() {
       toast.error((data as any)?.error ?? error?.message ?? "Erro");
     } else {
       toast.success("Ação executada com sucesso");
+
+      // Ao aceitar (confirm), imprime automaticamente o cupom da cozinha
+      if (action === "confirm") {
+        try {
+          const { data: full } = await supabase
+            .from("orders")
+            .select(`
+              id, order_number, customer_name, total_amount, payment_method,
+              status, created_at, updated_at,
+              order_items (
+                id, product_name, quantity, unit_price, total_price, complements, observations
+              )
+            `)
+            .eq("id", orderId)
+            .maybeSingle();
+
+          if (full) {
+            const orderForPrint: any = {
+              ...full,
+              items: (full as any).order_items ?? [],
+            };
+            await printOrder(orderForPrint);
+          }
+        } catch (e) {
+          console.error("Falha ao imprimir cupom iFood:", e);
+          toast.error("Pedido aceito, mas falhou ao imprimir o cupom");
+        }
+      }
+
       load();
     }
   };
