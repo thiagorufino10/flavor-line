@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
 import { formatBRL } from "@/lib/format";
+import { printOrder } from "@/lib/printOrder";
 import { AppLayout } from "@/components/AppLayout";
 
 type IfoodOrder = {
