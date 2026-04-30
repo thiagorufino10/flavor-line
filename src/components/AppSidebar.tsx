@@ -112,7 +112,7 @@ export function AppSidebar() {
         <SidebarMenuButton asChild tooltip={item.title}>
           <NavLink
             to={item.url}
-            end={item.url === "/"}
+            end
             className="flex items-center gap-3 rounded-md hover:bg-muted/60"
             activeClassName="bg-muted text-primary font-medium"
           >
