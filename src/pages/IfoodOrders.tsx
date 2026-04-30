@@ -233,7 +233,8 @@ export default function IfoodOrders() {
                       size="sm"
                       className="flex-1"
                       onClick={() => doAction(o.id, "dispatch")}
-                      disabled={acting === o.id}
+                      disabled={acting === o.id || o.ifood_status !== "READY_TO_PICKUP"}
+                      title={o.ifood_status !== "READY_TO_PICKUP" ? "Marque como Pronto antes de despachar" : ""}
                     >
                       <Truck className="w-3 h-3 mr-1" /> Despachar
                     </Button>
