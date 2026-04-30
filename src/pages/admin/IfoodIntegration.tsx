@@ -228,7 +228,7 @@ export default function IfoodIntegration() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground pt-2">
-                ⚡ Polling automático ativo: o sistema verifica novos pedidos do iFood a cada 30 segundos.
+                ⚡ Polling automático ativo: o sistema verifica novos pedidos do iFood a cada 10 segundos.
               </p>
               {cred?.last_polling_at && (
                 <p className="text-xs text-muted-foreground">
