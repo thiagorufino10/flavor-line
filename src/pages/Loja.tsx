@@ -348,12 +348,14 @@ const Loja = () => {
       const saucesLine = i.sauces.length > 0
         ? `  Molhos: ${i.sauces.join(", ")}`
         : `  Molhos: nenhum`;
+      const obsLine = i.observations ? `  Obs: ${i.observations}` : null;
       return [
         `- x${i.quantity} ${i.name} - ${i.size} ${formatBRL(total)}`,
         `  Preço unitário ${formatBRL(i.price)}`,
         saucesLine,
+        obsLine,
         ``,
-      ];
+      ].filter((l) => l !== null);
     });
 
     const lines = [
