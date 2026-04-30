@@ -339,7 +339,7 @@ const DeliveryOrdersPage = () => {
                     )}
 
                     <div className="border-t pt-2 space-y-1">
-                      {order.items.map((i, idx) => (
+                      {order.items.map((i: any, idx: number) => (
                         <div key={idx} className="text-sm">
                           <div className="flex justify-between">
                             <span>
@@ -350,6 +350,11 @@ const DeliveryOrdersPage = () => {
                           {i.sauces?.length > 0 && (
                             <div className="text-xs text-muted-foreground pl-4">
                               Molhos: {i.sauces.join(", ")}
+                            </div>
+                          )}
+                          {i.observations && (
+                            <div className="text-xs text-amber-600 dark:text-amber-400 pl-4 font-medium">
+                              Obs: {i.observations}
                             </div>
                           )}
                         </div>
