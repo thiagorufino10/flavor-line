@@ -460,7 +460,7 @@ const DeliveryOrdersPage = () => {
                         WhatsApp
                       </Button>
                       {order.status === "novo" && (
-                        <Button size="sm" onClick={() => updateStatus(order.id, "preparando")}>
+                        <Button size="sm" onClick={() => acceptDeliveryOrder(order)}>
                           Aceitar
                         </Button>
                       )}
