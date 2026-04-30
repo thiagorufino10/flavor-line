@@ -175,26 +175,22 @@ export const ComplementsModal = ({
                       Complementos Inclusos
                       <Badge variant="secondary">Grátis</Badge>
                     </h3>
-                    {item &&
-                      (item.name.toLowerCase().includes("disco") ||
-                        item.name.toLowerCase().includes("tradicional")) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const allFreeIds = freeComplements.map((c) => c.id);
-                            const allSelected = allFreeIds.every((id) => selectedComplements.has(id));
-                            const newSelected = new Set(selectedComplements);
-                            if (allSelected) allFreeIds.forEach((id) => newSelected.delete(id));
-                            else allFreeIds.forEach((id) => newSelected.add(id));
-                            setSelectedComplements(newSelected);
-                          }}
-                        >
-                          {freeComplements.every((c) => selectedComplements.has(c.id))
-                            ? "Desmarcar todos"
-                            : "Marcar todos"}
-                        </Button>
-                      )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const allFreeIds = freeComplements.map((c) => c.id);
+                        const allSelected = allFreeIds.every((id) => selectedComplements.has(id));
+                        const newSelected = new Set(selectedComplements);
+                        if (allSelected) allFreeIds.forEach((id) => newSelected.delete(id));
+                        else allFreeIds.forEach((id) => newSelected.add(id));
+                        setSelectedComplements(newSelected);
+                      }}
+                    >
+                      {freeComplements.every((c) => selectedComplements.has(c.id))
+                        ? "Desmarcar todos"
+                        : "Marcar todos"}
+                    </Button>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {freeComplements.map((complement) => (
