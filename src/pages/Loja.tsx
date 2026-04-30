@@ -292,6 +292,7 @@ const Loja = () => {
           price: drink.price,
           quantity: 1,
           sauces: [],
+          observations: "",
         },
       ];
     });
