@@ -4,6 +4,7 @@ import { Check, X, RefreshCw, Loader2, Truck, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -109,9 +110,17 @@ export default function IfoodOrders() {
   }
 
   const pendentes = orders.filter((o) => o.approval_status === "pendente");
-  const ativos = orders.filter((o) => o.approval_status === "aprovado" && o.status !== "cancelado");
+  const ativos = orders.filter(
+    (o) =>
+      o.approval_status === "aprovado" &&
+      o.status !== "cancelado" &&
+      o.ifood_status !== "DISPATCHED"
+  );
   const finalizados = orders.filter(
-    (o) => o.approval_status === "rejeitado" || o.status === "cancelado" || o.ifood_status === "DISPATCHED"
+    (o) => o.ifood_status === "DISPATCHED" || o.status === "finalizado"
+  );
+  const cancelados = orders.filter(
+    (o) => o.approval_status === "rejeitado" || o.status === "cancelado" || o.ifood_status === "CANCELLED"
   );
 
   return (
@@ -224,7 +233,8 @@ export default function IfoodOrders() {
                       size="sm"
                       className="flex-1"
                       onClick={() => doAction(o.id, "dispatch")}
-                      disabled={acting === o.id}
+                      disabled={acting === o.id || o.ifood_status !== "READY_TO_PICKUP"}
+                      title={o.ifood_status !== "READY_TO_PICKUP" ? "Marque como Pronto antes de despachar" : ""}
                     >
                       <Truck className="w-3 h-3 mr-1" /> Despachar
                     </Button>
@@ -236,20 +246,47 @@ export default function IfoodOrders() {
         )}
       </section>
 
-      {/* Finalizados/cancelados */}
+      {/* Histórico */}
       <section>
-        <h2 className="text-lg font-semibold mb-3 text-muted-foreground">
-          Finalizados / Cancelados ({finalizados.length})
-        </h2>
-        <div className="space-y-2">
-          {finalizados.slice(0, 10).map((o) => (
-            <div key={o.id} className="flex items-center justify-between p-3 border rounded text-sm">
-              <span>#{o.order_number} · {o.customer_name}</span>
-              <Badge variant="secondary">{o.ifood_status ?? o.status}</Badge>
-              <span>{formatBRL(Number(o.total_amount))}</span>
-            </div>
-          ))}
-        </div>
+        <h2 className="text-lg font-semibold mb-3 text-muted-foreground">Histórico</h2>
+        <Tabs defaultValue="finalizados" className="w-full">
+          <TabsList>
+            <TabsTrigger value="finalizados">
+              Finalizados / Despachados ({finalizados.length})
+            </TabsTrigger>
+            <TabsTrigger value="cancelados">
+              Cancelados ({cancelados.length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="finalizados" className="space-y-2 mt-3">
+            {finalizados.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum pedido finalizado.</p>
+            ) : (
+              finalizados.slice(0, 20).map((o) => (
+                <div key={o.id} className="flex items-center justify-between p-3 border rounded text-sm">
+                  <span>#{o.order_number} · {o.customer_name}</span>
+                  <Badge variant="secondary">{o.ifood_status ?? o.status}</Badge>
+                  <span>{formatBRL(Number(o.total_amount))}</span>
+                </div>
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="cancelados" className="space-y-2 mt-3">
+            {cancelados.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum pedido cancelado.</p>
+            ) : (
+              cancelados.slice(0, 20).map((o) => (
+                <div key={o.id} className="flex items-center justify-between p-3 border rounded text-sm">
+                  <span>#{o.order_number} · {o.customer_name}</span>
+                  <Badge variant="destructive">{o.ifood_status ?? o.status}</Badge>
+                  <span>{formatBRL(Number(o.total_amount))}</span>
+                </div>
+              ))
+            )}
+          </TabsContent>
+        </Tabs>
       </section>
       </div>
     </AppLayout>
