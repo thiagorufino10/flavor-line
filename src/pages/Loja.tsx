@@ -747,6 +747,28 @@ const Loja = () => {
                   </div>
                 </div>
 
+                <div>
+                  <Label className="text-sm mb-2 block font-semibold">
+                    Observação
+                    <span className="block text-[11px] text-zinc-500 font-normal">
+                      Opcional — ex.: sem cebola, bem passado, etc.
+                    </span>
+                  </Label>
+                  <Textarea
+                    value={selectedObservations}
+                    onChange={(e) =>
+                      setSelectedObservations(e.target.value.slice(0, 200))
+                    }
+                    maxLength={200}
+                    rows={2}
+                    placeholder="Alguma observação para este item?"
+                    className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 resize-none"
+                  />
+                  <div className="text-[10px] text-zinc-500 text-right mt-1">
+                    {selectedObservations.length}/200
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-semibold">Quantidade</Label>
                   <div className="flex items-center gap-3">
