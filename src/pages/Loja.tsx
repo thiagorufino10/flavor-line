@@ -61,6 +61,7 @@ interface CartItem {
   price: number;
   quantity: number;
   sauces: string[];
+  observations: string;
 }
 
 const SAUCES = [
@@ -100,6 +101,7 @@ const Loja = () => {
   const [selectedSize, setSelectedSize] = useState<Size>("M");
   const [selectedQty, setSelectedQty] = useState(1);
   const [selectedSauces, setSelectedSauces] = useState<string[]>([]);
+  const [selectedObservations, setSelectedObservations] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -228,6 +230,7 @@ const Loja = () => {
     setSelectedSize("M");
     setSelectedQty(1);
     setSelectedSauces([]);
+    setSelectedObservations("");
   };
 
   const toggleSauce = (s: string) => {
@@ -239,13 +242,15 @@ const Loja = () => {
   const addToCart = () => {
     if (!selected) return;
     const price = selected.prices[selectedSize];
+    const obs = selectedObservations.trim();
     const saucesKey = [...selectedSauces].sort().join("|");
     setCart((prev) => {
       const found = prev.find(
         (i) =>
           i.productId === selected.id &&
           i.size === selectedSize &&
-          [...i.sauces].sort().join("|") === saucesKey
+          [...i.sauces].sort().join("|") === saucesKey &&
+          (i.observations || "") === obs
       );
       if (found) {
         return prev.map((i) =>
@@ -262,6 +267,7 @@ const Loja = () => {
           price,
           quantity: selectedQty,
           sauces: [...selectedSauces],
+          observations: obs,
         },
       ];
     });
@@ -287,6 +293,7 @@ const Loja = () => {
           price: drink.price,
           quantity: 1,
           sauces: [],
+          observations: "",
         },
       ];
     });
@@ -341,12 +348,14 @@ const Loja = () => {
       const saucesLine = i.sauces.length > 0
         ? `  Molhos: ${i.sauces.join(", ")}`
         : `  Molhos: nenhum`;
+      const obsLine = i.observations ? `  Obs: ${i.observations}` : null;
       return [
         `- x${i.quantity} ${i.name} - ${i.size} ${formatBRL(total)}`,
         `  Preço unitário ${formatBRL(i.price)}`,
         saucesLine,
+        obsLine,
         ``,
-      ];
+      ].filter((l) => l !== null);
     });
 
     const lines = [
@@ -401,6 +410,7 @@ const Loja = () => {
             unit_price: i.price,
             total_price: i.price * i.quantity,
             sauces: i.sauces,
+            observations: i.observations || null,
           })),
           products_total: productsTotal,
           delivery_fee: deliveryFee,
@@ -486,6 +496,11 @@ const Loja = () => {
                         {i.sauces.length > 0 && (
                           <p className="text-xs text-zinc-500 mt-0.5">
                             Molhos: {i.sauces.join(", ")}
+                          </p>
+                        )}
+                        {i.observations && (
+                          <p className="text-xs text-amber-400 mt-0.5">
+                            Obs: {i.observations}
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-2">
@@ -737,6 +752,28 @@ const Loja = () => {
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm mb-2 block font-semibold">
+                    Observação
+                    <span className="block text-[11px] text-zinc-500 font-normal">
+                      Opcional — ex.: sem cebola, bem passado, etc.
+                    </span>
+                  </Label>
+                  <Textarea
+                    value={selectedObservations}
+                    onChange={(e) =>
+                      setSelectedObservations(e.target.value.slice(0, 200))
+                    }
+                    maxLength={200}
+                    rows={2}
+                    placeholder="Alguma observação para este item?"
+                    className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 resize-none"
+                  />
+                  <div className="text-[10px] text-zinc-500 text-right mt-1">
+                    {selectedObservations.length}/200
                   </div>
                 </div>
 

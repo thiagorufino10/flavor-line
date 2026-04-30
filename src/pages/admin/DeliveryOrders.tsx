@@ -101,11 +101,12 @@ const printOrder = (order: DeliveryOrder) => {
   const data = new Date(order.created_at).toLocaleString("pt-BR");
   const itemsHtml = order.items
     .map(
-      (i) => `
+      (i: any) => `
       <div class="item">
         <div class="row"><strong>${i.quantity}x ${i.name}</strong> <span>${formatBRL(i.total_price)}</span></div>
         <div class="sub">Tamanho: ${i.size}</div>
         ${i.sauces?.length ? `<div class="sub">Molhos: ${i.sauces.join(", ")}</div>` : ""}
+        ${i.observations ? `<div class="sub"><strong>OBS:</strong> ${i.observations}</div>` : ""}
       </div>`
     )
     .join("");
@@ -338,7 +339,7 @@ const DeliveryOrdersPage = () => {
                     )}
 
                     <div className="border-t pt-2 space-y-1">
-                      {order.items.map((i, idx) => (
+                      {order.items.map((i: any, idx: number) => (
                         <div key={idx} className="text-sm">
                           <div className="flex justify-between">
                             <span>
@@ -349,6 +350,11 @@ const DeliveryOrdersPage = () => {
                           {i.sauces?.length > 0 && (
                             <div className="text-xs text-muted-foreground pl-4">
                               Molhos: {i.sauces.join(", ")}
+                            </div>
+                          )}
+                          {i.observations && (
+                            <div className="text-xs text-amber-600 dark:text-amber-400 pl-4 font-medium">
+                              Obs: {i.observations}
                             </div>
                           )}
                         </div>
