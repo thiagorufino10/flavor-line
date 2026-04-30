@@ -232,6 +232,66 @@ const DeliveryOrdersPage = () => {
     else toast.success("Atualizado");
   };
 
+  // Ao aceitar um pedido delivery, cria um pedido equivalente em `orders`
+  // para que apareça na Tela da Cozinha. Evita duplicação via external_order_id.
+  const acceptDeliveryOrder = async (order: DeliveryOrder) => {
+    try {
+      // Verifica se já existe pedido na cozinha para este delivery
+      const { data: existing } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("external_order_id", order.id)
+        .eq("origin", "delivery")
+        .maybeSingle();
+
+      if (!existing) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: profile } = await supabase
+          .from("profiles").select("client_id").eq("id", user!.id).maybeSingle();
+        const clientId = profile?.client_id;
+        if (!clientId) throw new Error("Usuário sem cliente vinculado");
+
+        const { data: created, error: orderError } = await supabase
+          .from("orders")
+          .insert({
+            client_id: clientId,
+            customer_name: order.customer_name,
+            payment_method: order.payment_method,
+            total_amount: order.total_amount,
+            status: "novo",
+            order_number: 0,
+            origin: "delivery",
+            external_order_id: order.id,
+          })
+          .select()
+          .single();
+        if (orderError) throw orderError;
+
+        const orderItems = (order.items || []).map((i: any) => ({
+          client_id: clientId,
+          order_id: created.id,
+          product_name: `${i.name}${i.size ? ` (${i.size})` : ""}`,
+          quantity: i.quantity,
+          unit_price: i.unit_price,
+          total_price: i.total_price,
+          complements: i.sauces?.length
+            ? i.sauces.map((s: string) => ({ name: s, price: 0 }))
+            : null,
+          observations: i.observations || order.notes || null,
+        }));
+        if (orderItems.length > 0) {
+          const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
+          if (itemsError) throw itemsError;
+        }
+      }
+
+      await updateStatus(order.id, "preparando");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Erro ao aceitar pedido: " + (e.message || ""));
+    }
+  };
+
   const markReady = (order: DeliveryOrder) => {
     updateStatus(order.id, "pronto");
     const msg =
