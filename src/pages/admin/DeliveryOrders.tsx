@@ -101,11 +101,12 @@ const printOrder = (order: DeliveryOrder) => {
   const data = new Date(order.created_at).toLocaleString("pt-BR");
   const itemsHtml = order.items
     .map(
-      (i) => `
+      (i: any) => `
       <div class="item">
         <div class="row"><strong>${i.quantity}x ${i.name}</strong> <span>${formatBRL(i.total_price)}</span></div>
         <div class="sub">Tamanho: ${i.size}</div>
         ${i.sauces?.length ? `<div class="sub">Molhos: ${i.sauces.join(", ")}</div>` : ""}
+        ${i.observations ? `<div class="sub"><strong>OBS:</strong> ${i.observations}</div>` : ""}
       </div>`
     )
     .join("");
