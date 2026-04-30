@@ -61,6 +61,7 @@ interface CartItem {
   price: number;
   quantity: number;
   sauces: string[];
+  observations: string;
 }
 
 const SAUCES = [
