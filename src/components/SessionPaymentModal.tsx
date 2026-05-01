@@ -65,6 +65,7 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
       setSplitMethod2(null);
       setSplitAmount1("");
       setSplitAmount2("");
+      setProcessing(false);
     } else {
       setAmountStr(remaining.toFixed(2));
     }
