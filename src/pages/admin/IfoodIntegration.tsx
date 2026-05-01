@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
 import { AppLayout } from "@/components/AppLayout";
+import { IfoodMerchantPanel } from "@/components/IfoodMerchantPanel";
 
 type Cred = {
   id: string;
