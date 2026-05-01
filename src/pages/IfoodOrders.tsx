@@ -282,6 +282,7 @@ export default function IfoodOrders() {
           .select(`
             id, order_number, customer_name, total_amount, payment_method,
             status, created_at, updated_at,
+            ifood_payload, ifood_order_type, ifood_pickup_code,
             order_items (
               id, product_name, quantity, unit_price, total_price, complements, observations
             )
