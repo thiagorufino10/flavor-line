@@ -204,10 +204,10 @@ const TableSession = () => {
     });
     if (error) {
       toast.error("Erro ao registrar pagamento");
-      return;
+      throw error;
     }
     toast.success(`Pagamento de ${formatBRL(amount)} registrado`);
-    fetchSession();
+    await fetchSession();
   };
 
   const handleClose = async () => {
