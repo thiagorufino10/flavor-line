@@ -264,6 +264,11 @@ const Reports = () => {
   return (
     <AppLayout title="Relatórios" subtitle="Análises completas do seu negócio">
 <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Aviso sobre valor bruto */}
+        <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-muted-foreground">
+          <strong className="text-foreground">Valor bruto faturado:</strong> os totais aqui representam o que foi vendido, sem descontar taxas de cartão. Para ver o que efetivamente entrou no caixa (líquido), consulte <strong className="text-foreground">Fluxo de Caixa</strong>.
+        </div>
+
         {/* Filtros */}
         <Card>
           <CardHeader className="pb-3">
