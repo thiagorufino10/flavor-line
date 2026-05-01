@@ -595,6 +595,12 @@ const Loja = () => {
         </div>
       </header>
 
+      {storeClosed && (
+        <div className="bg-red-600 text-white text-center py-3 px-4 font-semibold">
+          🚫 Loja fechada no momento. Não estamos aceitando pedidos.
+        </div>
+      )}
+
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-orange-600/20">
         <div
