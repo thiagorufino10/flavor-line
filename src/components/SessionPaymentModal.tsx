@@ -256,8 +256,8 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
               </div>
             )}
 
-            <Button className="w-full h-12 text-lg" onClick={handleSingleConfirm} disabled={baseAmount <= 0}>
-              Registrar pagamento
+            <Button className="w-full h-12 text-lg" onClick={handleSingleConfirm} disabled={baseAmount <= 0 || processing}>
+              {processing ? "Registrando..." : "Registrar pagamento"}
             </Button>
           </div>
         )}
