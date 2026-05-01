@@ -72,6 +72,7 @@ const TableSession = () => {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
 
   const fetchSession = useCallback(async () => {
     if (!sessionId) return;
@@ -193,21 +194,27 @@ const TableSession = () => {
 
   const registerPayment = async (method: string, amount: number, netAmount: number) => {
     if (!session || !clientId) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from("session_payments").insert({
-      client_id: clientId,
-      table_session_id: session.id,
-      payment_method: method,
-      amount,
-      net_amount: netAmount,
-      created_by: user?.id ?? null,
-    });
-    if (error) {
-      toast.error("Erro ao registrar pagamento");
-      throw error;
+    if (paymentSubmitting) return;
+    setPaymentSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("session_payments").insert({
+        client_id: clientId,
+        table_session_id: session.id,
+        payment_method: method,
+        amount,
+        net_amount: netAmount,
+        created_by: user?.id ?? null,
+      });
+      if (error) {
+        toast.error("Erro ao registrar pagamento");
+        throw error;
+      }
+      toast.success(`Pagamento de ${formatBRL(amount)} registrado`);
+      await fetchSession();
+    } finally {
+      setPaymentSubmitting(false);
     }
-    toast.success(`Pagamento de ${formatBRL(amount)} registrado`);
-    await fetchSession();
   };
 
   const handleClose = async () => {
@@ -240,8 +247,8 @@ const TableSession = () => {
       subtitle={`${session.customer_name || "Sem nome"}${session.status === "fechada" ? " • Encerrada" : ""}`}
       actions={
         <>
-          <Button variant="outline" size="sm" onClick={() => setPaymentOpen(true)} className="gap-2">
-            <DollarSign className="w-4 h-4" /> Pagamento
+          <Button variant="outline" size="sm" onClick={() => setPaymentOpen(true)} className="gap-2" disabled={paymentSubmitting}>
+            <DollarSign className="w-4 h-4" /> {paymentSubmitting ? "Registrando..." : "Pagamento"}
           </Button>
           <Button
             variant="default"
