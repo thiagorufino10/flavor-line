@@ -92,10 +92,12 @@ const Reports = () => {
 
   // Stats
   const stats = useMemo(() => {
-    const totalVendas = filteredSales.reduce((sum, v) => sum + v.valorTotal, 0);
+    // Faturamento bruto = soma do total dos pedidos (inclui taxa de cartão paga pelo cliente e taxa de entrega).
+    // Usamos orders.total_amount em vez da soma dos itens para alinhar com o Fluxo de Caixa.
+    const totalVendas = filteredOrders.reduce((sum, o) => sum + o.total_amount, 0);
     const totalQuantidade = filteredSales.reduce((sum, v) => sum + v.quantidade, 0);
     const ticketMedio = filteredOrders.length > 0
-      ? filteredOrders.reduce((sum, o) => sum + o.total_amount, 0) / filteredOrders.length
+      ? totalVendas / filteredOrders.length
       : 0;
     const totalPedidos = filteredOrders.length;
     return { totalVendas, totalQuantidade, ticketMedio, totalPedidos };
