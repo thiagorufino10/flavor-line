@@ -541,7 +541,7 @@ export default function IfoodOrders() {
   return (
     <AppLayout
       title="Pedidos iFood"
-      subtitle="Aprovação manual · SLA 10 min para confirmação (homologação iFood)"
+      subtitle="Aprovação manual · SLA 10 min para confirmação"
       actions={
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
