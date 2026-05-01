@@ -53,6 +53,7 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
   const [splitAmount2, setSplitAmount2] = useState("");
 
   const [rates, setRates] = useState<Record<string, RateConfig>>({});
+  const [processing, setProcessing] = useState(false);
 
   // Reset on open/close
   useEffect(() => {
