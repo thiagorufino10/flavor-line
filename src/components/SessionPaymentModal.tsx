@@ -18,7 +18,7 @@ interface SessionPaymentModalProps {
   onOpenChange: (open: boolean) => void;
   remaining: number;
   /** Mantém compatibilidade: chamado uma vez por pagamento (único OU para cada parcela do split). */
-  onConfirm: (method: string, amount: number, netAmount: number) => void;
+  onConfirm: (method: string, amount: number, netAmount: number) => void | Promise<void>;
 }
 
 const methods = [
