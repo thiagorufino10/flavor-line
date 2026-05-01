@@ -129,6 +129,7 @@ const TableSession = () => {
     [payments]
   );
   const remaining = Math.max(0, consumedTotal - paidTotal);
+  const paymentLocked = !session || session.status === "fechada" || consumedTotal === 0 || remaining <= 0.009;
 
   const handleAddToCart = useCallback((item: AddedItem) => {
     setCart((prev) => [...prev, {
@@ -195,6 +196,10 @@ const TableSession = () => {
 
   const registerPayment = async (method: string, amount: number, netAmount: number) => {
     if (!session || !clientId) return;
+    if (remaining <= 0.009) {
+      toast.error("Pagamento já registrado para esta mesa");
+      throw new Error("Mesa quitada");
+    }
     if (paymentSubmittingRef.current) throw new Error("Pagamento já em processamento");
     paymentSubmittingRef.current = true;
     setPaymentSubmitting(true);
@@ -250,7 +255,14 @@ const TableSession = () => {
       subtitle={`${session.customer_name || "Sem nome"}${session.status === "fechada" ? " • Encerrada" : ""}`}
       actions={
         <>
-          <Button variant="outline" size="sm" onClick={() => setPaymentOpen(true)} className="gap-2" disabled={paymentSubmitting}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPaymentOpen(true)}
+            className="gap-2"
+            disabled={paymentSubmitting || paymentLocked}
+            title={remaining <= 0.009 && consumedTotal > 0 ? "Pagamento já registrado" : undefined}
+          >
             <DollarSign className="w-4 h-4" /> {paymentSubmitting ? "Registrando..." : "Pagamento"}
           </Button>
           <Button
