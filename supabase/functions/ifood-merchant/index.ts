@@ -265,22 +265,30 @@ Deno.serve(async (req) => {
 
       case "get_opening_hours":
         result = await callIfood(token, "GET", `${MERCHANT_PREFIX}/merchants/${mid}/opening-hours`);
+        console.log("[ifood-merchant] GET opening-hours response:", JSON.stringify(result));
         break;
 
       case "update_opening_hours": {
         const { shifts } = body;
-        if (!Array.isArray(shifts) || shifts.length === 0) {
+        if (!Array.isArray(shifts)) {
           return jsonResponse(
             { ok: false, code: "BadRequest", message: "shifts (array) obrigatório" },
             400,
           );
         }
+        // iFood: para fechar um dia, ele NÃO deve estar no array.
+        // Removemos qualquer shift com duration <= 0 ou enabled=false.
+        const cleanShifts = shifts.filter(
+          (s: any) => s && s.enabled !== false && Number(s.duration) > 0,
+        );
+        console.log("[ifood-merchant] PUT opening-hours payload:", JSON.stringify({ shifts: cleanShifts }));
         result = await callIfood(
           token,
           "PUT",
           `${MERCHANT_PREFIX}/merchants/${mid}/opening-hours`,
-          { shifts },
+          { shifts: cleanShifts },
         );
+        console.log("[ifood-merchant] PUT opening-hours response:", JSON.stringify(result));
         break;
       }
 

@@ -123,11 +123,12 @@ export default function LojaIfood() {
           DAYS.map((d) => [d.key, { start: "08:00", end: "18:00", enabled: false }]),
         ) as any;
         for (const s of oh.shifts as Shift[]) {
+          // Presença no array = dia aberto. Ausência = fechado.
+          // Ignoramos shifts sem duração válida.
+          if (!s?.dayOfWeek || !(Number(s.duration) > 0)) continue;
           const start = (s.start || "08:00:00").slice(0, 5);
-          const end = durationToEnd(start, s.duration ?? 600);
-          // Respeita flag enabled vinda do iFood (default true se omitido)
-          const enabled = s.enabled !== false;
-          next[s.dayOfWeek] = { start, end, enabled };
+          const end = durationToEnd(start, Number(s.duration));
+          next[s.dayOfWeek] = { start, end, enabled: true };
         }
         setShifts(next);
       }
