@@ -323,6 +323,20 @@ const Loja = () => {
   };
 
   const sendToWhatsApp = async () => {
+    // Revalida em tempo real se a loja foi fechada
+    if (clientId) {
+      const { data: closedCfg } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("client_id", clientId)
+        .eq("key", "store_closed")
+        .maybeSingle();
+      const isClosed = String(closedCfg?.value ?? "false") === "true";
+      setStoreClosed(isClosed);
+      if (isClosed) {
+        return toast.error("Loja fechada no momento. Não é possível enviar pedidos.");
+      }
+    }
     if (cart.length === 0) return toast.error("Carrinho vazio");
     if (!customerName.trim()) return toast.error("Informe seu nome");
     const phoneClean = customerPhone.replace(/\D/g, "");
