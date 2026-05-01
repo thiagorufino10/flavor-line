@@ -93,6 +93,7 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
   <div class="left"><strong>Pedido:</strong> #${order.order_number}</div>
   <div class="left"><strong>Cliente:</strong> ${order.customer_name.toUpperCase()}</div>
   <div class="left"><strong>Pagamento:</strong> ${paymentMethodLabel[order.payment_method] || order.payment_method.toUpperCase()}</div>
+  ${ifoodHtml}
   <div class="line"></div>
   ${itemsHtml}
   <div class="line"></div>
