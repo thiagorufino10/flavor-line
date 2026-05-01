@@ -1,5 +1,13 @@
-// iFood Poller — consome eventos do iFood a cada 30s para clientes com ifood_enabled=true
-// Pode ser chamado manualmente OU via pg_cron
+// iFood Poller — Homologação Order API
+// - Polling 30s (chamado pelo cron)
+// - Acknowledgment de TODOS os eventos (mesmo duplicados ou com erro)
+// - Detecção de duplicatas via UNIQUE(client_id, event_id)
+// - Processa eventos: PLC/PLACED, CFM/CONFIRMED, DSP/DISPATCHED, CON/CONCLUDED,
+//   RTP/READY_TO_PICKUP, CAN/CANCELLED (sincronização entre apps)
+// - Eventos da Plataforma de Negociação: HMC/HANDSHAKE, HMD/HANDSHAKE_DECLINED
+// - Captura completa do payload do pedido (orderType, orderTiming, payments,
+//   benefits, customer, pickupCode, observations, deliveryAddress)
+// - Backoff em rate limit (HTTP 429)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -7,17 +15,30 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const IFOOD_BASE_SANDBOX = "https://merchant-api.ifood.com.br";
-const IFOOD_BASE_PROD = "https://merchant-api.ifood.com.br";
+const IFOOD_BASE = "https://merchant-api.ifood.com.br";
+
+// --------- Utilitários ----------
+async function fetchWithBackoff(url: string, init: RequestInit, maxRetries = 3): Promise<Response> {
+  let attempt = 0;
+  while (true) {
+    const resp = await fetch(url, init);
+    if (resp.status !== 429 || attempt >= maxRetries) return resp;
+    const retryAfter = Number(resp.headers.get("retry-after") ?? 0);
+    const wait = retryAfter > 0 ? retryAfter * 1000 : Math.min(2 ** attempt * 500, 4000);
+    console.warn(`[iFood] 429 em ${url}, aguardando ${wait}ms (attempt ${attempt + 1})`);
+    await new Promise((r) => setTimeout(r, wait));
+    attempt++;
+  }
+}
 
 async function getIfoodToken(supabase: any, environment: string): Promise<string> {
-  // Verifica cache
   const { data: cached } = await supabase
     .from("ifood_token_cache")
     .select("access_token, expires_at")
     .eq("environment", environment)
     .maybeSingle();
 
+  // Renova SOMENTE se expirado (margem de 60s)
   if (cached && new Date(cached.expires_at) > new Date(Date.now() + 60_000)) {
     return cached.access_token;
   }
@@ -32,18 +53,15 @@ async function getIfoodToken(supabase: any, environment: string): Promise<string
     clientSecret,
   });
 
-  const base = environment === "production" ? IFOOD_BASE_PROD : IFOOD_BASE_SANDBOX;
-  const resp = await fetch(`${base}/authentication/v1.0/oauth/token`, {
+  const resp = await fetchWithBackoff(`${IFOOD_BASE}/authentication/v1.0/oauth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
 
   if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`Auth iFood falhou [${resp.status}]: ${errText}`);
+    throw new Error(`Auth iFood falhou [${resp.status}]: ${await resp.text()}`);
   }
-
   const data = await resp.json();
   const expiresAt = new Date(Date.now() + (data.expiresIn ?? 10800) * 1000).toISOString();
 
@@ -54,20 +72,143 @@ async function getIfoodToken(supabase: any, environment: string): Promise<string
   return data.accessToken;
 }
 
-async function fetchOrderDetails(base: string, token: string, orderId: string) {
-  const resp = await fetch(`${base}/order/v1.0/orders/${orderId}`, {
+async function fetchOrderDetails(token: string, orderId: string) {
+  const resp = await fetchWithBackoff(`${IFOOD_BASE}/order/v1.0/orders/${orderId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!resp.ok) return null;
+  if (!resp.ok) {
+    console.error(`Falha ao buscar pedido ${orderId}: ${resp.status}`);
+    return null;
+  }
   return await resp.json();
 }
 
+// Mapa de codes (curtos) -> tipo lógico
+function classifyEvent(code: string): string {
+  const c = (code || "").toUpperCase();
+  if (c === "PLC" || c === "PLACED") return "PLACED";
+  if (c === "CFM" || c === "CONFIRMED") return "CONFIRMED";
+  if (c === "DSP" || c === "DISPATCHED") return "DISPATCHED";
+  if (c === "CON" || c === "CONCLUDED") return "CONCLUDED";
+  if (c === "RTP" || c === "READY_TO_PICKUP") return "READY_TO_PICKUP";
+  if (c === "CAN" || c === "CANCELLED" || c === "CANCELED") return "CANCELLED";
+  if (c === "CRE" || c === "CANCELLATION_REQUESTED") return "CANCELLATION_REQUESTED";
+  if (c === "HMC") return "HANDSHAKE_CONFIRMED";
+  if (c === "HMD") return "HANDSHAKE_DECLINED";
+  return c;
+}
+
+// Atualização local quando chega evento de mudança de status (sincronização)
+function statusUpdatesFromEvent(eventLogical: string): Record<string, any> | null {
+  switch (eventLogical) {
+    case "CONFIRMED":
+      return { ifood_status: "CONFIRMED", approval_status: "aprovado", status: "novo" };
+    case "DISPATCHED":
+      return { ifood_status: "DISPATCHED", status: "finalizado" };
+    case "READY_TO_PICKUP":
+      return { ifood_status: "READY_TO_PICKUP", status: "pronto" };
+    case "CONCLUDED":
+      return { ifood_status: "CONCLUDED", status: "finalizado" };
+    case "CANCELLED":
+      return { ifood_status: "CANCELLED", approval_status: "rejeitado", status: "cancelado" };
+    case "CANCELLATION_REQUESTED":
+      return { ifood_status: "CANCELLATION_REQUESTED" };
+    default:
+      return null;
+  }
+}
+
+async function upsertOrderFromIfood(supabase: any, clientId: string, details: any) {
+  const externalId = details.id ?? details.orderId;
+  if (!externalId) return null;
+
+  // Verifica se já existe
+  const { data: existing } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("client_id", clientId)
+    .eq("external_order_id", externalId)
+    .maybeSingle();
+
+  // Campos derivados
+  const orderType = details.orderType ?? null; // DELIVERY | TAKEOUT | INDOOR
+  const orderTiming = details.orderTiming ?? null; // IMMEDIATE | SCHEDULED
+  const scheduledFor =
+    details.schedule?.deliveryDateTimeStart ?? details.scheduledDateTime ?? null;
+  const pickupCode = details.takeout?.takeoutDateTime ? null : details.pickupCode ?? details.takeout?.pickupCode ?? null;
+
+  const payment = details.payments?.methods?.[0] ?? details.payments?.[0] ?? {};
+  const paymentMethodLabel = (payment.method ?? payment.code ?? "ifood").toString().toLowerCase();
+
+  const totalAmount = Number(
+    details.total?.orderAmount ??
+      details.totalPrice ??
+      details.total ??
+      0
+  );
+
+  const customerName = details.customer?.name ?? "Cliente iFood";
+
+  if (existing) {
+    // Atualiza payload caso já tenhamos o pedido (evita perder dados ricos)
+    await supabase
+      .from("orders")
+      .update({
+        ifood_payload: details,
+        ifood_order_type: orderType,
+        ifood_order_timing: orderTiming,
+        ifood_pickup_code: pickupCode,
+        ifood_scheduled_for: scheduledFor,
+      })
+      .eq("id", existing.id);
+    return existing.id;
+  }
+
+  const items = (details.items ?? []).map((it: any) => ({
+    product_name: it.name,
+    quantity: it.quantity ?? 1,
+    unit_price: Number(it.unitPrice ?? it.price ?? 0),
+    total_price: Number(it.totalPrice ?? it.price ?? 0),
+    observations: it.observations ?? null,
+    complements: it.options ?? it.subItems ?? null,
+  }));
+
+  const { data: newOrder, error: ordErr } = await supabase
+    .from("orders")
+    .insert({
+      client_id: clientId,
+      customer_name: customerName,
+      total_amount: totalAmount,
+      payment_method: paymentMethodLabel,
+      status: "novo",
+      origin: "ifood",
+      external_order_id: externalId,
+      ifood_status: "PLACED",
+      approval_status: "pendente",
+      ifood_payload: details,
+      ifood_order_type: orderType,
+      ifood_order_timing: orderTiming,
+      ifood_pickup_code: pickupCode,
+      ifood_scheduled_for: scheduledFor,
+    })
+    .select()
+    .single();
+
+  if (ordErr) throw ordErr;
+
+  if (items.length > 0 && newOrder) {
+    await supabase.from("order_items").insert(
+      items.map((it: any) => ({ ...it, order_id: newOrder.id, client_id: clientId }))
+    );
+  }
+  return newOrder?.id ?? null;
+}
+
 async function processClient(supabase: any, cred: any) {
-  const base = cred.environment === "production" ? IFOOD_BASE_PROD : IFOOD_BASE_SANDBOX;
   const token = await getIfoodToken(supabase, cred.environment);
 
-  // Polling de eventos
-  const pollResp = await fetch(`${base}/events/v1.0/events:polling`, {
+  // 1) Polling de eventos
+  const pollResp = await fetchWithBackoff(`${IFOOD_BASE}/events/v1.0/events:polling`, {
     headers: {
       Authorization: `Bearer ${token}`,
       "x-polling-merchants": cred.merchant_id,
@@ -84,8 +225,7 @@ async function processClient(supabase: any, cred: any) {
   }
 
   if (!pollResp.ok) {
-    const errText = await pollResp.text();
-    throw new Error(`Polling falhou [${pollResp.status}]: ${errText}`);
+    throw new Error(`Polling falhou [${pollResp.status}]: ${await pollResp.text()}`);
   }
 
   const events = await pollResp.json();
@@ -93,108 +233,88 @@ async function processClient(supabase: any, cred: any) {
     return { events: 0 };
   }
 
+  // ackIds inclui TODOS os eventos recebidos (mesmo duplicados ou que falham processamento)
+  // A homologação exige ack de tudo.
   const ackIds: string[] = [];
   let processed = 0;
 
   for (const evt of events) {
-    const eventId = evt.id ?? evt.eventId ?? crypto.randomUUID();
-    const eventType = evt.code ?? evt.fullCode ?? "UNKNOWN";
+    const eventId = String(evt.id ?? evt.eventId ?? crypto.randomUUID());
+    const rawCode = String(evt.code ?? evt.fullCode ?? "UNKNOWN");
+    const eventLogical = classifyEvent(rawCode);
     const orderExternalId = evt.orderId ?? null;
 
-    // Salva log (idempotente via UNIQUE)
+    ackIds.push(eventId);
+
+    // Tenta inserir log. Se duplicado (UNIQUE), descarta silenciosamente.
     const { error: logErr } = await supabase.from("ifood_event_log").insert({
       client_id: cred.client_id,
-      event_id: String(eventId),
-      event_type: String(eventType),
+      event_id: eventId,
+      event_type: rawCode,
       order_external_id: orderExternalId,
       payload: evt,
       processed: false,
     });
 
-    // Se já existia (duplicado), só faz ack
-    if (logErr && !logErr.message?.includes("duplicate")) {
-      console.error("Erro ao logar evento:", logErr);
+    if (logErr) {
+      // Duplicata → já processado anteriormente, só faz ack
+      const isDup = (logErr.message ?? "").toLowerCase().includes("duplicate");
+      if (!isDup) console.error("Erro ao logar evento:", logErr);
       continue;
     }
 
-    ackIds.push(String(eventId));
-
-    // Processa eventos de pedido novo (PLC = código curto, PLACED = código longo)
-    const isPlaced = eventType === "PLC" || eventType === "PLACED";
-    if (isPlaced && orderExternalId) {
-      try {
-        const details = await fetchOrderDetails(base, token, orderExternalId);
+    try {
+      // PLACED → cria pedido para aprovação manual
+      if (eventLogical === "PLACED" && orderExternalId) {
+        const details = await fetchOrderDetails(token, orderExternalId);
         if (details) {
-          // Verifica se já existe
-          const { data: existing } = await supabase
-            .from("orders")
-            .select("id")
-            .eq("client_id", cred.client_id)
-            .eq("external_order_id", orderExternalId)
-            .maybeSingle();
-
-          if (!existing) {
-            const items = (details.items ?? []).map((it: any) => ({
-              product_name: it.name,
-              quantity: it.quantity ?? 1,
-              unit_price: Number(it.unitPrice ?? it.price ?? 0),
-              total_price: Number(it.totalPrice ?? it.price ?? 0),
-              observations: it.observations ?? null,
-              complements: it.options ?? null,
-            }));
-
-            const { data: newOrder, error: ordErr } = await supabase
-              .from("orders")
-              .insert({
-                client_id: cred.client_id,
-                customer_name: details.customer?.name ?? "Cliente iFood",
-                total_amount: Number(details.total?.orderAmount ?? details.totalPrice ?? 0),
-                payment_method: details.payments?.methods?.[0]?.method ?? "ifood",
-                status: "novo",
-                origin: "ifood",
-                external_order_id: orderExternalId,
-                ifood_status: "PLACED",
-                approval_status: "pendente",
-              })
-              .select()
-              .single();
-
-            if (ordErr) throw ordErr;
-
-            if (items.length > 0 && newOrder) {
-              await supabase.from("order_items").insert(
-                items.map((it: any) => ({ ...it, order_id: newOrder.id, client_id: cred.client_id }))
-              );
-            }
-          }
+          await upsertOrderFromIfood(supabase, cred.client_id, details);
         }
-      } catch (e) {
-        console.error("Erro ao criar pedido iFood:", e);
-        await supabase
-          .from("ifood_event_log")
-          .update({ error_message: String(e) })
-          .eq("client_id", cred.client_id)
-          .eq("event_id", String(eventId));
-        continue;
       }
-    }
 
-    // Marca processado
-    await supabase
-      .from("ifood_event_log")
-      .update({ processed: true })
-      .eq("client_id", cred.client_id)
-      .eq("event_id", String(eventId));
-    processed++;
+      // CONFIRMED/DISPATCHED/READY_TO_PICKUP/CONCLUDED/CANCELLED → sincroniza status local
+      // (caso outro app — Gestor de Pedidos Web, app do iFood — tenha movido o pedido)
+      const updates = statusUpdatesFromEvent(eventLogical);
+      if (updates && orderExternalId) {
+        await supabase
+          .from("orders")
+          .update(updates)
+          .eq("client_id", cred.client_id)
+          .eq("external_order_id", orderExternalId);
+      }
+
+      // Eventos da Plataforma de Negociação — apenas registramos, sem alterar pedido.
+      // (Visíveis na aba "Eventos recebidos")
+
+      await supabase
+        .from("ifood_event_log")
+        .update({ processed: true })
+        .eq("client_id", cred.client_id)
+        .eq("event_id", eventId);
+      processed++;
+    } catch (e) {
+      console.error(`Erro processando evento ${eventId} (${rawCode}):`, e);
+      await supabase
+        .from("ifood_event_log")
+        .update({ error_message: String(e) })
+        .eq("client_id", cred.client_id)
+        .eq("event_id", eventId);
+      // ack mesmo em erro (homologação exige)
+    }
   }
 
-  // Acknowledgment dos eventos
-  if (ackIds.length > 0) {
-    await fetch(`${base}/events/v1.0/events/acknowledgment`, {
+  // 2) Acknowledgment — em lotes de 2000 (limite iFood)
+  const CHUNK = 2000;
+  for (let i = 0; i < ackIds.length; i += CHUNK) {
+    const chunk = ackIds.slice(i, i + CHUNK).map((id) => ({ id }));
+    const ackResp = await fetchWithBackoff(`${IFOOD_BASE}/events/v1.0/events/acknowledgment`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(ackIds.map((id) => ({ id }))),
+      body: JSON.stringify(chunk),
     });
+    if (!ackResp.ok) {
+      console.error(`Ack falhou [${ackResp.status}]: ${await ackResp.text()}`);
+    }
   }
 
   await supabase
@@ -202,14 +322,12 @@ async function processClient(supabase: any, cred: any) {
     .update({ last_polling_at: new Date().toISOString() })
     .eq("id", cred.id);
 
-  return { events: processed };
+  return { events: processed, total_received: events.length, ack: ackIds.length };
 }
 
 async function reprocessPlacedEvents(supabase: any, cred: any) {
-  const base = cred.environment === "production" ? IFOOD_BASE_PROD : IFOOD_BASE_SANDBOX;
   const token = await getIfoodToken(supabase, cred.environment);
 
-  // Pega todos os order_external_id dos eventos PLC/PLACED desse cliente
   const { data: plcEvents } = await supabase
     .from("ifood_event_log")
     .select("order_external_id")
@@ -231,44 +349,9 @@ async function reprocessPlacedEvents(supabase: any, cred: any) {
       .maybeSingle();
     if (existing) continue;
 
-    const details = await fetchOrderDetails(base, token, orderExternalId as string);
+    const details = await fetchOrderDetails(token, orderExternalId as string);
     if (!details) continue;
-
-    const items = (details.items ?? []).map((it: any) => ({
-      product_name: it.name,
-      quantity: it.quantity ?? 1,
-      unit_price: Number(it.unitPrice ?? it.price ?? 0),
-      total_price: Number(it.totalPrice ?? it.price ?? 0),
-      observations: it.observations ?? null,
-      complements: it.options ?? null,
-    }));
-
-    const { data: newOrder, error: ordErr } = await supabase
-      .from("orders")
-      .insert({
-        client_id: cred.client_id,
-        customer_name: details.customer?.name ?? "Cliente iFood",
-        total_amount: Number(details.total?.orderAmount ?? details.totalPrice ?? 0),
-        payment_method: details.payments?.methods?.[0]?.method ?? "ifood",
-        status: "novo",
-        origin: "ifood",
-        external_order_id: orderExternalId,
-        ifood_status: "PLACED",
-        approval_status: "pendente",
-      })
-      .select()
-      .single();
-
-    if (ordErr) {
-      console.error("Erro ao criar pedido (reprocess):", ordErr);
-      continue;
-    }
-
-    if (items.length > 0 && newOrder) {
-      await supabase.from("order_items").insert(
-        items.map((it: any) => ({ ...it, order_id: newOrder.id, client_id: cred.client_id }))
-      );
-    }
+    await upsertOrderFromIfood(supabase, cred.client_id, details);
     created++;
   }
 
@@ -284,11 +367,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Modo opcional: ?reprocess=1 → re-busca pedidos PLC já logados que ainda não viraram orders
     const url = new URL(req.url);
     const reprocess = url.searchParams.get("reprocess") === "1";
 
-    // Busca clientes com iFood habilitado
+    // Apenas clientes com iFood habilitado (gate `clients.ifood_enabled`)
     const { data: enabledClients, error: clientsErr } = await supabase
       .from("clients")
       .select("id")
@@ -302,7 +384,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Busca credenciais ativas desses clientes
     const { data: creds, error } = await supabase
       .from("ifood_credentials")
       .select("id, client_id, merchant_id, environment, active")
