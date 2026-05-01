@@ -243,7 +243,20 @@ const TableSession = () => {
           <Button variant="outline" size="sm" onClick={() => setPaymentOpen(true)} className="gap-2">
             <DollarSign className="w-4 h-4" /> Pagamento
           </Button>
-          <Button variant="default" size="sm" onClick={() => setConfirmClose(true)} className="gap-2" disabled={session.status === "fechada"}>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => {
+              if (remaining > 0.009) {
+                toast.error(`Pagamento pendente: ${formatBRL(remaining)}`);
+                return;
+              }
+              setConfirmClose(true);
+            }}
+            className="gap-2"
+            disabled={session.status === "fechada" || consumedTotal === 0 || remaining > 0.009}
+            title={remaining > 0.009 ? "Registre o pagamento antes de fechar" : undefined}
+          >
             <Lock className="w-4 h-4" /> Fechar mesa
           </Button>
         </>
