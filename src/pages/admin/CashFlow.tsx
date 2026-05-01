@@ -119,7 +119,7 @@ const CashFlow = () => {
       (settings || []).forEach(s => { taxPayerMap[s.key.replace("tax_payer_", "")] = s.value; });
 
       // Extrai o método base (remove sufixo " ifood") para cálculo de taxa
-      const baseMethod = (m: string) => m.replace(/\s+ifood$/i, "").trim();
+      const baseMethod = (m: string) => m.replace(/\s+(ifood|delivery)$/i, "").trim();
 
       // Retorna o valor líquido (o que efetivamente entra no caixa) considerando taxa do estabelecimento
       const netForMethod = (method: string, gross: number): number => {
