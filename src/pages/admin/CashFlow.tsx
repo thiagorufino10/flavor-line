@@ -46,16 +46,30 @@ const PAYMENT_METHOD_MAP: Record<string, string> = {
   dinheiro: "Dinheiro",
 };
 
+// Normaliza variações em inglês (vindas do iFood, ex.: "credit", "CREDIT", "debit", "cash")
+// para os 4 métodos padrão em português.
+const normalizeBaseToken = (raw: string): string => {
+  const r = raw.trim().toLowerCase();
+  if (!r) return r;
+  if (r.includes("pix")) return "pix";
+  if (r.includes("cash") || r.includes("money") || r.includes("dinheiro")) return "dinheiro";
+  if (r.includes("debit") || r.includes("debito")) return "debito";
+  if (r.includes("credit") || r.includes("credito") || r === "card" || r === "cartao") return "credito";
+  return r;
+};
+
 const formatPaymentToken = (token: string) => {
   const t = token.trim().toLowerCase();
   // Sufixos suportados: " ifood" e " delivery" (origem na loja pública)
-  const suffixMatch = t.match(/^(credito|debito|pix|dinheiro|cartao)\s+(ifood|delivery)$/);
+  const suffixMatch = t.match(/^(.+?)\s+(ifood|delivery)$/);
   if (suffixMatch) {
-    const base = suffixMatch[1] === "cartao" ? "Cartão" : PAYMENT_METHOD_MAP[suffixMatch[1]];
+    const baseKey = normalizeBaseToken(suffixMatch[1]);
+    const base = baseKey === "cartao" ? "Cartão" : (PAYMENT_METHOD_MAP[baseKey] || suffixMatch[1]);
     const tag = suffixMatch[2] === "ifood" ? "iFood" : "Delivery";
     return `${base} ${tag}`;
   }
-  return PAYMENT_METHOD_MAP[t] || token;
+  const baseKey = normalizeBaseToken(t);
+  return PAYMENT_METHOD_MAP[baseKey] || token;
 };
 
 const formatPaymentMethod = (pm: string) => {
