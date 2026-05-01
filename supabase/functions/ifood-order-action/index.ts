@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const IFOOD_BASE = "https://merchant-api.ifood.com.br";
 
-const VALID_ACTIONS = ["confirm", "dispatch", "cancel", "readyToPickup"];
+const VALID_ACTIONS = ["confirm", "dispatch", "cancel", "readyToPickup", "getCancellationReasons"];
 
 async function getIfoodToken(supabase: any, environment: string): Promise<string> {
   const { data: cached } = await supabase
