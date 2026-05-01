@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -73,6 +73,7 @@ const TableSession = () => {
   const [confirmClose, setConfirmClose] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+  const paymentSubmittingRef = useRef(false);
 
   const fetchSession = useCallback(async () => {
     if (!sessionId) return;
@@ -194,7 +195,8 @@ const TableSession = () => {
 
   const registerPayment = async (method: string, amount: number, netAmount: number) => {
     if (!session || !clientId) return;
-    if (paymentSubmitting) return;
+    if (paymentSubmittingRef.current) throw new Error("Pagamento já em processamento");
+    paymentSubmittingRef.current = true;
     setPaymentSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -213,6 +215,7 @@ const TableSession = () => {
       toast.success(`Pagamento de ${formatBRL(amount)} registrado`);
       await fetchSession();
     } finally {
+      paymentSubmittingRef.current = false;
       setPaymentSubmitting(false);
     }
   };
