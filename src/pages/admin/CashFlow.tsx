@@ -46,11 +46,21 @@ const PAYMENT_METHOD_MAP: Record<string, string> = {
   dinheiro: "Dinheiro",
 };
 
+const formatPaymentToken = (token: string) => {
+  const t = token.trim().toLowerCase();
+  // Detecta sufixo " ifood" (ex: "credito ifood")
+  const ifoodMatch = t.match(/^(credito|debito|pix|dinheiro)\s+ifood$/);
+  if (ifoodMatch) {
+    return `${PAYMENT_METHOD_MAP[ifoodMatch[1]]} iFood`;
+  }
+  return PAYMENT_METHOD_MAP[t] || token;
+};
+
 const formatPaymentMethod = (pm: string) => {
   if (pm.includes("/")) {
-    return pm.split("/").map(p => PAYMENT_METHOD_MAP[p.trim()] || p.trim()).join(" / ");
+    return pm.split("/").map(formatPaymentToken).join(" / ");
   }
-  return PAYMENT_METHOD_MAP[pm] || pm;
+  return formatPaymentToken(pm);
 };
 
 const CashFlow = () => {
