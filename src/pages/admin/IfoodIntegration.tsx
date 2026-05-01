@@ -294,9 +294,14 @@ export default function IfoodIntegration() {
         <Tabs defaultValue="config">
           <TabsList>
             <TabsTrigger value="config">Configuração</TabsTrigger>
+            <TabsTrigger value="merchant">Merchant</TabsTrigger>
             <TabsTrigger value="logs">Eventos recebidos</TabsTrigger>
             <TabsTrigger value="homolog">Checklist homologação</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="merchant">
+            <IfoodMerchantPanel />
+          </TabsContent>
 
           <TabsContent value="config" className="space-y-4">
             <Card>
