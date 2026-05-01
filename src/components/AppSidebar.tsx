@@ -18,6 +18,7 @@ import {
   MessageCircle,
   Bike,
   Plug,
+  Store,
 } from "lucide-react";
 import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
 import { NavLink } from "@/components/NavLink";
@@ -88,6 +89,9 @@ export function AppSidebar() {
   const ifoodOperacao: Item[] = ifoodEnabled
     ? [{ title: "Pedidos iFood", url: "/orders/ifood", icon: Plug, roles: ["admin", "atendente"] }]
     : [];
+  const ifoodGestao: Item[] = ifoodEnabled
+    ? [{ title: "Loja iFood", url: "/admin/loja-ifood", icon: Store, roles: ["admin"] }]
+    : [];
   const ifoodConfig: Item[] = ifoodEnabled
     ? [{ title: "Integração iFood", url: "/admin/ifood", icon: Plug, roles: ["admin"] }]
     : [];
@@ -146,11 +150,11 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {filter(gestao).length > 0 && (
+        {filter([...gestao, ...ifoodGestao]).length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>Gestão</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>{renderItems(filter(gestao))}</SidebarMenu>
+              <SidebarMenu>{renderItems(filter([...gestao, ...ifoodGestao]))}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
