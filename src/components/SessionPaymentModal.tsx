@@ -18,7 +18,7 @@ interface SessionPaymentModalProps {
   onOpenChange: (open: boolean) => void;
   remaining: number;
   /** Mantém compatibilidade: chamado uma vez por pagamento (único OU para cada parcela do split). */
-  onConfirm: (method: string, amount: number, netAmount: number) => void;
+  onConfirm: (method: string, amount: number, netAmount: number) => void | Promise<void>;
 }
 
 const methods = [
@@ -53,6 +53,7 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
   const [splitAmount2, setSplitAmount2] = useState("");
 
   const [rates, setRates] = useState<Record<string, RateConfig>>({});
+  const [processing, setProcessing] = useState(false);
 
   // Reset on open/close
   useEffect(() => {
@@ -64,6 +65,7 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
       setSplitMethod2(null);
       setSplitAmount1("");
       setSplitAmount2("");
+      setProcessing(false);
     } else {
       setAmountStr(remaining.toFixed(2));
     }
@@ -107,25 +109,36 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
     }
   }, [splitAmount1, remaining, step]);
 
-  const handleSingleConfirm = () => {
+  const handleSingleConfirm = async () => {
+    if (processing) return;
     const base = parseFloat(amountStr) || 0;
     if (!singleMethod || base <= 0) return;
     const p = computePayment(singleMethod, base);
-    onConfirm(p.method, p.amount, p.netAmount);
-    onOpenChange(false);
+    setProcessing(true);
+    try {
+      await onConfirm(p.method, p.amount, p.netAmount);
+      onOpenChange(false);
+    } catch {
+      setProcessing(false);
+    }
   };
 
-  const handleSplitConfirm = () => {
+  const handleSplitConfirm = async () => {
+    if (processing) return;
     if (!splitMethod1 || !splitMethod2) return;
     const a1 = parseFloat(splitAmount1) || 0;
     const a2 = parseFloat(splitAmount2) || 0;
     if (a1 <= 0 || a2 <= 0) return;
     const p1 = computePayment(splitMethod1, a1);
     const p2 = computePayment(splitMethod2, a2);
-    // Registra duas parcelas separadas (cada uma vira uma linha em session_payments)
-    onConfirm(p1.method, p1.amount, p1.netAmount);
-    onConfirm(p2.method, p2.amount, p2.netAmount);
-    onOpenChange(false);
+    setProcessing(true);
+    try {
+      await onConfirm(p1.method, p1.amount, p1.netAmount);
+      await onConfirm(p2.method, p2.amount, p2.netAmount);
+      onOpenChange(false);
+    } catch {
+      setProcessing(false);
+    }
   };
 
   // ---------- Cálculos auxiliares ----------
@@ -243,8 +256,8 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
               </div>
             )}
 
-            <Button className="w-full h-12 text-lg" onClick={handleSingleConfirm} disabled={baseAmount <= 0}>
-              Registrar pagamento
+            <Button className="w-full h-12 text-lg" onClick={handleSingleConfirm} disabled={baseAmount <= 0 || processing}>
+              {processing ? "Registrando..." : "Registrar pagamento"}
             </Button>
           </div>
         )}
@@ -342,8 +355,8 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
               )}
             </div>
 
-            <Button className="w-full h-12 text-lg" onClick={handleSplitConfirm} disabled={!splitValid}>
-              Registrar pagamentos
+            <Button className="w-full h-12 text-lg" onClick={handleSplitConfirm} disabled={!splitValid || processing}>
+              {processing ? "Registrando..." : "Registrar pagamentos"}
             </Button>
           </div>
         )}
