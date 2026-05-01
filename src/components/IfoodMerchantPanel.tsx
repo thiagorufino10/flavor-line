@@ -27,6 +27,19 @@ const DAYS = [
 type Shift = { dayOfWeek: string; start: string; duration: number };
 type Interruption = { id?: string; description: string; start: string; end: string };
 
+// Renderiza com segurança qualquer valor que o iFood retorne (pode ser string,
+// número, ou objeto localizado tipo {title, subtitle, description, priority}).
+function safe(v: any): string {
+  if (v == null) return "—";
+  if (typeof v === "string" || typeof v === "number") return String(v);
+  if (typeof v === "object") {
+    return (
+      v.name ?? v.title ?? v.label ?? v.description ?? v.code ?? v.value ?? ""
+    ).toString();
+  }
+  return String(v);
+}
+
 async function call<T = any>(action: string, payload: Record<string, any> = {}): Promise<ApiResp<T>> {
   const { data, error } = await supabase.functions.invoke("ifood-merchant", {
     body: { action, ...payload },
