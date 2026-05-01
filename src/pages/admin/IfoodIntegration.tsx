@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
 import { AppLayout } from "@/components/AppLayout";
+import { IfoodMerchantPanel } from "@/components/IfoodMerchantPanel";
 
 type Cred = {
   id: string;
@@ -53,6 +54,13 @@ const HOMOLOG_CHECKLIST = [
   { id: "obs", label: "Observações de entrega impressas na comanda (Restaurante)", done: true },
   { id: "sla", label: "Indicador de SLA visível na tela de aprovação", done: true },
   { id: "audit", label: "Auditoria: log de eventos + payload bruto disponível", done: true },
+  // Módulo Merchant (homologação)
+  { id: "merch_list", label: "Merchant · GET /merchants (lista lojas)", done: true },
+  { id: "merch_get", label: "Merchant · GET /merchants/{id} (detalhes + endereço)", done: true },
+  { id: "merch_status", label: "Merchant · GET /merchants/{id}/status (OK/WARNING/CLOSED/ERROR)", done: true },
+  { id: "merch_inter", label: "Merchant · GET/POST/DELETE /interruptions (pausas)", done: true },
+  { id: "merch_hours", label: "Merchant · GET/PUT /opening-hours (horários por turno)", done: true },
+  { id: "merch_errors", label: "Merchant · Erros padronizados {code,message} + Retry-After", done: true },
 ];
 
 function fmtRelative(iso: string) {
@@ -286,9 +294,14 @@ export default function IfoodIntegration() {
         <Tabs defaultValue="config">
           <TabsList>
             <TabsTrigger value="config">Configuração</TabsTrigger>
+            <TabsTrigger value="merchant">Merchant</TabsTrigger>
             <TabsTrigger value="logs">Eventos recebidos</TabsTrigger>
             <TabsTrigger value="homolog">Checklist homologação</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="merchant">
+            <IfoodMerchantPanel />
+          </TabsContent>
 
           <TabsContent value="config" className="space-y-4">
             <Card>
@@ -495,6 +508,15 @@ export default function IfoodIntegration() {
                     <li><code>POST /order/v1.0/orders/{`{orderId}`}/dispatch</code></li>
                     <li><code>GET  /order/v1.0/orders/{`{orderId}`}/cancellationReasons</code></li>
                     <li><code>POST /order/v1.0/orders/{`{orderId}`}/requestCancellation</code></li>
+                    <li className="pt-2 font-semibold text-foreground">Módulo Merchant</li>
+                    <li><code>GET  /merchant/v1.0/merchants</code></li>
+                    <li><code>GET  /merchant/v1.0/merchants/{`{id}`}</code></li>
+                    <li><code>GET  /merchant/v1.0/merchants/{`{id}`}/status</code></li>
+                    <li><code>GET  /merchant/v1.0/merchants/{`{id}`}/interruptions</code></li>
+                    <li><code>POST /merchant/v1.0/merchants/{`{id}`}/interruptions</code></li>
+                    <li><code>DELETE /merchant/v1.0/merchants/{`{id}`}/interruptions/{`{interruptionId}`}</code></li>
+                    <li><code>GET  /merchant/v1.0/merchants/{`{id}`}/opening-hours</code></li>
+                    <li><code>PUT  /merchant/v1.0/merchants/{`{id}`}/opening-hours</code></li>
                   </ul>
                 </div>
               </CardContent>
