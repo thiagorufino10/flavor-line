@@ -4,29 +4,42 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MessageCircle, ExternalLink, Copy } from "lucide-react";
+import { MessageCircle, ExternalLink, Copy, Store, StoreIcon } from "lucide-react";
 import { getClientId } from "@/lib/getClientId";
 
 const SETTING_KEY = "whatsapp_orders_number";
+const CLOSED_KEY = "store_closed";
 
 const WhatsAppAdmin = () => {
   const [number, setNumber] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [storeClosed, setStoreClosed] = useState(false);
+  const [togglingClosed, setTogglingClosed] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
         const client_id = await getClientId();
-        const { data } = await supabase
-          .from("system_settings")
-          .select("value")
-          .eq("client_id", client_id)
-          .eq("key", SETTING_KEY)
-          .maybeSingle();
-        if (data?.value) setNumber(String(data.value));
+        const [{ data: phoneRow }, { data: closedRow }] = await Promise.all([
+          supabase
+            .from("system_settings")
+            .select("value")
+            .eq("client_id", client_id)
+            .eq("key", SETTING_KEY)
+            .maybeSingle(),
+          supabase
+            .from("system_settings")
+            .select("value")
+            .eq("client_id", client_id)
+            .eq("key", CLOSED_KEY)
+            .maybeSingle(),
+        ]);
+        if (phoneRow?.value) setNumber(String(phoneRow.value));
+        setStoreClosed(String(closedRow?.value ?? "false") === "true");
       } catch (e) {
         console.error(e);
       } finally {
@@ -73,11 +86,86 @@ const WhatsAppAdmin = () => {
     }
   };
 
+  const toggleStoreClosed = async (next: boolean) => {
+    setTogglingClosed(true);
+    try {
+      const client_id = await getClientId();
+      const { data: existing } = await supabase
+        .from("system_settings")
+        .select("id")
+        .eq("client_id", client_id)
+        .eq("key", CLOSED_KEY)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("system_settings")
+          .update({ value: String(next) })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("system_settings")
+          .insert({ key: CLOSED_KEY, value: String(next), client_id });
+        if (error) throw error;
+      }
+      setStoreClosed(next);
+      toast.success(next ? "Loja online FECHADA" : "Loja online ABERTA");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Erro ao atualizar: " + (e.message || ""));
+    } finally {
+      setTogglingClosed(false);
+    }
+  };
+
   const lojaUrl = "https://tarmfood.tarmsolution.com.br/loja";
 
   return (
     <AppLayout title="WhatsApp" subtitle="Configuração da loja online">
       <div className="space-y-6 max-w-2xl">
+        <Card className={storeClosed ? "border-destructive" : ""}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {storeClosed ? (
+                <StoreIcon className="w-5 h-5 text-destructive" />
+              ) : (
+                <Store className="w-5 h-5 text-green-600" />
+              )}
+              Status da Loja Online
+            </CardTitle>
+            <CardDescription>
+              Quando a loja estiver <strong>fechada</strong>, os clientes não conseguirão enviar pedidos pelo WhatsApp.
+              O sistema bloqueia o envio e não registra o pedido.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between gap-4 p-4 rounded-lg border bg-muted/30">
+              <div>
+                <p className="font-semibold">
+                  {storeClosed ? "🚫 Loja FECHADA" : "✅ Loja ABERTA"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {storeClosed
+                    ? "Pedidos estão bloqueados no site."
+                    : "Pedidos estão sendo aceitos normalmente."}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="store-closed" className="text-sm">
+                  Fechar loja
+                </Label>
+                <Switch
+                  id="store-closed"
+                  checked={storeClosed}
+                  onCheckedChange={toggleStoreClosed}
+                  disabled={togglingClosed || loading}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

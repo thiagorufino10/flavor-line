@@ -120,6 +120,7 @@ const Loja = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [clientId, setClientId] = useState<string>("");
+  const [storeClosed, setStoreClosed] = useState(false);
 
   // Slug do cliente dono desta loja. Esta página /loja é exclusiva da Malukus Batata.
   const STORE_CLIENT_SLUG = "malukusbatata";
@@ -156,7 +157,7 @@ const Loja = () => {
       setClientId(cid);
 
       // 2. Carrega tudo já filtrado por client_id
-      const [{ data: cfg }, { data: nb }, { data: menu }] = await Promise.all([
+      const [{ data: cfg }, { data: nb }, { data: menu }, { data: closedCfg }] = await Promise.all([
         supabase
           .from("system_settings")
           .select("value")
@@ -175,9 +176,16 @@ const Loja = () => {
           .eq("client_id", cid)
           .eq("active", true)
           .order("sort_order"),
+        supabase
+          .from("system_settings")
+          .select("value")
+          .eq("client_id", cid)
+          .eq("key", "store_closed")
+          .maybeSingle(),
       ]);
       if (cfg?.value) setWhatsappNumber(String(cfg.value));
       setNeighborhoods((nb as any[]) || []);
+      setStoreClosed(String(closedCfg?.value ?? "false") === "true");
 
       const items = (menu as any[]) || [];
       const prods: Product[] = items
@@ -315,6 +323,20 @@ const Loja = () => {
   };
 
   const sendToWhatsApp = async () => {
+    // Revalida em tempo real se a loja foi fechada
+    if (clientId) {
+      const { data: closedCfg } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("client_id", clientId)
+        .eq("key", "store_closed")
+        .maybeSingle();
+      const isClosed = String(closedCfg?.value ?? "false") === "true";
+      setStoreClosed(isClosed);
+      if (isClosed) {
+        return toast.error("Loja fechada no momento. Não é possível enviar pedidos.");
+      }
+    }
     if (cart.length === 0) return toast.error("Carrinho vazio");
     if (!customerName.trim()) return toast.error("Informe seu nome");
     const phoneClean = customerPhone.replace(/\D/g, "");
@@ -558,12 +580,13 @@ const Loja = () => {
                     <span className="text-orange-400">{formatBRL(productsTotal)}</span>
                   </div>
                   <Button
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white disabled:opacity-60"
                     size="lg"
+                    disabled={storeClosed}
                     onClick={() => setCheckoutOpen(true)}
                   >
                     <MessageCircle className="w-5 h-5 mr-2" />
-                    Finalizar pelo WhatsApp
+                    {storeClosed ? "Loja fechada" : "Finalizar pelo WhatsApp"}
                   </Button>
                 </div>
               )}
@@ -571,6 +594,12 @@ const Loja = () => {
           </Sheet>
         </div>
       </header>
+
+      {storeClosed && (
+        <div className="bg-red-600 text-white text-center py-3 px-4 font-semibold">
+          🚫 Loja fechada no momento. Não estamos aceitando pedidos.
+        </div>
+      )}
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-orange-600/20">
@@ -953,12 +982,13 @@ const Loja = () => {
 
           <DialogFooter>
             <Button
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="w-full bg-green-600 hover:bg-green-700 text-white disabled:opacity-60"
               size="lg"
+              disabled={storeClosed}
               onClick={sendToWhatsApp}
             >
               <MessageCircle className="w-5 h-5 mr-2" />
-              Enviar pedido pelo WhatsApp
+              {storeClosed ? "Loja fechada — pedidos indisponíveis" : "Enviar pedido pelo WhatsApp"}
             </Button>
           </DialogFooter>
         </DialogContent>
