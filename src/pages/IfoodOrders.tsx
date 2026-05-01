@@ -472,27 +472,6 @@ export default function IfoodOrders() {
     );
   }
 
-  const pendentes = orders.filter((o) => o.approval_status === "pendente");
-  const ativos = orders.filter(
-    (o) =>
-      o.approval_status === "aprovado" &&
-      o.status !== "cancelado" &&
-      o.ifood_status !== "DISPATCHED" &&
-      o.ifood_status !== "CONCLUDED"
-  );
-  const finalizados = orders.filter(
-    (o) => o.ifood_status === "DISPATCHED" || o.ifood_status === "CONCLUDED" || o.status === "finalizado"
-  );
-  const cancelados = orders.filter(
-    (o) => o.approval_status === "rejeitado" || o.status === "cancelado" || o.ifood_status === "CANCELLED"
-  );
-
-  // Alerta global se houver pedidos perto de violar SLA
-  const slaAlerts = useMemo(() => {
-    void tick;
-    return pendentes.filter((p) => SLA_CONFIRM_MINUTES - minutesSince(p.created_at) <= 5);
-  }, [pendentes, tick]);
-
   const renderRichCard = (o: IfoodOrder, footer: React.ReactNode) => {
     const isExp = !!expanded[o.id];
     return (
