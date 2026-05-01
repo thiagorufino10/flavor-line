@@ -48,10 +48,12 @@ const PAYMENT_METHOD_MAP: Record<string, string> = {
 
 const formatPaymentToken = (token: string) => {
   const t = token.trim().toLowerCase();
-  // Detecta sufixo " ifood" (ex: "credito ifood")
-  const ifoodMatch = t.match(/^(credito|debito|pix|dinheiro)\s+ifood$/);
-  if (ifoodMatch) {
-    return `${PAYMENT_METHOD_MAP[ifoodMatch[1]]} iFood`;
+  // Sufixos suportados: " ifood" e " delivery" (origem na loja pública)
+  const suffixMatch = t.match(/^(credito|debito|pix|dinheiro|cartao)\s+(ifood|delivery)$/);
+  if (suffixMatch) {
+    const base = suffixMatch[1] === "cartao" ? "Cartão" : PAYMENT_METHOD_MAP[suffixMatch[1]];
+    const tag = suffixMatch[2] === "ifood" ? "iFood" : "Delivery";
+    return `${base} ${tag}`;
   }
   return PAYMENT_METHOD_MAP[t] || token;
 };
@@ -117,7 +119,7 @@ const CashFlow = () => {
       (settings || []).forEach(s => { taxPayerMap[s.key.replace("tax_payer_", "")] = s.value; });
 
       // Extrai o método base (remove sufixo " ifood") para cálculo de taxa
-      const baseMethod = (m: string) => m.replace(/\s+ifood$/i, "").trim();
+      const baseMethod = (m: string) => m.replace(/\s+(ifood|delivery)$/i, "").trim();
 
       // Retorna o valor líquido (o que efetivamente entra no caixa) considerando taxa do estabelecimento
       const netForMethod = (method: string, gross: number): number => {
