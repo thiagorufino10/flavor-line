@@ -120,6 +120,7 @@ const Loja = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [clientId, setClientId] = useState<string>("");
+  const [storeClosed, setStoreClosed] = useState(false);
 
   // Slug do cliente dono desta loja. Esta página /loja é exclusiva da Malukus Batata.
   const STORE_CLIENT_SLUG = "malukusbatata";
