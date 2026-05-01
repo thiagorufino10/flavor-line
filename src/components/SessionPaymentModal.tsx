@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +54,7 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
 
   const [rates, setRates] = useState<Record<string, RateConfig>>({});
   const [processing, setProcessing] = useState(false);
+  const processingRef = useRef(false);
 
   // Reset on open/close
   useEffect(() => {
@@ -66,6 +67,7 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
       setSplitAmount1("");
       setSplitAmount2("");
       setProcessing(false);
+      processingRef.current = false;
     } else {
       setAmountStr(remaining.toFixed(2));
     }
@@ -110,33 +112,37 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
   }, [splitAmount1, remaining, step]);
 
   const handleSingleConfirm = async () => {
-    if (processing) return;
+    if (processingRef.current) return;
     const base = parseFloat(amountStr) || 0;
     if (!singleMethod || base <= 0) return;
     const p = computePayment(singleMethod, base);
+    processingRef.current = true;
     setProcessing(true);
     try {
       await onConfirm(p.method, p.amount, p.netAmount);
       onOpenChange(false);
     } catch {
+      processingRef.current = false;
       setProcessing(false);
     }
   };
 
   const handleSplitConfirm = async () => {
-    if (processing) return;
+    if (processingRef.current) return;
     if (!splitMethod1 || !splitMethod2) return;
     const a1 = parseFloat(splitAmount1) || 0;
     const a2 = parseFloat(splitAmount2) || 0;
     if (a1 <= 0 || a2 <= 0) return;
     const p1 = computePayment(splitMethod1, a1);
     const p2 = computePayment(splitMethod2, a2);
+    processingRef.current = true;
     setProcessing(true);
     try {
       await onConfirm(p1.method, p1.amount, p1.netAmount);
       await onConfirm(p2.method, p2.amount, p2.netAmount);
       onOpenChange(false);
     } catch {
+      processingRef.current = false;
       setProcessing(false);
     }
   };
@@ -171,7 +177,10 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(nextOpen) => {
+      if (processingRef.current && !nextOpen) return;
+      onOpenChange(nextOpen);
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{renderTitle()}</DialogTitle>
