@@ -274,9 +274,13 @@ export function IfoodMerchantPanel() {
                 {merchantInfo.operations && (
                   <div className="flex gap-1 flex-wrap">
                     {(Array.isArray(merchantInfo.operations) ? merchantInfo.operations : [merchantInfo.operations]).map(
-                      (op: any, i: number) => (
-                        <Badge key={i} variant="outline">{typeof op === "string" ? op : op.name ?? JSON.stringify(op)}</Badge>
-                      ),
+                      (op: any, i: number) => {
+                        const label =
+                          typeof op === "string"
+                            ? op
+                            : op?.name ?? op?.title ?? op?.type ?? op?.code ?? `Operação ${i + 1}`;
+                        return <Badge key={i} variant="outline">{String(label)}</Badge>;
+                      },
                     )}
                   </div>
                 )}
