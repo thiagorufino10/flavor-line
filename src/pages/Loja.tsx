@@ -976,12 +976,13 @@ const Loja = () => {
 
           <DialogFooter>
             <Button
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="w-full bg-green-600 hover:bg-green-700 text-white disabled:opacity-60"
               size="lg"
+              disabled={storeClosed}
               onClick={sendToWhatsApp}
             >
               <MessageCircle className="w-5 h-5 mr-2" />
-              Enviar pedido pelo WhatsApp
+              {storeClosed ? "Loja fechada — pedidos indisponíveis" : "Enviar pedido pelo WhatsApp"}
             </Button>
           </DialogFooter>
         </DialogContent>
