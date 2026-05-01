@@ -767,7 +767,7 @@ export default function IfoodOrders() {
           <DialogHeader>
             <DialogTitle>Detalhes técnicos do pedido</DialogTitle>
             <DialogDescription>
-              Dados brutos retornados pelo iFood. Útil para auditoria e homologação.
+              Dados brutos retornados pelo iFood.
             </DialogDescription>
           </DialogHeader>
           {showTechnical && (
