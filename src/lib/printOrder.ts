@@ -17,6 +17,34 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
   const pageMm = is58 ? "58mm" : "80mm";
   const bodyMm = is58 ? "54mm" : "66mm";
 
+  const ifoodPayload = (order as any).ifood_payload ?? null;
+  const deliveryObs =
+    ifoodPayload?.delivery?.observations ??
+    ifoodPayload?.deliveryObservations ??
+    null;
+  const deliveryAddr =
+    ifoodPayload?.delivery?.deliveryAddress ?? ifoodPayload?.deliveryAddress ?? null;
+  const customerDoc =
+    ifoodPayload?.customer?.documentNumber ??
+    ifoodPayload?.customer?.cpf ??
+    ifoodPayload?.customer?.taxPayerIdentificationNumber ??
+    null;
+  const pickupCode = (order as any).ifood_pickup_code ?? null;
+  const orderType = (order as any).ifood_order_type ?? null;
+
+  const ifoodHtml = ifoodPayload
+    ? `<div class="line"></div>
+       <div class="left"><strong>iFood:</strong> ${orderType ?? "DELIVERY"}</div>
+       ${customerDoc ? `<div class="left"><strong>CPF/CNPJ:</strong> ${customerDoc}</div>` : ""}
+       ${pickupCode ? `<div class="left"><strong>Código de coleta:</strong> ${pickupCode}</div>` : ""}
+       ${
+         deliveryAddr
+           ? `<div class="left"><strong>Entrega:</strong> ${deliveryAddr.streetName ?? ""}${deliveryAddr.streetNumber ? ", " + deliveryAddr.streetNumber : ""} ${deliveryAddr.neighborhood ? "- " + deliveryAddr.neighborhood : ""}${deliveryAddr.complement ? " (" + deliveryAddr.complement + ")" : ""}</div>`
+           : ""
+       }
+       ${deliveryObs ? `<div class="left"><strong>Obs. ENTREGA:</strong> ${deliveryObs}</div>` : ""}`
+    : "";
+
   const itemsHtml = items
     .map((item) => {
       const complementsHtml =
