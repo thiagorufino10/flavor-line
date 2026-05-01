@@ -253,7 +253,7 @@ export default function IfoodIntegration() {
             <CardContent>
               {events.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  Nenhum evento ainda. O polling automático roda a cada 10s — assim que o iFood enviar um pedido, ele aparecerá aqui.
+                  Nenhum evento ainda. O polling automático roda a cada 30s — assim que o iFood enviar um pedido, ele aparecerá aqui.
                 </p>
               ) : (
                 <div className="space-y-2">
