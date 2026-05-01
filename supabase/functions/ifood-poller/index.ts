@@ -138,7 +138,18 @@ async function upsertOrderFromIfood(supabase: any, clientId: string, details: an
   const pickupCode = details.takeout?.takeoutDateTime ? null : details.pickupCode ?? details.takeout?.pickupCode ?? null;
 
   const payment = details.payments?.methods?.[0] ?? details.payments?.[0] ?? {};
-  const paymentMethodLabel = (payment.method ?? payment.code ?? "ifood").toString().toLowerCase();
+  const rawPaymentMethod = (payment.method ?? payment.code ?? payment.type ?? "").toString().toLowerCase();
+  // Normaliza para um dos 4 métodos + sufixo " ifood" (ex: "credito ifood", "pix ifood")
+  const normalizeIfoodMethod = (raw: string): string => {
+    const r = raw.toLowerCase();
+    if (r.includes("pix")) return "pix ifood";
+    if (r.includes("cash") || r.includes("dinheiro") || r.includes("money")) return "dinheiro ifood";
+    if (r.includes("debit") || r.includes("debito") || r.includes("vr") || r.includes("va") || r.includes("voucher") || r.includes("meal") || r.includes("food")) return "debito ifood";
+    if (r.includes("credit") || r.includes("credito") || r.includes("card")) return "credito ifood";
+    // Default: trata pagamento online iFood como crédito
+    return "credito ifood";
+  };
+  const paymentMethodLabel = normalizeIfoodMethod(rawPaymentMethod);
 
   const totalAmount = Number(
     details.total?.orderAmount ??
