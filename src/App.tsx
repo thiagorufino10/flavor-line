@@ -34,6 +34,7 @@ const DeliveryMenu = lazy(() => import("./pages/admin/DeliveryMenu"));
 const Loja = lazy(() => import("./pages/Loja"));
 const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
 const IfoodIntegration = lazy(() => import("./pages/admin/IfoodIntegration"));
+const LojaIfood = lazy(() => import("./pages/admin/LojaIfood"));
 const IfoodOrders = lazy(() => import("./pages/IfoodOrders"));
 
 const LazyFallback = () => (
@@ -85,6 +86,7 @@ const App = () => (
 
         {/* iFood (apenas para clientes com ifood_enabled=true) */}
         <Route path="/admin/ifood" element={<ProtectedRoute requiredRole={["admin"]}><IfoodIntegration /></ProtectedRoute>} />
+        <Route path="/admin/loja-ifood" element={<ProtectedRoute requiredRole={["admin"]}><LojaIfood /></ProtectedRoute>} />
         <Route path="/orders/ifood" element={<ProtectedRoute requiredRole={["admin", "atendente"]}><IfoodOrders /></ProtectedRoute>} />
 
         {/* Public routes */}
