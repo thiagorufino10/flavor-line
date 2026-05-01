@@ -54,6 +54,13 @@ const HOMOLOG_CHECKLIST = [
   { id: "obs", label: "Observações de entrega impressas na comanda (Restaurante)", done: true },
   { id: "sla", label: "Indicador de SLA visível na tela de aprovação", done: true },
   { id: "audit", label: "Auditoria: log de eventos + payload bruto disponível", done: true },
+  // Módulo Merchant (homologação)
+  { id: "merch_list", label: "Merchant · GET /merchants (lista lojas)", done: true },
+  { id: "merch_get", label: "Merchant · GET /merchants/{id} (detalhes + endereço)", done: true },
+  { id: "merch_status", label: "Merchant · GET /merchants/{id}/status (OK/WARNING/CLOSED/ERROR)", done: true },
+  { id: "merch_inter", label: "Merchant · GET/POST/DELETE /interruptions (pausas)", done: true },
+  { id: "merch_hours", label: "Merchant · GET/PUT /opening-hours (horários por turno)", done: true },
+  { id: "merch_errors", label: "Merchant · Erros padronizados {code,message} + Retry-After", done: true },
 ];
 
 function fmtRelative(iso: string) {
