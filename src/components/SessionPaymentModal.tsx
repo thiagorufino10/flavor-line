@@ -355,8 +355,8 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
               )}
             </div>
 
-            <Button className="w-full h-12 text-lg" onClick={handleSplitConfirm} disabled={!splitValid}>
-              Registrar pagamentos
+            <Button className="w-full h-12 text-lg" onClick={handleSplitConfirm} disabled={!splitValid || processing}>
+              {processing ? "Registrando..." : "Registrar pagamentos"}
             </Button>
           </div>
         )}
