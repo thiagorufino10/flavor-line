@@ -401,7 +401,15 @@ const Loja = () => {
           service_type: serviceType,
           neighborhood_name: serviceType === "delivery" ? selectedNeighborhood?.name ?? null : null,
           address_detail: serviceType === "delivery" ? addressDetail.trim() : null,
-          payment_method: paymentMethod,
+          payment_method: (() => {
+            // Padroniza forma de pagamento da loja com sufixo " delivery"
+            // (alinhado ao padrão "<metodo> ifood" usado pela integração iFood).
+            const m = paymentMethod.toLowerCase();
+            if (m === "pix") return "pix delivery";
+            if (m === "dinheiro") return "dinheiro delivery";
+            if (m === "cartão" || m === "cartao") return "cartao delivery";
+            return paymentMethod;
+          })(),
           notes: notes.trim() || null,
           items: cart.map((i) => ({
             name: i.name,
