@@ -109,25 +109,36 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
     }
   }, [splitAmount1, remaining, step]);
 
-  const handleSingleConfirm = () => {
+  const handleSingleConfirm = async () => {
+    if (processing) return;
     const base = parseFloat(amountStr) || 0;
     if (!singleMethod || base <= 0) return;
     const p = computePayment(singleMethod, base);
-    onConfirm(p.method, p.amount, p.netAmount);
-    onOpenChange(false);
+    setProcessing(true);
+    try {
+      await onConfirm(p.method, p.amount, p.netAmount);
+      onOpenChange(false);
+    } catch {
+      setProcessing(false);
+    }
   };
 
-  const handleSplitConfirm = () => {
+  const handleSplitConfirm = async () => {
+    if (processing) return;
     if (!splitMethod1 || !splitMethod2) return;
     const a1 = parseFloat(splitAmount1) || 0;
     const a2 = parseFloat(splitAmount2) || 0;
     if (a1 <= 0 || a2 <= 0) return;
     const p1 = computePayment(splitMethod1, a1);
     const p2 = computePayment(splitMethod2, a2);
-    // Registra duas parcelas separadas (cada uma vira uma linha em session_payments)
-    onConfirm(p1.method, p1.amount, p1.netAmount);
-    onConfirm(p2.method, p2.amount, p2.netAmount);
-    onOpenChange(false);
+    setProcessing(true);
+    try {
+      await onConfirm(p1.method, p1.amount, p1.netAmount);
+      await onConfirm(p2.method, p2.amount, p2.netAmount);
+      onOpenChange(false);
+    } catch {
+      setProcessing(false);
+    }
   };
 
   // ---------- Cálculos auxiliares ----------
