@@ -1,17 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, X, RefreshCw, Loader2, Truck, Package, ChevronDown, ChevronUp, Calendar, MapPin, CreditCard, Tag, User } from "lucide-react";
+import {
+  Check, X, RefreshCw, Loader2, Truck, Package, ChevronDown, ChevronUp,
+  Calendar, MapPin, CreditCard, Tag, User, Clock, AlertTriangle, Printer, Info,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -48,7 +46,10 @@ type IfoodOrder = {
 
 type CancellationReason = { cancelCodeId: string; description: string };
 
-// ---------- Helpers de exibição ----------
+// SLA da homologação iFood: confirmar pedido em até 10 min
+const SLA_CONFIRM_MINUTES = 10;
+
+// ---------- Helpers ----------
 const fmtCpfCnpj = (doc: string) => {
   const d = doc.replace(/\D/g, "");
   if (d.length === 11) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
@@ -56,8 +57,31 @@ const fmtCpfCnpj = (doc: string) => {
   return doc;
 };
 
+const minutesSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+
+function SlaBadge({ createdAt, status }: { createdAt: string; status: string | null }) {
+  // Só faz sentido enquanto está pendente
+  if (status !== "pendente") return null;
+  const mins = minutesSince(createdAt);
+  const remaining = SLA_CONFIRM_MINUTES - mins;
+  const danger = remaining <= 2;
+  const warn = remaining <= 5;
+  return (
+    <Badge
+      variant={danger ? "destructive" : warn ? "secondary" : "outline"}
+      className="gap-1"
+      title="SLA iFood: confirmar em até 10 min"
+    >
+      <Clock className="w-3 h-3" />
+      {remaining > 0 ? `SLA ${remaining}min` : `Atrasado ${Math.abs(remaining)}min`}
+    </Badge>
+  );
+}
+
 function PaymentInfo({ payload }: { payload: any }) {
   const methods = payload?.payments?.methods ?? payload?.payments ?? [];
+  const prepaidTotal = Number(payload?.payments?.prepaid ?? 0);
+  const pendingTotal = Number(payload?.payments?.pending ?? 0);
   if (!Array.isArray(methods) || methods.length === 0) return null;
 
   return (
@@ -69,20 +93,27 @@ function PaymentInfo({ payload }: { payload: any }) {
         const changeFor = isCash ? Number(m.cash?.changeFor ?? m.changeFor ?? 0) : 0;
         const value = Number(m.value ?? m.amount ?? 0);
         const prepaid = m.prepaid === true || m.type === "ONLINE";
+        const wallet = m.wallet?.name ?? null;
 
         return (
           <div key={i} className="flex items-center gap-2 flex-wrap">
             <CreditCard className="w-3 h-3 text-muted-foreground" />
             <span className="font-medium">
-              {method || "Pagamento"} {brand ? `· ${brand}` : ""} {prepaid ? "(pago online)" : "(na entrega)"}
+              {method || "Pagamento"} {brand ? `· ${brand}` : ""}{wallet ? ` · ${wallet}` : ""} {prepaid ? "(pago online)" : "(na entrega)"}
             </span>
             {value > 0 && <span className="text-muted-foreground">{formatBRL(value)}</span>}
             {isCash && changeFor > 0 && (
-              <Badge variant="secondary">Troco para {formatBRL(changeFor)}</Badge>
+              <Badge variant="secondary">Troco para {formatBRL(changeFor)} (devolver {formatBRL(Math.max(0, changeFor - value))})</Badge>
             )}
           </div>
         );
       })}
+      {(prepaidTotal > 0 || pendingTotal > 0) && (
+        <div className="text-xs text-muted-foreground pl-5">
+          {prepaidTotal > 0 && <span className="mr-3">Pago online: {formatBRL(prepaidTotal)}</span>}
+          {pendingTotal > 0 && <span>A receber: {formatBRL(pendingTotal)}</span>}
+        </div>
+      )}
     </div>
   );
 }
@@ -107,6 +138,7 @@ function BenefitsInfo({ payload }: { payload: any }) {
             </div>
             {Array.isArray(sponsorshipValues) && sponsorshipValues.length > 0 && (
               <div className="text-xs text-muted-foreground pl-5">
+                <strong>Quem paga:</strong>{" "}
                 {sponsorshipValues.map((s: any, j: number) => (
                   <span key={j} className="mr-3">
                     {s.name ?? s.sponsor ?? "—"}: {formatBRL(Number(s.value ?? 0))}
@@ -121,22 +153,54 @@ function BenefitsInfo({ payload }: { payload: any }) {
   );
 }
 
+function TotalsBreakdown({ payload, totalAmount }: { payload: any; totalAmount: number }) {
+  const total = payload?.total ?? {};
+  const subTotal = Number(total.subTotal ?? payload?.subTotal ?? 0);
+  const deliveryFee = Number(total.deliveryFee ?? payload?.deliveryFee ?? 0);
+  const additionalFees = Number(total.additionalFees ?? 0);
+  const benefits = Number(total.benefits ?? 0);
+  const orderAmount = Number(total.orderAmount ?? totalAmount ?? 0);
+
+  if (!subTotal && !deliveryFee && !benefits) {
+    return (
+      <div className="flex justify-between font-bold border-t pt-2">
+        <span>Total</span><span>{formatBRL(orderAmount || totalAmount)}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="text-sm border-t pt-2 space-y-1">
+      {subTotal > 0 && <div className="flex justify-between"><span>Subtotal</span><span>{formatBRL(subTotal)}</span></div>}
+      {deliveryFee > 0 && <div className="flex justify-between"><span>Taxa de entrega</span><span>{formatBRL(deliveryFee)}</span></div>}
+      {additionalFees > 0 && <div className="flex justify-between"><span>Taxas adicionais</span><span>{formatBRL(additionalFees)}</span></div>}
+      {benefits > 0 && <div className="flex justify-between text-green-700"><span>Descontos / cupons</span><span>- {formatBRL(benefits)}</span></div>}
+      <div className="flex justify-between font-bold pt-1"><span>Total</span><span>{formatBRL(orderAmount)}</span></div>
+    </div>
+  );
+}
+
 function CustomerInfo({ payload, pickupCode }: { payload: any; pickupCode: string | null }) {
   const customer = payload?.customer ?? {};
   const doc = customer.documentNumber ?? customer.cpf ?? customer.taxPayerIdentificationNumber;
   const phone = customer.phone?.number ?? customer.phone ?? null;
+  const localizer = customer.phone?.localizer ?? null;
+  const ordersCount = customer.ordersCountOnMerchant ?? null;
 
   return (
     <div className="space-y-1 text-sm">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <User className="w-3 h-3 text-muted-foreground" />
         <span className="font-medium">{customer.name ?? "—"}</span>
         {phone && <span className="text-muted-foreground">· {phone}</span>}
+        {localizer && <Badge variant="outline" className="text-[10px]">cód. {localizer}</Badge>}
+        {ordersCount !== null && (
+          <Badge variant="secondary" className="text-[10px]">{ordersCount}º pedido</Badge>
+        )}
       </div>
       {doc && <div className="text-xs text-muted-foreground pl-5">CPF/CNPJ: {fmtCpfCnpj(String(doc))}</div>}
       {pickupCode && (
         <div className="pl-5">
-          <Badge variant="outline" className="font-mono">Código de coleta: {pickupCode}</Badge>
+          <Badge variant="outline" className="font-mono text-base">Código de coleta: {pickupCode}</Badge>
         </div>
       )}
     </div>
@@ -151,12 +215,25 @@ function DeliveryInfo({ payload, orderType }: { payload: any; orderType: string 
       </div>
     );
   }
+  if (orderType === "INDOOR") {
+    return (
+      <div className="text-sm flex items-center gap-2">
+        <Package className="w-3 h-3 text-muted-foreground" /> Consumo no local
+      </div>
+    );
+  }
   const addr = payload?.delivery?.deliveryAddress ?? payload?.deliveryAddress ?? null;
   const obs = payload?.delivery?.observations ?? payload?.deliveryObservations ?? null;
+  const deliveredBy = payload?.delivery?.deliveredBy ?? null; // MERCHANT | IFOOD
   if (!addr && !obs) return null;
 
   return (
     <div className="space-y-1 text-sm">
+      {deliveredBy && (
+        <Badge variant="outline" className="text-[10px]">
+          Entrega: {deliveredBy === "IFOOD" ? "Logística iFood" : "Loja"}
+        </Badge>
+      )}
       {addr && (
         <div className="flex items-start gap-2">
           <MapPin className="w-3 h-3 text-muted-foreground mt-0.5" />
@@ -168,6 +245,7 @@ function DeliveryInfo({ payload, orderType }: { payload: any; orderType: string 
             <div className="text-xs text-muted-foreground">
               {addr.neighborhood ?? ""} {addr.city ? `· ${addr.city}` : ""} {addr.complement ? `· ${addr.complement}` : ""}
             </div>
+            {addr.postalCode && <div className="text-xs text-muted-foreground">CEP: {addr.postalCode}</div>}
             {addr.reference && <div className="text-xs text-muted-foreground">Ref: {addr.reference}</div>}
           </div>
         </div>
@@ -226,12 +304,20 @@ export default function IfoodOrders() {
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [showTechnical, setShowTechnical] = useState<IfoodOrder | null>(null);
+  const [tick, setTick] = useState(0); // re-render para atualizar SLA
 
   // Cancelamento
   const [cancelTarget, setCancelTarget] = useState<IfoodOrder | null>(null);
   const [cancelReasons, setCancelReasons] = useState<CancellationReason[]>([]);
   const [selectedReason, setSelectedReason] = useState<string>("");
   const [loadingReasons, setLoadingReasons] = useState(false);
+
+  // Atualiza SLA a cada 30s
+  useEffect(() => {
+    const t = setInterval(() => setTick((x) => x + 1), 30000);
+    return () => clearInterval(t);
+  }, []);
 
   const load = async () => {
     if (!clientId) return;
@@ -263,6 +349,28 @@ export default function IfoodOrders() {
     };
   }, [clientId]);
 
+  const reprintOrder = async (orderId: string) => {
+    try {
+      const { data: full } = await supabase
+        .from("orders")
+        .select(`
+          id, order_number, customer_name, total_amount, payment_method,
+          status, created_at, updated_at,
+          ifood_payload, ifood_order_type, ifood_pickup_code,
+          order_items (id, product_name, quantity, unit_price, total_price, complements, observations)
+        `)
+        .eq("id", orderId)
+        .maybeSingle();
+      if (full) {
+        await printOrder({ ...(full as any), items: (full as any).order_items ?? [] });
+        toast.success("Comanda reenviada à impressora");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Falha ao imprimir");
+    }
+  };
+
   const doAction = async (orderId: string, action: string, extra?: any) => {
     setActing(orderId);
     const { data, error } = await supabase.functions.invoke("ifood-order-action", {
@@ -276,26 +384,7 @@ export default function IfoodOrders() {
     toast.success("Ação executada com sucesso");
 
     if (action === "confirm") {
-      try {
-        const { data: full } = await supabase
-          .from("orders")
-          .select(`
-            id, order_number, customer_name, total_amount, payment_method,
-            status, created_at, updated_at,
-            ifood_payload, ifood_order_type, ifood_pickup_code,
-            order_items (
-              id, product_name, quantity, unit_price, total_price, complements, observations
-            )
-          `)
-          .eq("id", orderId)
-          .maybeSingle();
-        if (full) {
-          await printOrder({ ...(full as any), items: (full as any).order_items ?? [] });
-        }
-      } catch (e) {
-        console.error("Falha ao imprimir cupom iFood:", e);
-        toast.error("Pedido aceito, mas falhou ao imprimir o cupom");
-      }
+      await reprintOrder(orderId);
     }
     load();
     return true;
@@ -377,13 +466,28 @@ export default function IfoodOrders() {
     (o) => o.approval_status === "rejeitado" || o.status === "cancelado" || o.ifood_status === "CANCELLED"
   );
 
+  // Alerta global se houver pedidos perto de violar SLA
+  const slaAlerts = useMemo(() => {
+    void tick;
+    return pendentes.filter((p) => SLA_CONFIRM_MINUTES - minutesSince(p.created_at) <= 5);
+  }, [pendentes, tick]);
+
   const renderRichCard = (o: IfoodOrder, footer: React.ReactNode) => {
     const isExp = !!expanded[o.id];
     return (
-      <Card key={o.id} className={o.approval_status === "pendente" ? "border-amber-300" : ""}>
+      <Card
+        key={o.id}
+        className={
+          o.approval_status === "pendente"
+            ? SLA_CONFIRM_MINUTES - minutesSince(o.created_at) <= 2
+              ? "border-destructive border-2"
+              : "border-amber-300"
+            : ""
+        }
+      >
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-base">
+            <CardTitle className="text-base flex items-center gap-2">
               #{o.order_number} · {o.customer_name}
             </CardTitle>
             <span className="font-bold">{formatBRL(Number(o.total_amount))}</span>
@@ -393,8 +497,17 @@ export default function IfoodOrders() {
             {o.ifood_order_timing === "SCHEDULED" && (
               <ScheduledBadge scheduledFor={o.ifood_scheduled_for} />
             )}
+            <SlaBadge createdAt={o.created_at} status={o.approval_status} />
             <span>iFood {o.external_order_id?.slice(0, 8)}…</span>
             <span>· {new Date(o.created_at).toLocaleTimeString("pt-BR")}</span>
+            <button
+              type="button"
+              onClick={() => setShowTechnical(o)}
+              className="ml-auto inline-flex items-center gap-1 text-primary hover:underline"
+              title="Ver dados técnicos do pedido (auditoria)"
+            >
+              <Info className="w-3 h-3" /> Detalhes
+            </button>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -412,7 +525,12 @@ export default function IfoodOrders() {
             {isExp ? <ChevronUp className="w-3 h-3 mr-1" /> : <ChevronDown className="w-3 h-3 mr-1" />}
             {isExp ? "Ocultar itens" : `Ver ${o.order_items?.length ?? 0} itens`}
           </Button>
-          {isExp && <OrderItemsList items={o.order_items} />}
+          {isExp && (
+            <>
+              <OrderItemsList items={o.order_items} />
+              <TotalsBreakdown payload={o.ifood_payload} totalAmount={o.total_amount} />
+            </>
+          )}
 
           {footer}
         </CardContent>
@@ -423,7 +541,7 @@ export default function IfoodOrders() {
   return (
     <AppLayout
       title="Pedidos iFood"
-      subtitle="Aprove manualmente antes de enviar para a cozinha"
+      subtitle="Aprovação manual · SLA 10 min para confirmação (homologação iFood)"
       actions={
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
           <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
@@ -432,6 +550,17 @@ export default function IfoodOrders() {
       }
     >
       <div className="space-y-6">
+        {slaAlerts.length > 0 && (
+          <div className="flex items-start gap-2 p-3 rounded-md border-2 border-destructive bg-destructive/10">
+            <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <strong className="text-destructive">Atenção — SLA crítico:</strong>{" "}
+              {slaAlerts.length} pedido(s) prestes a violar o SLA de confirmação iFood (10 min).
+              Aceite ou rejeite agora para evitar cancelamento automático.
+            </div>
+          </div>
+        )}
+
         {/* Aguardando aprovação */}
         <section>
           <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -488,6 +617,14 @@ export default function IfoodOrders() {
                     <div className="flex-1" />
                     <Button
                       size="sm"
+                      variant="ghost"
+                      onClick={() => reprintOrder(o.id)}
+                      title="Reimprimir comanda"
+                    >
+                      <Printer className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      size="sm"
                       variant="outline"
                       onClick={() => doAction(o.id, "readyToPickup")}
                       disabled={acting === o.id || o.ifood_status === "READY_TO_PICKUP"}
@@ -535,10 +672,17 @@ export default function IfoodOrders() {
                 <p className="text-sm text-muted-foreground">Nenhum pedido finalizado.</p>
               ) : (
                 finalizados.slice(0, 20).map((o) => (
-                  <div key={o.id} className="flex items-center justify-between p-3 border rounded text-sm">
-                    <span>#{o.order_number} · {o.customer_name}</span>
+                  <div key={o.id} className="flex items-center justify-between gap-2 p-3 border rounded text-sm">
+                    <span className="flex-1">#{o.order_number} · {o.customer_name}</span>
+                    <Badge variant="outline" className="text-[10px]">{o.ifood_order_type ?? "DELIVERY"}</Badge>
                     <Badge variant="secondary">{o.ifood_status ?? o.status}</Badge>
                     <span>{formatBRL(Number(o.total_amount))}</span>
+                    <Button size="sm" variant="ghost" onClick={() => reprintOrder(o.id)} title="Reimprimir">
+                      <Printer className="w-3 h-3" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowTechnical(o)} title="Ver detalhes">
+                      <Info className="w-3 h-3" />
+                    </Button>
                   </div>
                 ))
               )}
@@ -548,13 +692,25 @@ export default function IfoodOrders() {
               {cancelados.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhum pedido cancelado.</p>
               ) : (
-                cancelados.slice(0, 20).map((o) => (
-                  <div key={o.id} className="flex items-center justify-between p-3 border rounded text-sm">
-                    <span>#{o.order_number} · {o.customer_name}</span>
-                    <Badge variant="destructive">{o.ifood_status ?? o.status}</Badge>
-                    <span>{formatBRL(Number(o.total_amount))}</span>
-                  </div>
-                ))
+                cancelados.slice(0, 20).map((o) => {
+                  const reason =
+                    o.ifood_payload?.cancellation?.reason ??
+                    o.ifood_payload?.cancellationReason ??
+                    null;
+                  return (
+                    <div key={o.id} className="flex items-center justify-between gap-2 p-3 border rounded text-sm">
+                      <div className="flex-1">
+                        <div>#{o.order_number} · {o.customer_name}</div>
+                        {reason && <div className="text-xs text-muted-foreground">Motivo: {reason}</div>}
+                      </div>
+                      <Badge variant="destructive">{o.ifood_status ?? o.status}</Badge>
+                      <span>{formatBRL(Number(o.total_amount))}</span>
+                      <Button size="sm" variant="ghost" onClick={() => setShowTechnical(o)}>
+                        <Info className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  );
+                })
               )}
             </TabsContent>
           </Tabs>
@@ -601,6 +757,44 @@ export default function IfoodOrders() {
             >
               Confirmar cancelamento
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de detalhes técnicos (auditoria homologação) */}
+      <Dialog open={!!showTechnical} onOpenChange={(o) => !o && setShowTechnical(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Detalhes técnicos do pedido</DialogTitle>
+            <DialogDescription>
+              Dados brutos retornados pelo iFood. Útil para auditoria e homologação.
+            </DialogDescription>
+          </DialogHeader>
+          {showTechnical && (
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-2">
+                <div><strong>Order ID iFood:</strong></div><div className="font-mono text-xs break-all">{showTechnical.external_order_id}</div>
+                <div><strong>Order ID interno:</strong></div><div className="font-mono text-xs break-all">{showTechnical.id}</div>
+                <div><strong>Tipo:</strong></div><div>{showTechnical.ifood_order_type ?? "—"}</div>
+                <div><strong>Timing:</strong></div><div>{showTechnical.ifood_order_timing ?? "—"}</div>
+                <div><strong>Status iFood:</strong></div><div>{showTechnical.ifood_status ?? "—"}</div>
+                <div><strong>Status interno:</strong></div><div>{showTechnical.status}</div>
+                <div><strong>Aprovação:</strong></div><div>{showTechnical.approval_status ?? "—"}</div>
+                <div><strong>Recebido em:</strong></div><div>{new Date(showTechnical.created_at).toLocaleString("pt-BR")}</div>
+                {showTechnical.ifood_pickup_code && (<>
+                  <div><strong>Cód. coleta:</strong></div><div className="font-mono">{showTechnical.ifood_pickup_code}</div>
+                </>)}
+              </div>
+              <div>
+                <strong className="text-xs">Payload iFood (JSON):</strong>
+                <pre className="mt-1 text-[10px] bg-muted p-2 rounded max-h-72 overflow-auto whitespace-pre-wrap break-all">
+{JSON.stringify(showTechnical.ifood_payload, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTechnical(null)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
