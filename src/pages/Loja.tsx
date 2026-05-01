@@ -157,7 +157,7 @@ const Loja = () => {
       setClientId(cid);
 
       // 2. Carrega tudo já filtrado por client_id
-      const [{ data: cfg }, { data: nb }, { data: menu }] = await Promise.all([
+      const [{ data: cfg }, { data: nb }, { data: menu }, { data: closedCfg }] = await Promise.all([
         supabase
           .from("system_settings")
           .select("value")
@@ -176,9 +176,16 @@ const Loja = () => {
           .eq("client_id", cid)
           .eq("active", true)
           .order("sort_order"),
+        supabase
+          .from("system_settings")
+          .select("value")
+          .eq("client_id", cid)
+          .eq("key", "store_closed")
+          .maybeSingle(),
       ]);
       if (cfg?.value) setWhatsappNumber(String(cfg.value));
       setNeighborhoods((nb as any[]) || []);
+      setStoreClosed(String(closedCfg?.value ?? "false") === "true");
 
       const items = (menu as any[]) || [];
       const prods: Product[] = items
