@@ -32,12 +32,19 @@ type Interruption = { id?: string; description: string; start: string; end: stri
 function safe(v: any): string {
   if (v == null) return "—";
   if (typeof v === "string" || typeof v === "number") return String(v);
+  if (typeof v === "boolean") return v ? "Sim" : "Não";
   if (typeof v === "object") {
     return (
-      v.name ?? v.title ?? v.label ?? v.description ?? v.code ?? v.value ?? ""
+      v.name ?? v.title ?? v.label ?? v.subtitle ?? v.description ?? v.code ?? v.value ?? JSON.stringify(v)
     ).toString();
   }
   return String(v);
+}
+
+function safeDate(v: any): string {
+  const raw = safe(v);
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? raw : date.toLocaleString("pt-BR");
 }
 
 async function call<T = any>(action: string, payload: Record<string, any> = {}): Promise<ApiResp<T>> {
@@ -249,7 +256,7 @@ export function IfoodMerchantPanel() {
                 onClick={() => setMerchantId(m.id)}
                 className="underline hover:text-primary mr-2"
               >
-                {m.name ?? m.corporateName ?? m.id}
+                {safe(m.name ?? m.corporateName ?? m.id)}
               </button>
             ))}
           </div>
@@ -322,11 +329,11 @@ export function IfoodMerchantPanel() {
                 <div className="flex items-center gap-2">
                   <Power className="w-4 h-4" />
                   <Badge variant={statusColor}>
-                    {statusInfo.state ?? statusInfo[0]?.state ?? "—"}
+                    {safe(statusInfo.state ?? statusInfo[0]?.state)}
                   </Badge>
                   <span className="text-sm">
                     Disponível:{" "}
-                    {String(statusInfo.available ?? statusInfo[0]?.available ?? "—")}
+                    {safe(statusInfo.available ?? statusInfo[0]?.available)}
                   </span>
                 </div>
                 {Array.isArray(statusInfo) && statusInfo[0]?.validations && (
@@ -338,8 +345,8 @@ export function IfoodMerchantPanel() {
                         ) : (
                           <AlertTriangle className="w-3 h-3 text-amber-600" />
                         )}
-                        <span className="font-mono">{v.id}</span>
-                        <span className="text-muted-foreground">— {v.message ?? v.state}</span>
+                        <span className="font-mono">{safe(v.id)}</span>
+                        <span className="text-muted-foreground">— {safe(v.message ?? v.state)}</span>
                       </div>
                     ))}
                   </div>
@@ -407,10 +414,9 @@ export function IfoodMerchantPanel() {
                 {interruptions.map((i) => (
                   <div key={i.id} className="border rounded p-3 flex justify-between items-center text-sm">
                     <div>
-                      <div className="font-medium">{i.description}</div>
+                      <div className="font-medium">{safe(i.description)}</div>
                       <div className="text-xs text-muted-foreground">
-                        {new Date(i.start).toLocaleString("pt-BR")} →{" "}
-                        {new Date(i.end).toLocaleString("pt-BR")}
+                        {safeDate(i.start)} → {safeDate(i.end)}
                       </div>
                     </div>
                     {i.id && (
