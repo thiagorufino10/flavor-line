@@ -178,7 +178,7 @@ export const SessionPaymentModal = ({ open, onOpenChange, remaining, onConfirm }
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => {
-      if (processing && !nextOpen) return;
+      if (processingRef.current && !nextOpen) return;
       onOpenChange(nextOpen);
     }}>
       <DialogContent className="sm:max-w-md">
