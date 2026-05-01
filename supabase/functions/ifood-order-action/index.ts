@@ -8,7 +8,7 @@ const corsHeaders = {
 
 const IFOOD_BASE = "https://merchant-api.ifood.com.br";
 
-const VALID_ACTIONS = ["confirm", "dispatch", "cancel", "readyToPickup"];
+const VALID_ACTIONS = ["confirm", "dispatch", "cancel", "readyToPickup", "getCancellationReasons"];
 
 async function getIfoodToken(supabase: any, environment: string): Promise<string> {
   const { data: cached } = await supabase
@@ -137,6 +137,25 @@ Deno.serve(async (req) => {
 
     const environment = cred?.environment ?? "sandbox";
     const token = await getIfoodToken(admin, environment);
+
+    // Action especial: lista de motivos de cancelamento dinâmica do iFood
+    if (action === "getCancellationReasons") {
+      const reasonsResp = await fetch(
+        `${IFOOD_BASE}/order/v1.0/orders/${order.external_order_id}/cancellationReasons`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!reasonsResp.ok) {
+        const t = await reasonsResp.text();
+        return new Response(JSON.stringify({ error: `iFood [${reasonsResp.status}]: ${t}` }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const reasons = await reasonsResp.json();
+      return new Response(JSON.stringify({ ok: true, reasons }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Mapeia para o endpoint correto da Order API v1.0
     const endpointMap: Record<string, string> = {

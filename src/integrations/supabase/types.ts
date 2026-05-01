@@ -583,6 +583,11 @@ export type Database = {
           customer_name: string
           external_order_id: string | null
           id: string
+          ifood_order_timing: string | null
+          ifood_order_type: string | null
+          ifood_payload: Json | null
+          ifood_pickup_code: string | null
+          ifood_scheduled_for: string | null
           ifood_status: string | null
           order_number: number
           origin: string
@@ -599,6 +604,11 @@ export type Database = {
           customer_name: string
           external_order_id?: string | null
           id?: string
+          ifood_order_timing?: string | null
+          ifood_order_type?: string | null
+          ifood_payload?: Json | null
+          ifood_pickup_code?: string | null
+          ifood_scheduled_for?: string | null
           ifood_status?: string | null
           order_number?: number
           origin?: string
@@ -615,6 +625,11 @@ export type Database = {
           customer_name?: string
           external_order_id?: string | null
           id?: string
+          ifood_order_timing?: string | null
+          ifood_order_type?: string | null
+          ifood_payload?: Json | null
+          ifood_pickup_code?: string | null
+          ifood_scheduled_for?: string | null
           ifood_status?: string | null
           order_number?: number
           origin?: string
