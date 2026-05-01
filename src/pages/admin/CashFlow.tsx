@@ -94,30 +94,38 @@ const CashFlow = () => {
       const [
         { data: manualTx, error: e1 },
         { data: orders, error: e2 },
+        { data: sessionPays, error: e3 },
         { data: rates },
         { data: settings },
       ] = await Promise.all([
         supabase.from("cash_flow_transactions").select("*").order("transaction_date", { ascending: false }),
         supabase.from("orders").select("*").order("created_at", { ascending: false }),
+        supabase
+          .from("session_payments")
+          .select("id, payment_method, amount, net_amount, created_at, table_session_id, table_sessions(customer_name, tables(name))")
+          .order("created_at", { ascending: false }),
         supabase.from("payment_rates").select("payment_method, rate_percentage"),
         supabase.from("system_settings").select("key, value").like("key", "tax_payer_%"),
       ]);
       if (e1) throw e1;
       if (e2) throw e2;
+      if (e3) throw e3;
 
       const rateMap: Record<string, number> = {};
       (rates || []).forEach(r => { rateMap[r.payment_method] = parseFloat(String(r.rate_percentage)); });
       const taxPayerMap: Record<string, string> = {};
       (settings || []).forEach(s => { taxPayerMap[s.key.replace("tax_payer_", "")] = s.value; });
 
+      // Extrai o método base (remove sufixo " ifood") para cálculo de taxa
+      const baseMethod = (m: string) => m.replace(/\s+ifood$/i, "").trim();
+
       // Retorna o valor líquido (o que efetivamente entra no caixa) considerando taxa do estabelecimento
       const netForMethod = (method: string, gross: number): number => {
-        if (method !== "credito" && method !== "debito") return gross;
-        const rate = rateMap[method] || 0;
-        const payer = taxPayerMap[method] || (method === "credito" ? "cliente" : "estabelecimento");
-        if (payer === "cliente") return gross; // cliente já pagou a taxa, valor cheio entra
-        // estabelecimento absorve a taxa: gross = valor_base + 0; precisamos extrair a taxa de gross
-        // gross é o valor base (pois o cliente não paga taxa nesse caso) → desconta a taxa
+        const m = baseMethod(method);
+        if (m !== "credito" && m !== "debito") return gross;
+        const rate = rateMap[m] || 0;
+        const payer = taxPayerMap[m] || (m === "credito" ? "cliente" : "estabelecimento");
+        if (payer === "cliente") return gross;
         return gross - (gross * rate / 100);
       };
 
@@ -132,31 +140,55 @@ const CashFlow = () => {
         source: "manual" as const,
       }));
 
-      const sales: Transaction[] = (orders || []).map((order) => {
-        const gross = parseFloat(String(order.total_amount));
-        // Calcula líquido por método (split: divide proporcionalmente, considerando que cada parte pode ter taxa diferente)
-        let net = gross;
-        if (order.payment_method.includes("/")) {
-          // Para split, conservadoramente aplica a regra do método mais "caro" — mantém compat antiga.
-          const methods = order.payment_method.split("/").map(m => m.trim());
-          const portion = gross / methods.length;
-          net = methods.reduce((sum, m) => sum + netForMethod(m, portion), 0);
-        } else {
-          net = netForMethod(order.payment_method, gross);
-        }
+      // Pedidos: ignora pagamentos "mesa" (entram no caixa apenas via session_payments quando o cliente fecha a conta).
+      const sales: Transaction[] = (orders || [])
+        .filter((order) => {
+          const pm = (order.payment_method || "").toLowerCase().trim();
+          return pm !== "mesa";
+        })
+        .map((order) => {
+          const gross = parseFloat(String(order.total_amount));
+          let net = gross;
+          if (order.payment_method.includes("/")) {
+            const methods = order.payment_method.split("/").map(m => m.trim());
+            const portion = gross / methods.length;
+            net = methods.reduce((sum, m) => sum + netForMethod(m, portion), 0);
+          } else {
+            net = netForMethod(order.payment_method, gross);
+          }
+          const isIfood = order.origin === "ifood";
+          return {
+            id: `order-${order.id}`,
+            rawDate: new Date(order.created_at),
+            type: "entrada" as const,
+            description: `Pedido #${order.order_number} - ${order.customer_name}`,
+            category: isIfood ? "Vendas iFood" : "Vendas",
+            amount: net,
+            paymentMethod: formatPaymentMethod(order.payment_method),
+            source: "venda" as const,
+          };
+        });
+
+      // Pagamentos de mesa: cada session_payment vira uma entrada de venda no caixa.
+      const sessionSales: Transaction[] = (sessionPays || []).map((p: any) => {
+        const tableName = p.table_sessions?.tables?.name || "Mesa";
+        const customer = p.table_sessions?.customer_name || "";
+        const desc = customer
+          ? `Mesa ${tableName} - ${customer}`
+          : `Mesa ${tableName}`;
         return {
-          id: `order-${order.id}`,
-          rawDate: new Date(order.created_at),
+          id: `sp-${p.id}`,
+          rawDate: new Date(p.created_at),
           type: "entrada" as const,
-          description: `Pedido #${order.order_number} - ${order.customer_name}`,
-          category: "Vendas",
-          amount: net,
-          paymentMethod: formatPaymentMethod(order.payment_method),
+          description: desc,
+          category: "Vendas Mesa",
+          amount: parseFloat(String(p.net_amount ?? p.amount)),
+          paymentMethod: formatPaymentMethod(p.payment_method),
           source: "venda" as const,
         };
       });
 
-      setTransactions([...manual, ...sales].sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime()));
+      setTransactions([...manual, ...sales, ...sessionSales].sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime()));
     } catch (error) {
       console.error("Erro ao buscar transações:", error);
       toast({ title: "Erro", description: "Erro ao carregar transações", variant: "destructive" });
