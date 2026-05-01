@@ -508,6 +508,15 @@ export default function IfoodIntegration() {
                     <li><code>POST /order/v1.0/orders/{`{orderId}`}/dispatch</code></li>
                     <li><code>GET  /order/v1.0/orders/{`{orderId}`}/cancellationReasons</code></li>
                     <li><code>POST /order/v1.0/orders/{`{orderId}`}/requestCancellation</code></li>
+                    <li className="pt-2 font-semibold text-foreground">Módulo Merchant</li>
+                    <li><code>GET  /merchant/v1.0/merchants</code></li>
+                    <li><code>GET  /merchant/v1.0/merchants/{`{id}`}</code></li>
+                    <li><code>GET  /merchant/v1.0/merchants/{`{id}`}/status</code></li>
+                    <li><code>GET  /merchant/v1.0/merchants/{`{id}`}/interruptions</code></li>
+                    <li><code>POST /merchant/v1.0/merchants/{`{id}`}/interruptions</code></li>
+                    <li><code>DELETE /merchant/v1.0/merchants/{`{id}`}/interruptions/{`{interruptionId}`}</code></li>
+                    <li><code>GET  /merchant/v1.0/merchants/{`{id}`}/opening-hours</code></li>
+                    <li><code>PUT  /merchant/v1.0/merchants/{`{id}`}/opening-hours</code></li>
                   </ul>
                 </div>
               </CardContent>
