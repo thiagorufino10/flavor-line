@@ -349,6 +349,11 @@ const CashFlow = () => {
   return (
     <AppLayout title="Fluxo de Caixa" subtitle="Controle completo de entradas e saídas">
 <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Aviso sobre valor líquido */}
+        <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-muted-foreground">
+          <strong className="text-foreground">Valor líquido:</strong> as vendas em crédito/débito aparecem aqui já com a taxa da maquininha descontada (quando o estabelecimento é o pagador). Por isso o total pode ser menor que o exibido em <strong className="text-foreground">Relatórios</strong>, que mostra o valor bruto faturado.
+        </div>
+
         {/* Filtros */}
         <Card>
           <CardHeader className="pb-3">
