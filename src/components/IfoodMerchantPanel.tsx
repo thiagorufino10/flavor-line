@@ -262,25 +262,21 @@ export function IfoodMerchantPanel() {
             </div>
             {merchantInfo ? (
               <div className="border rounded p-3 space-y-2 text-sm">
-                <div><strong>Nome:</strong> {merchantInfo.name ?? "—"}</div>
-                <div><strong>Razão social:</strong> {merchantInfo.corporateName ?? "—"}</div>
+                <div><strong>Nome:</strong> {safe(merchantInfo.name)}</div>
+                <div><strong>Razão social:</strong> {safe(merchantInfo.corporateName)}</div>
                 {merchantInfo.address && (
                   <div className="text-xs text-muted-foreground">
-                    📍 {merchantInfo.address.street}, {merchantInfo.address.number} —{" "}
-                    {merchantInfo.address.neighborhood}, {merchantInfo.address.city}/
-                    {merchantInfo.address.state}
+                    📍 {safe(merchantInfo.address.street)}, {safe(merchantInfo.address.number)} —{" "}
+                    {safe(merchantInfo.address.neighborhood)}, {safe(merchantInfo.address.city)}/
+                    {safe(merchantInfo.address.state)}
                   </div>
                 )}
                 {merchantInfo.operations && (
                   <div className="flex gap-1 flex-wrap">
                     {(Array.isArray(merchantInfo.operations) ? merchantInfo.operations : [merchantInfo.operations]).map(
-                      (op: any, i: number) => {
-                        const label =
-                          typeof op === "string"
-                            ? op
-                            : op?.name ?? op?.title ?? op?.type ?? op?.code ?? `Operação ${i + 1}`;
-                        return <Badge key={i} variant="outline">{String(label)}</Badge>;
-                      },
+                      (op: any, i: number) => (
+                        <Badge key={i} variant="outline">{safe(op) || `Operação ${i + 1}`}</Badge>
+                      ),
                     )}
                   </div>
                 )}
