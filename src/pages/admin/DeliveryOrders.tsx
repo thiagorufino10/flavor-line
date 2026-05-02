@@ -163,7 +163,7 @@ const DeliveryOrdersPage = () => {
   const [orders, setOrders] = useState<DeliveryOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [soundOn, setSoundOn] = useState(true);
-  const [filter, setFilter] = useState<"ativos" | "entregues">("ativos");
+  const [filter, setFilter] = useState<"ativos" | "entregues" | "cancelados">("ativos");
   const seenIds = useRef<Set<string>>(new Set());
   const initialized = useRef(false);
 
