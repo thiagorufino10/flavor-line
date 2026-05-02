@@ -21,6 +21,7 @@ import {
   Store,
 } from "lucide-react";
 import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
+import { useNewDeliveryCount } from "@/hooks/useNewDeliveryCount";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
