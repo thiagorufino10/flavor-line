@@ -83,6 +83,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { userRole, signOut } = useAuth();
   const { enabled: ifoodEnabled } = useIfoodEnabled();
+  const newDeliveryCount = useNewDeliveryCount();
   const [systemName, setSystemName] = useState("TARMFood");
   const [logoUrl, setLogoUrl] = useState("");
 
