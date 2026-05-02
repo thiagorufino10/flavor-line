@@ -89,11 +89,13 @@ export function AppSidebar() {
   const ifoodOperacao: Item[] = ifoodEnabled
     ? [{ title: "Pedidos iFood", url: "/orders/ifood", icon: Plug, roles: ["admin", "atendente"] }]
     : [];
-  const ifoodGestao: Item[] = ifoodEnabled
-    ? [{ title: "Loja iFood", url: "/admin/loja-ifood", icon: Store, roles: ["admin"] }]
-    : [];
-  const ifoodConfig: Item[] = ifoodEnabled
-    ? [{ title: "Integração iFood", url: "/admin/ifood", icon: Plug, roles: ["admin"] }]
+  const ifoodGestao: Item[] = [];
+  const ifoodConfig: Item[] = [];
+  const ifoodConfiguracoes: Item[] = ifoodEnabled
+    ? [
+        { title: "Integração iFood", url: "/admin/ifood", icon: Plug, roles: ["admin"] },
+        { title: "Loja iFood", url: "/admin/loja-ifood", icon: Store, roles: ["admin"] },
+      ]
     : [];
 
   useEffect(() => {
@@ -164,6 +166,15 @@ export function AppSidebar() {
             <SidebarGroupLabel>Configurações</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{renderItems(filter([...configuracoes, ...ifoodConfig]))}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {filter(ifoodConfiguracoes).length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Configurações iFood</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderItems(filter(ifoodConfiguracoes))}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
