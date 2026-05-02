@@ -356,7 +356,9 @@ const DeliveryOrdersPage = () => {
               <p className="text-muted-foreground">
                 {filter === "ativos"
                   ? "Nenhum pedido ativo no momento. Quando um cliente fizer um pedido pela loja online, ele aparecerá aqui automaticamente."
-                  : "Nenhum pedido entregue ainda."}
+                  : filter === "entregues"
+                  ? "Nenhum pedido entregue ainda."
+                  : "Nenhum pedido cancelado."}
               </p>
             </CardContent>
           </Card>
