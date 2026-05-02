@@ -339,10 +339,11 @@ const DeliveryOrdersPage = () => {
       }
     >
       <div className="space-y-4">
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as "ativos" | "entregues")}>
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as "ativos" | "entregues" | "cancelados")}>
           <TabsList>
             <TabsTrigger value="ativos">Ativos ({activeCount})</TabsTrigger>
             <TabsTrigger value="entregues">Entregues ({doneCount})</TabsTrigger>
+            <TabsTrigger value="cancelados">Cancelados ({canceledCount})</TabsTrigger>
           </TabsList>
         </Tabs>
 
