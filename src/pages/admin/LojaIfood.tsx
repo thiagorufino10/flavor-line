@@ -90,6 +90,8 @@ export default function LojaIfood() {
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   const [statusInfo, setStatusInfo] = useState<ReturnType<typeof normalizeStatus> | null>(null);
+  const [merchantDetails, setMerchantDetails] = useState<any>(null);
+  const [merchantsList, setMerchantsList] = useState<any[]>([]);
   const [shifts, setShifts] = useState<Record<string, { start: string; end: string; enabled: boolean }>>(
     Object.fromEntries(DAYS.map((d) => [d.key, { start: "08:00", end: "18:00", enabled: false }])),
   );
@@ -98,33 +100,50 @@ export default function LojaIfood() {
   const [pauseReason, setPauseReason] = useState("");
   const [pauseDuration, setPauseDuration] = useState("60");
 
+  // iFood exige polling de status >= 30s. Bloqueamos refresh manual mais frequente.
+  const [lastRefresh, setLastRefresh] = useState<number>(0);
+
   async function call(action: string, body: any = {}) {
     const { data, error } = await supabase.functions.invoke("ifood-merchant", {
       body: { action, ...body },
     });
     if (error) throw new Error(error.message || "Erro ao chamar iFood");
-    if (!data?.ok) throw new Error(data?.message || "Erro iFood");
+    if (!data?.ok) {
+      const code = data?.code ? `[${data.code}] ` : "";
+      throw new Error(`${code}${data?.message || "Erro iFood"}`);
+    }
     return data.data;
   }
 
-  async function loadAll() {
+  async function loadAll(force = false) {
+    // Throttle de 30s (exigência iFood). Primeiro load (lastRefresh=0) sempre passa.
+    if (!force && lastRefresh > 0 && Date.now() - lastRefresh < 30_000) {
+      const wait = Math.ceil((30_000 - (Date.now() - lastRefresh)) / 1000);
+      toast({
+        title: "Aguarde para atualizar novamente",
+        description: `O iFood exige intervalo mínimo de 30s entre consultas de status. Tente em ${wait}s.`,
+      });
+      return;
+    }
     setLoading(true);
     try {
-      const [status, oh, ints] = await Promise.all([
+      const [status, oh, ints, details, list] = await Promise.all([
         call("get_status").catch((e) => { console.warn("status err:", e); return null; }),
         call("get_opening_hours").catch((e) => { console.warn("hours err:", e); return null; }),
         call("list_interruptions").catch((e) => { console.warn("ints err:", e); return []; }),
+        call("get_merchant").catch((e) => { console.warn("merchant err:", e); return null; }),
+        call("list_merchants").catch((e) => { console.warn("list err:", e); return []; }),
       ]);
 
       setStatusInfo(normalizeStatus(status));
+      setMerchantDetails(details);
+      setMerchantsList(Array.isArray(list) ? list : []);
 
       if (oh && Array.isArray(oh.shifts)) {
         const next: typeof shifts = Object.fromEntries(
           DAYS.map((d) => [d.key, { start: "08:00", end: "18:00", enabled: false }]),
         ) as any;
         for (const s of oh.shifts as Shift[]) {
-          // Presença no array = dia aberto. Ausência = fechado.
-          // Ignoramos shifts sem duração válida.
           if (!s?.dayOfWeek || !(Number(s.duration) > 0)) continue;
           const start = (s.start || "08:00:00").slice(0, 5);
           const end = durationToEnd(start, Number(s.duration));
@@ -134,6 +153,7 @@ export default function LojaIfood() {
       }
 
       setInterruptions(Array.isArray(ints) ? ints : []);
+      setLastRefresh(Date.now());
     } catch (e: any) {
       toast({ title: "Erro ao carregar dados do iFood", description: e.message, variant: "destructive" });
     } finally {
@@ -142,7 +162,7 @@ export default function LojaIfood() {
   }
 
   useEffect(() => {
-    if (!flagLoading && ifoodEnabled) loadAll();
+    if (!flagLoading && ifoodEnabled) loadAll(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flagLoading, ifoodEnabled]);
 
