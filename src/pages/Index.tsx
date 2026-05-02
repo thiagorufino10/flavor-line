@@ -73,14 +73,6 @@ const Index = () => {
       color: "bg-orange-50 text-orange-600",
     },
     {
-      icon: Tv,
-      title: "Display",
-      description: "Painel do cliente",
-      path: "/customer-display",
-      roles: ["admin", "atendente", "cozinha"],
-      color: "bg-purple-50 text-purple-600",
-    },
-    {
       icon: UtensilsCrossed,
       title: "Cardápio",
       description: "Pratos e preços",
