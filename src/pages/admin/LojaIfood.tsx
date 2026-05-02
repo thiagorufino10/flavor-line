@@ -280,7 +280,7 @@ export default function LojaIfood() {
       title="Loja iFood"
       subtitle="Configure horários e disponibilidade da sua loja no iFood"
       actions={
-        <Button variant="outline" size="sm" onClick={loadAll} disabled={loading}>
+        <Button variant="outline" size="sm" onClick={() => loadAll(false)} disabled={loading}>
           <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
           Atualizar
         </Button>
@@ -292,6 +292,66 @@ export default function LojaIfood() {
             <Store className="w-6 h-6 text-primary" /> Painel da Loja
           </h2>
         </div>
+
+        {/* DADOS DA LOJA (GET /merchants/{id}) */}
+        {merchantDetails && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Store className="w-5 h-5" /> {safe(merchantDetails.name) || "Loja"}
+              </CardTitle>
+              <CardDescription>Dados retornados pelo iFood (Merchant API).</CardDescription>
+            </CardHeader>
+            <CardContent className="grid sm:grid-cols-2 gap-3 text-sm">
+              <div><span className="text-muted-foreground">ID: </span><span className="font-mono text-xs">{safe(merchantDetails.id)}</span></div>
+              {merchantDetails.corporateName && (
+                <div><span className="text-muted-foreground">Razão social: </span>{safe(merchantDetails.corporateName)}</div>
+              )}
+              {merchantDetails.phones && (
+                <div><span className="text-muted-foreground">Telefone: </span>{safe(Array.isArray(merchantDetails.phones) ? merchantDetails.phones[0] : merchantDetails.phones)}</div>
+              )}
+              {merchantDetails.address && (
+                <div className="sm:col-span-2">
+                  <span className="text-muted-foreground">Endereço: </span>
+                  {[
+                    merchantDetails.address.street,
+                    merchantDetails.address.number,
+                    merchantDetails.address.neighborhood,
+                    merchantDetails.address.city,
+                    merchantDetails.address.state,
+                  ].filter(Boolean).join(", ") || "—"}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* LOJAS VINCULADAS AO TOKEN (GET /merchants) */}
+        {merchantsList.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Lojas vinculadas ao seu acesso</CardTitle>
+              <CardDescription>
+                Todas as lojas que o token tem permissão para gerenciar. A loja ativa neste sistema é a configurada em "Integração iFood".
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {merchantsList.map((m: any) => (
+                  <div key={m.id} className="flex items-center justify-between p-2 rounded border text-sm">
+                    <div>
+                      <div className="font-medium">{safe(m.name)}</div>
+                      <div className="text-xs text-muted-foreground font-mono">{safe(m.id)}</div>
+                    </div>
+                    {merchantDetails?.id === m.id && (
+                      <Badge variant="default">Ativa</Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* STATUS */}
         <Card>
