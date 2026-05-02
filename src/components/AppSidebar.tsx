@@ -21,6 +21,7 @@ import {
   Store,
 } from "lucide-react";
 import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
+import { useNewDeliveryCount } from "@/hooks/useNewDeliveryCount";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -82,6 +83,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { userRole, signOut } = useAuth();
   const { enabled: ifoodEnabled } = useIfoodEnabled();
+  const newDeliveryCount = useNewDeliveryCount();
   const [systemName, setSystemName] = useState("TARMFood");
   const [logoUrl, setLogoUrl] = useState("");
 
@@ -113,21 +115,32 @@ export function AppSidebar() {
   };
 
   const renderItems = (items: Item[]) =>
-    items.map((item) => (
-      <SidebarMenuItem key={item.title}>
-        <SidebarMenuButton asChild tooltip={item.title}>
-          <NavLink
-            to={item.url}
-            end
-            className="flex items-center gap-3 rounded-md hover:bg-muted/60"
-            activeClassName="bg-muted text-primary font-medium"
-          >
-            <item.icon className="w-4 h-4 shrink-0" />
-            {!collapsed && <span>{item.title}</span>}
-          </NavLink>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    ));
+    items.map((item) => {
+      const isDelivery = item.url === "/delivery-orders";
+      const showBadge = isDelivery && newDeliveryCount > 0;
+      return (
+        <SidebarMenuItem key={item.title}>
+          <SidebarMenuButton asChild tooltip={item.title}>
+            <NavLink
+              to={item.url}
+              end
+              className={`flex items-center gap-3 rounded-md hover:bg-muted/60 ${
+                showBadge ? "bg-orange-500/15 text-orange-600 dark:text-orange-400 animate-pulse" : ""
+              }`}
+              activeClassName="bg-muted text-primary font-medium"
+            >
+              <item.icon className="w-4 h-4 shrink-0" />
+              {!collapsed && <span className="flex-1">{item.title}</span>}
+              {showBadge && (
+                <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold rounded-full bg-orange-500 text-white">
+                  {newDeliveryCount}
+                </span>
+              )}
+            </NavLink>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      );
+    });
 
   return (
     <Sidebar collapsible="icon">
