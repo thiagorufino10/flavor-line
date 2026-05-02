@@ -163,7 +163,7 @@ const DeliveryOrdersPage = () => {
   const [orders, setOrders] = useState<DeliveryOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [soundOn, setSoundOn] = useState(true);
-  const [filter, setFilter] = useState<"ativos" | "entregues">("ativos");
+  const [filter, setFilter] = useState<"ativos" | "entregues" | "cancelados">("ativos");
   const seenIds = useRef<Set<string>>(new Set());
   const initialized = useRef(false);
 
@@ -313,10 +313,15 @@ const DeliveryOrdersPage = () => {
   };
 
   const filteredOrders = orders.filter((o) =>
-    filter === "ativos" ? ACTIVE_STATUSES.includes(o.status) : ["entregue", "cancelado"].includes(o.status),
+    filter === "ativos"
+      ? ACTIVE_STATUSES.includes(o.status)
+      : filter === "entregues"
+      ? o.status === "entregue"
+      : o.status === "cancelado",
   );
   const activeCount = orders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length;
-  const doneCount = orders.filter((o) => ["entregue", "cancelado"].includes(o.status)).length;
+  const doneCount = orders.filter((o) => o.status === "entregue").length;
+  const canceledCount = orders.filter((o) => o.status === "cancelado").length;
 
   return (
     <AppLayout
@@ -334,10 +339,11 @@ const DeliveryOrdersPage = () => {
       }
     >
       <div className="space-y-4">
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as "ativos" | "entregues")}>
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as "ativos" | "entregues" | "cancelados")}>
           <TabsList>
             <TabsTrigger value="ativos">Ativos ({activeCount})</TabsTrigger>
             <TabsTrigger value="entregues">Entregues ({doneCount})</TabsTrigger>
+            <TabsTrigger value="cancelados">Cancelados ({canceledCount})</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -350,7 +356,9 @@ const DeliveryOrdersPage = () => {
               <p className="text-muted-foreground">
                 {filter === "ativos"
                   ? "Nenhum pedido ativo no momento. Quando um cliente fizer um pedido pela loja online, ele aparecerá aqui automaticamente."
-                  : "Nenhum pedido entregue ainda."}
+                  : filter === "entregues"
+                  ? "Nenhum pedido entregue ainda."
+                  : "Nenhum pedido cancelado."}
               </p>
             </CardContent>
           </Card>
