@@ -90,6 +90,8 @@ export default function LojaIfood() {
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   const [statusInfo, setStatusInfo] = useState<ReturnType<typeof normalizeStatus> | null>(null);
+  const [merchantDetails, setMerchantDetails] = useState<any>(null);
+  const [merchantsList, setMerchantsList] = useState<any[]>([]);
   const [shifts, setShifts] = useState<Record<string, { start: string; end: string; enabled: boolean }>>(
     Object.fromEntries(DAYS.map((d) => [d.key, { start: "08:00", end: "18:00", enabled: false }])),
   );
@@ -98,33 +100,50 @@ export default function LojaIfood() {
   const [pauseReason, setPauseReason] = useState("");
   const [pauseDuration, setPauseDuration] = useState("60");
 
+  // iFood exige polling de status >= 30s. Bloqueamos refresh manual mais frequente.
+  const [lastRefresh, setLastRefresh] = useState<number>(0);
+
   async function call(action: string, body: any = {}) {
     const { data, error } = await supabase.functions.invoke("ifood-merchant", {
       body: { action, ...body },
     });
     if (error) throw new Error(error.message || "Erro ao chamar iFood");
-    if (!data?.ok) throw new Error(data?.message || "Erro iFood");
+    if (!data?.ok) {
+      const code = data?.code ? `[${data.code}] ` : "";
+      throw new Error(`${code}${data?.message || "Erro iFood"}`);
+    }
     return data.data;
   }
 
-  async function loadAll() {
+  async function loadAll(force = false) {
+    // Throttle de 30s (exigência iFood). Primeiro load (lastRefresh=0) sempre passa.
+    if (!force && lastRefresh > 0 && Date.now() - lastRefresh < 30_000) {
+      const wait = Math.ceil((30_000 - (Date.now() - lastRefresh)) / 1000);
+      toast({
+        title: "Aguarde para atualizar novamente",
+        description: `O iFood exige intervalo mínimo de 30s entre consultas de status. Tente em ${wait}s.`,
+      });
+      return;
+    }
     setLoading(true);
     try {
-      const [status, oh, ints] = await Promise.all([
+      const [status, oh, ints, details, list] = await Promise.all([
         call("get_status").catch((e) => { console.warn("status err:", e); return null; }),
         call("get_opening_hours").catch((e) => { console.warn("hours err:", e); return null; }),
         call("list_interruptions").catch((e) => { console.warn("ints err:", e); return []; }),
+        call("get_merchant").catch((e) => { console.warn("merchant err:", e); return null; }),
+        call("list_merchants").catch((e) => { console.warn("list err:", e); return []; }),
       ]);
 
       setStatusInfo(normalizeStatus(status));
+      setMerchantDetails(details);
+      setMerchantsList(Array.isArray(list) ? list : []);
 
       if (oh && Array.isArray(oh.shifts)) {
         const next: typeof shifts = Object.fromEntries(
           DAYS.map((d) => [d.key, { start: "08:00", end: "18:00", enabled: false }]),
         ) as any;
         for (const s of oh.shifts as Shift[]) {
-          // Presença no array = dia aberto. Ausência = fechado.
-          // Ignoramos shifts sem duração válida.
           if (!s?.dayOfWeek || !(Number(s.duration) > 0)) continue;
           const start = (s.start || "08:00:00").slice(0, 5);
           const end = durationToEnd(start, Number(s.duration));
@@ -134,6 +153,7 @@ export default function LojaIfood() {
       }
 
       setInterruptions(Array.isArray(ints) ? ints : []);
+      setLastRefresh(Date.now());
     } catch (e: any) {
       toast({ title: "Erro ao carregar dados do iFood", description: e.message, variant: "destructive" });
     } finally {
@@ -142,7 +162,7 @@ export default function LojaIfood() {
   }
 
   useEffect(() => {
-    if (!flagLoading && ifoodEnabled) loadAll();
+    if (!flagLoading && ifoodEnabled) loadAll(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flagLoading, ifoodEnabled]);
 
@@ -260,7 +280,7 @@ export default function LojaIfood() {
       title="Loja iFood"
       subtitle="Configure horários e disponibilidade da sua loja no iFood"
       actions={
-        <Button variant="outline" size="sm" onClick={loadAll} disabled={loading}>
+        <Button variant="outline" size="sm" onClick={() => loadAll(false)} disabled={loading}>
           <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
           Atualizar
         </Button>
@@ -272,6 +292,66 @@ export default function LojaIfood() {
             <Store className="w-6 h-6 text-primary" /> Painel da Loja
           </h2>
         </div>
+
+        {/* DADOS DA LOJA (GET /merchants/{id}) */}
+        {merchantDetails && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Store className="w-5 h-5" /> {safe(merchantDetails.name) || "Loja"}
+              </CardTitle>
+              <CardDescription>Dados retornados pelo iFood (Merchant API).</CardDescription>
+            </CardHeader>
+            <CardContent className="grid sm:grid-cols-2 gap-3 text-sm">
+              <div><span className="text-muted-foreground">ID: </span><span className="font-mono text-xs">{safe(merchantDetails.id)}</span></div>
+              {merchantDetails.corporateName && (
+                <div><span className="text-muted-foreground">Razão social: </span>{safe(merchantDetails.corporateName)}</div>
+              )}
+              {merchantDetails.phones && (
+                <div><span className="text-muted-foreground">Telefone: </span>{safe(Array.isArray(merchantDetails.phones) ? merchantDetails.phones[0] : merchantDetails.phones)}</div>
+              )}
+              {merchantDetails.address && (
+                <div className="sm:col-span-2">
+                  <span className="text-muted-foreground">Endereço: </span>
+                  {[
+                    merchantDetails.address.street,
+                    merchantDetails.address.number,
+                    merchantDetails.address.neighborhood,
+                    merchantDetails.address.city,
+                    merchantDetails.address.state,
+                  ].filter(Boolean).join(", ") || "—"}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* LOJAS VINCULADAS AO TOKEN (GET /merchants) */}
+        {merchantsList.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Lojas vinculadas ao seu acesso</CardTitle>
+              <CardDescription>
+                Todas as lojas que o token tem permissão para gerenciar. A loja ativa neste sistema é a configurada em "Integração iFood".
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {merchantsList.map((m: any) => (
+                  <div key={m.id} className="flex items-center justify-between p-2 rounded border text-sm">
+                    <div>
+                      <div className="font-medium">{safe(m.name)}</div>
+                      <div className="text-xs text-muted-foreground font-mono">{safe(m.id)}</div>
+                    </div>
+                    {merchantDetails?.id === m.id && (
+                      <Badge variant="default">Ativa</Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* STATUS */}
         <Card>
