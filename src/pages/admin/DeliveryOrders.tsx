@@ -313,10 +313,15 @@ const DeliveryOrdersPage = () => {
   };
 
   const filteredOrders = orders.filter((o) =>
-    filter === "ativos" ? ACTIVE_STATUSES.includes(o.status) : ["entregue", "cancelado"].includes(o.status),
+    filter === "ativos"
+      ? ACTIVE_STATUSES.includes(o.status)
+      : filter === "entregues"
+      ? o.status === "entregue"
+      : o.status === "cancelado",
   );
   const activeCount = orders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length;
-  const doneCount = orders.filter((o) => ["entregue", "cancelado"].includes(o.status)).length;
+  const doneCount = orders.filter((o) => o.status === "entregue").length;
+  const canceledCount = orders.filter((o) => o.status === "cancelado").length;
 
   return (
     <AppLayout
