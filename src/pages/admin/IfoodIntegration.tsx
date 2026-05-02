@@ -16,7 +16,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
 import { AppLayout } from "@/components/AppLayout";
 import { IfoodMerchantPanel } from "@/components/IfoodMerchantPanel";
-import { IfoodCatalogPanel } from "@/components/IfoodCatalogPanel";
 
 type Cred = {
   id: string;
@@ -62,16 +61,6 @@ const HOMOLOG_CHECKLIST = [
   { id: "merch_inter", label: "Merchant · GET/POST/DELETE /interruptions (pausas)", done: true },
   { id: "merch_hours", label: "Merchant · GET/PUT /opening-hours (horários por turno)", done: true },
   { id: "merch_errors", label: "Merchant · Erros padronizados {code,message} + Retry-After", done: true },
-  // Módulo Catalog (homologação)
-  { id: "cat_list", label: "Catalog · GET /catalogs (lista catálogos)", done: true },
-  { id: "cat_categories_list", label: "Catalog · GET /catalogs/{id}/categories (lista categorias)", done: true },
-  { id: "cat_categories_create", label: "Catalog · POST /catalogs/{id}/categories (cria categoria)", done: true },
-  { id: "cat_item_upsert", label: "Catalog · PUT /items (cria/edita item completo)", done: true },
-  { id: "cat_item_price", label: "Catalog · PATCH /items/price (altera preço)", done: true },
-  { id: "cat_item_status", label: "Catalog · PATCH /items/status (altera status)", done: true },
-  { id: "cat_option_price", label: "Catalog · PATCH /options/price (preço de complemento)", done: true },
-  { id: "cat_option_status", label: "Catalog · PATCH /options/status (status de complemento)", done: true },
-  { id: "cat_image", label: "Catalog · POST /image/upload (upload de imagens)", done: true },
 ];
 
 function fmtRelative(iso: string) {
@@ -306,17 +295,12 @@ export default function IfoodIntegration() {
           <TabsList>
             <TabsTrigger value="config">Configuração</TabsTrigger>
             <TabsTrigger value="merchant">Merchant</TabsTrigger>
-            <TabsTrigger value="catalog">Catálogo</TabsTrigger>
             <TabsTrigger value="logs">Eventos recebidos</TabsTrigger>
             <TabsTrigger value="homolog">Checklist homologação</TabsTrigger>
           </TabsList>
 
           <TabsContent value="merchant">
             <IfoodMerchantPanel />
-          </TabsContent>
-
-          <TabsContent value="catalog">
-            <IfoodCatalogPanel />
           </TabsContent>
 
           <TabsContent value="config" className="space-y-4">
