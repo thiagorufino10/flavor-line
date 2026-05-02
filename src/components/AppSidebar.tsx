@@ -169,6 +169,15 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
+        {filter(ifoodConfiguracoes).length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Configurações iFood</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderItems(filter(ifoodConfiguracoes))}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t">
