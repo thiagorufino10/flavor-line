@@ -225,6 +225,21 @@ const TableSession = () => {
     }
   };
 
+  const cancelOrder = async (orderId: string, orderNumber: number) => {
+    if (!confirm(`Cancelar pedido #${orderNumber}? O pedido será removido da cozinha e da conta da mesa.`)) return;
+    try {
+      const { error: itemsErr } = await supabase.from("order_items").delete().eq("order_id", orderId);
+      if (itemsErr) throw itemsErr;
+      const { error: orderErr } = await supabase.from("orders").delete().eq("id", orderId);
+      if (orderErr) throw orderErr;
+      toast.success(`Pedido #${orderNumber} cancelado`);
+      fetchSession();
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao cancelar pedido");
+    }
+  };
+
   const handleClose = async () => {
     if (!session) return;
     if (remaining > 0.009) {
