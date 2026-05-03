@@ -501,6 +501,30 @@ const Loja = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      {loadError && (
+        <div className="fixed inset-x-0 top-0 z-50 bg-red-600 text-white text-sm px-4 py-2 flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button
+            onClick={() => {
+              try {
+                if ("caches" in window) {
+                  caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+                }
+              } catch {}
+              setReloadKey((k) => k + 1);
+            }}
+            className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-xs font-semibold whitespace-nowrap"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      {loading && !loadError && products.length === 0 && (
+        <div className="fixed inset-0 z-40 bg-zinc-950/90 flex flex-col items-center justify-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500"></div>
+          <p className="text-sm text-zinc-400">Carregando cardápio…</p>
+        </div>
+      )}
       {/* Header */}
       <header className="sticky top-0 z-30 bg-zinc-950/95 backdrop-blur border-b border-orange-600/30">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
