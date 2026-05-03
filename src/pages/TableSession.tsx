@@ -368,17 +368,27 @@ const TableSession = () => {
             <Card>
               <CardHeader><CardTitle className="text-base">Pedidos enviados</CardTitle></CardHeader>
               <CardContent className="space-y-2">
-                {orders.map((o) => (
+                {orders.map((o) => {
+                  const canCancel = o.status !== "finalizado" && o.status !== "cancelado" && session.status !== "fechada";
+                  return (
                   <div key={o.id} className="text-sm border rounded p-2">
-                    <div className="flex justify-between font-medium">
+                    <div className="flex justify-between font-medium items-center gap-2">
                       <span>#{o.order_number}</span>
-                      <span>{formatBRL(Number(o.total_amount))}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{formatBRL(Number(o.total_amount))}</span>
+                        {canCancel && (
+                          <Button size="icon" variant="ghost" onClick={() => cancelOrder(o.id, o.order_number)} title="Cancelar pedido">
+                            <Trash2 className="w-3 h-3 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {o.items.map(i => `${i.quantity}x ${i.product_name}`).join(", ")}
                     </p>
                   </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           )}
