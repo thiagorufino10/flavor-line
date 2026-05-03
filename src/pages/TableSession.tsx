@@ -276,7 +276,7 @@ const TableSession = () => {
               setConfirmClose(true);
             }}
             className="gap-2"
-            disabled={session.status === "fechada" || consumedTotal === 0 || remaining > 0.009}
+            disabled={session.status === "fechada" || remaining > 0.009}
             title={remaining > 0.009 ? "Registre o pagamento antes de fechar" : undefined}
           >
             <Lock className="w-4 h-4" /> Fechar mesa
