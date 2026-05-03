@@ -121,39 +121,58 @@ const Loja = () => {
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [clientId, setClientId] = useState<string>("");
   const [storeClosed, setStoreClosed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Slug do cliente dono desta loja. Esta página /loja é exclusiva da Malukus Batata.
   const STORE_CLIENT_SLUG = "malukusbatata";
 
-  // SEO
+  // SEO + cache-control para evitar versões antigas em cache do navegador
   useEffect(() => {
     document.title = "Malukus Batata — Cardápio Online";
     const desc = "Cardápio online da Malukus Batata. Peça batatas crocantes com frango, calabresa e bacon direto pelo WhatsApp.";
-    let m = document.querySelector('meta[name="description"]');
-    if (!m) {
-      m = document.createElement("meta");
-      m.setAttribute("name", "description");
-      document.head.appendChild(m);
-    }
-    m.setAttribute("content", desc);
+    const ensureMeta = (selector: string, attrs: Record<string, string>) => {
+      let m = document.querySelector(selector) as HTMLMetaElement | null;
+      if (!m) {
+        m = document.createElement("meta");
+        Object.entries(attrs).forEach(([k, v]) => m!.setAttribute(k, v));
+        document.head.appendChild(m);
+      }
+      return m;
+    };
+    ensureMeta('meta[name="description"]', { name: "description" }).setAttribute("content", desc);
+    ensureMeta('meta[http-equiv="Cache-Control"]', { "http-equiv": "Cache-Control" }).setAttribute("content", "no-cache, no-store, must-revalidate");
+    ensureMeta('meta[http-equiv="Pragma"]', { "http-equiv": "Pragma" }).setAttribute("content", "no-cache");
+    ensureMeta('meta[http-equiv="Expires"]', { "http-equiv": "Expires" }).setAttribute("content", "0");
   }, []);
 
   // Load WhatsApp + delivery neighborhoods + cardápio delivery — APENAS do cliente dono da loja
   useEffect(() => {
+    let cancelled = false;
     (async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
       // 1. Resolve o client_id da loja a partir do slug fixo
-      const { data: client } = await supabase
+      const { data: client, error: clientErr } = await supabase
         .from("clients")
         .select("id")
         .eq("slug", STORE_CLIENT_SLUG)
         .eq("active", true)
         .maybeSingle();
+      if (clientErr) throw clientErr;
 
       const cid = client?.id;
       if (!cid) {
         console.warn("Cliente da loja não encontrado para slug:", STORE_CLIENT_SLUG);
+        if (!cancelled) {
+          setLoadError("Loja indisponível no momento.");
+          setLoading(false);
+        }
         return;
       }
+      if (cancelled) return;
       setClientId(cid);
 
       // 2. Carrega tudo já filtrado por client_id
@@ -183,6 +202,7 @@ const Loja = () => {
           .eq("key", "store_closed")
           .maybeSingle(),
       ]);
+      if (cancelled) return;
       if (cfg?.value) setWhatsappNumber(String(cfg.value));
       setNeighborhoods((nb as any[]) || []);
       setStoreClosed(String(closedCfg?.value ?? "false") === "true");
@@ -212,8 +232,19 @@ const Loja = () => {
         }));
       setProducts(prods);
       setDrinks(drks);
+      setLoading(false);
+      } catch (err: any) {
+        console.error("Erro ao carregar loja:", err);
+        if (!cancelled) {
+          setLoadError("Não foi possível carregar o cardápio. Verifique sua conexão e tente novamente.");
+          setLoading(false);
+        }
+      }
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   const productsTotal = useMemo(
     () => cart.reduce((s, i) => s + i.price * i.quantity, 0),
@@ -470,6 +501,30 @@ const Loja = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      {loadError && (
+        <div className="fixed inset-x-0 top-0 z-50 bg-red-600 text-white text-sm px-4 py-2 flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <button
+            onClick={() => {
+              try {
+                if ("caches" in window) {
+                  caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+                }
+              } catch {}
+              setReloadKey((k) => k + 1);
+            }}
+            className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-xs font-semibold whitespace-nowrap"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      {loading && !loadError && products.length === 0 && (
+        <div className="fixed inset-0 z-40 bg-zinc-950/90 flex flex-col items-center justify-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500"></div>
+          <p className="text-sm text-zinc-400">Carregando cardápio…</p>
+        </div>
+      )}
       {/* Header */}
       <header className="sticky top-0 z-30 bg-zinc-950/95 backdrop-blur border-b border-orange-600/30">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
