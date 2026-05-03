@@ -202,6 +202,7 @@ const Loja = () => {
           .eq("key", "store_closed")
           .maybeSingle(),
       ]);
+      if (cancelled) return;
       if (cfg?.value) setWhatsappNumber(String(cfg.value));
       setNeighborhoods((nb as any[]) || []);
       setStoreClosed(String(closedCfg?.value ?? "false") === "true");
@@ -231,8 +232,19 @@ const Loja = () => {
         }));
       setProducts(prods);
       setDrinks(drks);
+      setLoading(false);
+      } catch (err: any) {
+        console.error("Erro ao carregar loja:", err);
+        if (!cancelled) {
+          setLoadError("Não foi possível carregar o cardápio. Verifique sua conexão e tente novamente.");
+          setLoading(false);
+        }
+      }
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   const productsTotal = useMemo(
     () => cart.reduce((s, i) => s + i.price * i.quantity, 0),
