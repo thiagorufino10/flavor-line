@@ -1,13 +1,17 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Copy, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Loader2, Copy, ExternalLink, CheckCircle2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useFood99Enabled } from "@/hooks/useFood99Enabled";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/AppLayout";
 
 const WEBHOOK_URL =
@@ -15,11 +19,62 @@ const WEBHOOK_URL =
 
 export default function Food99Integration() {
   const navigate = useNavigate();
+  const { clientId } = useAuth();
   const { enabled, loading } = useFood99Enabled();
+
+  const [merchantId, setMerchantId] = useState("");
+  const [storeToken, setStoreToken] = useState("");
+  const [environment, setEnvironment] = useState<"sandbox" | "production">("sandbox");
+  const [saving, setSaving] = useState(false);
+  const [credLoaded, setCredLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!clientId || !enabled) return;
+    (async () => {
+      const { data } = await supabase
+        .from("food99_credentials" as any)
+        .select("merchant_id, store_token, environment")
+        .eq("client_id", clientId)
+        .maybeSingle();
+      if (data) {
+        setMerchantId((data as any).merchant_id ?? "");
+        setStoreToken((data as any).store_token ?? "");
+        setEnvironment(((data as any).environment ?? "sandbox") as any);
+      }
+      setCredLoaded(true);
+    })();
+  }, [clientId, enabled]);
 
   const copy = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Copiado");
+  };
+
+  const saveCredentials = async () => {
+    if (!clientId) return;
+    if (!merchantId.trim()) {
+      toast.error("Informe o Merchant ID");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("food99_credentials" as any)
+      .upsert(
+        {
+          client_id: clientId,
+          merchant_id: merchantId.trim(),
+          store_token: storeToken.trim() || null,
+          environment,
+          active: true,
+        },
+        { onConflict: "client_id" }
+      );
+    setSaving(false);
+    if (error) {
+      toast.error("Erro ao salvar: " + error.message);
+    } else {
+      toast.success("Credenciais salvas!");
+    }
   };
 
   if (loading) {
@@ -59,7 +114,7 @@ export default function Food99Integration() {
       actions={<Badge variant="secondary">Em homologação</Badge>}
     >
       <div className="space-y-6 max-w-4xl">
-        <Tabs defaultValue="setup">
+        <Tabs defaultValue="credentials">
           <TabsList>
             <TabsTrigger value="setup">Passo a passo</TabsTrigger>
             <TabsTrigger value="credentials">Credenciais</TabsTrigger>
@@ -82,34 +137,13 @@ export default function Food99Integration() {
                 </Button>
 
                 <ol className="list-decimal pl-6 space-y-3 text-sm">
-                  <li>
-                    <strong>Login:</strong> acesse o portal com a conta da empresa aprovada.
-                  </li>
-                  <li>
-                    <strong>Perfil da empresa:</strong> preencha CNPJ, endereço e responsável técnico.
-                  </li>
-                  <li>
-                    <strong>Criar App:</strong> em "My Apps" → "Create App", selecione tipo
-                    <em> Server-to-Server</em>, vertical <em>Food</em>, país Brasil.
-                  </li>
-                  <li>
-                    <strong>APIs:</strong> marque Order API, Menu API, Store/Merchant API e Webhook /
-                    Event Subscription.
-                  </li>
-                  <li>
-                    <strong>Webhook:</strong> cole a URL da aba "Webhook" abaixo e clique em
-                    <em> Verify</em>.
-                  </li>
-                  <li>
-                    <strong>Vincular loja:</strong> em "My Stores" use o CNPJ da loja aprovada para
-                    obter o <em>Merchant ID</em>.
-                  </li>
+                  <li><strong>Login</strong> no portal com a conta da empresa aprovada.</li>
+                  <li><strong>Perfil da empresa:</strong> CNPJ, endereço e responsável técnico.</li>
+                  <li><strong>Criar App:</strong> tipo Server-to-Server, vertical Food, país Brasil.</li>
+                  <li><strong>APIs:</strong> Order, Menu, Store/Merchant e Webhook.</li>
+                  <li><strong>Webhook:</strong> cole a URL da aba "Webhook" abaixo e clique Verify.</li>
+                  <li><strong>Vincular loja:</strong> em "My Stores" obtenha o Merchant ID.</li>
                 </ol>
-
-                <div className="border-l-4 border-primary bg-muted/30 p-3 text-sm rounded">
-                  Ao concluir, você receberá <strong>App Key</strong>, <strong>App Secret</strong> e
-                  <strong> Merchant ID</strong>. Cadastre-os na aba "Credenciais".
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -119,31 +153,69 @@ export default function Food99Integration() {
               <CardHeader>
                 <CardTitle>Credenciais da loja</CardTitle>
                 <CardDescription>
-                  Após criar o app, informe os dados abaixo. (Cadastro será habilitado quando a
-                  integração for ativada.)
+                  Cadastre o Merchant ID e o token da sua loja no 99Food. App Key/Secret são
+                  configurados como segredos do servidor (já cadastrados).
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Merchant ID</Label>
-                  <Input placeholder="ID da loja vinculada no portal 99Food" disabled />
-                </div>
-                <div className="space-y-2">
-                  <Label>App Key (Client ID)</Label>
-                  <Input placeholder="Será armazenado como secret no servidor" disabled />
-                </div>
-                <div className="space-y-2">
-                  <Label>App Secret</Label>
-                  <Input
-                    type="password"
-                    placeholder="Será armazenado como secret no servidor"
-                    disabled
-                  />
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Por segurança, App Key e App Secret são armazenados como segredos da plataforma
-                  (não ficam no banco). Envie suas credenciais ao administrador para cadastro.
-                </div>
+                {!credLoaded ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Merchant ID *</Label>
+                      <Input
+                        placeholder="Ex: 5764615319785573736"
+                        value={merchantId}
+                        onChange={(e) => setMerchantId(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        ID da loja vinculada no portal 99Food (3ª coluna na lista de lojas).
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Token da loja (Base64)</Label>
+                      <Textarea
+                        placeholder="Ex: OGU3NTA0YjZhM...0MzA="
+                        value={storeToken}
+                        onChange={(e) => setStoreToken(e.target.value)}
+                        rows={3}
+                        className="font-mono text-xs"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        String longa em Base64 que aparece na lista de lojas (token específico da loja).
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Ambiente</Label>
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={environment}
+                        onChange={(e) => setEnvironment(e.target.value as any)}
+                      >
+                        <option value="sandbox">Sandbox (Ambiente de teste)</option>
+                        <option value="production">Produção</option>
+                      </select>
+                    </div>
+
+                    <div className="border-l-4 border-primary bg-muted/30 p-3 text-sm rounded">
+                      <strong>App Key</strong> e <strong>App Secret</strong> já estão configurados
+                      como segredos seguros no servidor (FOOD99_APP_KEY / FOOD99_APP_SECRET).
+                      Você só precisa cadastrar os dados específicos da sua loja acima.
+                    </div>
+
+                    <Button onClick={saveCredentials} disabled={saving}>
+                      {saving ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4 mr-2" />
+                      )}
+                      Salvar credenciais
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -153,7 +225,7 @@ export default function Food99Integration() {
               <CardHeader>
                 <CardTitle>URL de Webhook</CardTitle>
                 <CardDescription>
-                  Cole esta URL no campo "Callback / Webhook URL" ao criar o app no portal 99Food.
+                  Cole esta URL no campo "Endereço do webhook" ao criar o app no portal 99Food.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
