@@ -111,6 +111,7 @@ export type Database = {
           active: boolean
           created_at: string
           due_day: number
+          food99_enabled: boolean
           id: string
           ifood_enabled: boolean
           monthly_fee: number
@@ -123,6 +124,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           due_day?: number
+          food99_enabled?: boolean
           id?: string
           ifood_enabled?: boolean
           monthly_fee?: number
@@ -135,6 +137,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           due_day?: number
+          food99_enabled?: boolean
           id?: string
           ifood_enabled?: boolean
           monthly_fee?: number
