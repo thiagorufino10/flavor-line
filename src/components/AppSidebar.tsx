@@ -21,6 +21,7 @@ import {
   Store,
 } from "lucide-react";
 import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
+import { useFood99Enabled } from "@/hooks/useFood99Enabled";
 import { useNewDeliveryCount } from "@/hooks/useNewDeliveryCount";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -83,6 +84,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { userRole, signOut } = useAuth();
   const { enabled: ifoodEnabled } = useIfoodEnabled();
+  const { enabled: food99Enabled } = useFood99Enabled();
   const newDeliveryCount = useNewDeliveryCount();
   const [systemName, setSystemName] = useState("TARMFood");
   const [logoUrl, setLogoUrl] = useState("");
@@ -97,6 +99,17 @@ export function AppSidebar() {
     ? [
         { title: "Integração iFood", url: "/admin/ifood", icon: Plug, roles: ["admin"] },
         { title: "Loja iFood", url: "/admin/loja-ifood", icon: Store, roles: ["admin"] },
+      ]
+    : [];
+
+  // Itens 99Food — só aparecem se a flag food99_enabled estiver ligada para o cliente
+  const food99Operacao: Item[] = food99Enabled
+    ? [{ title: "Pedidos 99Food", url: "/orders/food99", icon: Plug, roles: ["admin", "atendente"] }]
+    : [];
+  const food99Configuracoes: Item[] = food99Enabled
+    ? [
+        { title: "Integração 99Food", url: "/admin/food99", icon: Plug, roles: ["admin"] },
+        { title: "Loja 99Food", url: "/admin/loja-food99", icon: Store, roles: ["admin"] },
       ]
     : [];
 
@@ -161,7 +174,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Operação</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>{renderItems(filter([...operacao, ...ifoodOperacao]))}</SidebarMenu>
+            <SidebarMenu>{renderItems(filter([...operacao, ...ifoodOperacao, ...food99Operacao]))}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
@@ -188,6 +201,15 @@ export function AppSidebar() {
             <SidebarGroupLabel>Configurações iFood</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{renderItems(filter(ifoodConfiguracoes))}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {filter(food99Configuracoes).length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Configurações 99Food</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderItems(filter(food99Configuracoes))}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}

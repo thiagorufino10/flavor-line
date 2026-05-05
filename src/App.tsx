@@ -36,6 +36,9 @@ const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
 const IfoodIntegration = lazy(() => import("./pages/admin/IfoodIntegration"));
 const LojaIfood = lazy(() => import("./pages/admin/LojaIfood"));
 const IfoodOrders = lazy(() => import("./pages/IfoodOrders"));
+const Food99Integration = lazy(() => import("./pages/admin/Food99Integration"));
+const LojaFood99 = lazy(() => import("./pages/admin/LojaFood99"));
+const Food99Orders = lazy(() => import("./pages/Food99Orders"));
 
 const LazyFallback = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -88,6 +91,11 @@ const App = () => (
         <Route path="/admin/ifood" element={<ProtectedRoute requiredRole={["admin"]}><IfoodIntegration /></ProtectedRoute>} />
         <Route path="/admin/loja-ifood" element={<ProtectedRoute requiredRole={["admin"]}><LojaIfood /></ProtectedRoute>} />
         <Route path="/orders/ifood" element={<ProtectedRoute requiredRole={["admin", "atendente"]}><IfoodOrders /></ProtectedRoute>} />
+
+        {/* 99Food (apenas para clientes com food99_enabled=true) */}
+        <Route path="/admin/food99" element={<ProtectedRoute requiredRole={["admin"]}><Food99Integration /></ProtectedRoute>} />
+        <Route path="/admin/loja-food99" element={<ProtectedRoute requiredRole={["admin"]}><LojaFood99 /></ProtectedRoute>} />
+        <Route path="/orders/food99" element={<ProtectedRoute requiredRole={["admin", "atendente"]}><Food99Orders /></ProtectedRoute>} />
 
         {/* Public routes */}
         <Route path="/customer-display" element={<CustomerDisplay />} />
