@@ -620,6 +620,7 @@ export type Database = {
           client_id: string
           created_at: string
           customer_name: string
+          deleted_at: string | null
           external_order_id: string | null
           id: string
           ifood_order_timing: string | null
@@ -641,6 +642,7 @@ export type Database = {
           client_id: string
           created_at?: string
           customer_name: string
+          deleted_at?: string | null
           external_order_id?: string | null
           id?: string
           ifood_order_timing?: string | null
@@ -662,6 +664,7 @@ export type Database = {
           client_id?: string
           created_at?: string
           customer_name?: string
+          deleted_at?: string | null
           external_order_id?: string | null
           id?: string
           ifood_order_timing?: string | null
