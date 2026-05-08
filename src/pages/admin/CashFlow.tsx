@@ -115,7 +115,7 @@ const CashFlow = () => {
         { data: settings },
       ] = await Promise.all([
         supabase.from("cash_flow_transactions").select("*").order("transaction_date", { ascending: false }),
-        supabase.from("orders").select("*").order("created_at", { ascending: false }),
+        supabase.from("orders").select("*").is("deleted_at", null).order("created_at", { ascending: false }),
         supabase
           .from("session_payments")
           .select("id, payment_method, amount, net_amount, created_at, table_session_id, table_sessions(customer_name, tables(name))")
