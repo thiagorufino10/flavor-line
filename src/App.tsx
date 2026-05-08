@@ -17,6 +17,7 @@ import SuperAdminLogin from "./pages/SuperAdminLogin";
 const TablesPage = lazy(() => import("./pages/Tables"));
 const TableSession = lazy(() => import("./pages/TableSession"));
 const TablesAdmin = lazy(() => import("./pages/admin/Tables"));
+const OrderControl = lazy(() => import("./pages/admin/OrderControl"));
 const Complements = lazy(() => import("./pages/admin/Complements"));
 const CashFlow = lazy(() => import("./pages/admin/CashFlow"));
 const Reports = lazy(() => import("./pages/admin/Reports"));
