@@ -71,6 +71,7 @@ const configuracoes: Item[] = [
   { title: "Usuários e Perfis", url: "/admin/users", icon: Users, roles: ["admin"] },
   { title: "Taxas de Pagamento", url: "/admin/payment-rates", icon: CreditCard, roles: ["admin"] },
   { title: "Cadastro de Mesas", url: "/admin/tables", icon: LayoutGrid, roles: ["admin"] },
+  { title: "Controle de Pedidos", url: "/admin/order-control", icon: ShoppingCart, roles: ["admin"] },
   { title: "Impressora", url: "/admin/printer", icon: Printer, roles: ["admin"] },
   { title: "Modo de Operação", url: "/admin/operation-mode", icon: Monitor, roles: ["admin"] },
   { title: "Marca e Identidade", url: "/admin/branding", icon: Palette, roles: ["admin"] },

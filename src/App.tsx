@@ -17,6 +17,7 @@ import SuperAdminLogin from "./pages/SuperAdminLogin";
 const TablesPage = lazy(() => import("./pages/Tables"));
 const TableSession = lazy(() => import("./pages/TableSession"));
 const TablesAdmin = lazy(() => import("./pages/admin/Tables"));
+const OrderControl = lazy(() => import("./pages/admin/OrderControl"));
 const Complements = lazy(() => import("./pages/admin/Complements"));
 const CashFlow = lazy(() => import("./pages/admin/CashFlow"));
 const Reports = lazy(() => import("./pages/admin/Reports"));
@@ -73,6 +74,7 @@ const App = () => (
         <Route path="/admin/cash-flow" element={<ProtectedRoute requiredRole={["admin"]}><CashFlow /></ProtectedRoute>} />
         <Route path="/admin/reports" element={<ProtectedRoute requiredRole={["admin"]}><Reports /></ProtectedRoute>} />
         <Route path="/admin/tables" element={<ProtectedRoute requiredRole={["admin"]}><TablesAdmin /></ProtectedRoute>} />
+        <Route path="/admin/order-control" element={<ProtectedRoute requiredRole={["admin"]}><OrderControl /></ProtectedRoute>} />
 
         {/* Attendant routes */}
         <Route path="/orders" element={<ProtectedRoute requiredRole={["admin", "atendente"]}><Orders /></ProtectedRoute>} />

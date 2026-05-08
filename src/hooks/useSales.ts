@@ -37,6 +37,7 @@ export const useSales = (startDate?: Date, endDate?: Date) => {
           *,
           order_items (*)
         `)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
       if (startDate) {
