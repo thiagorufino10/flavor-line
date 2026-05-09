@@ -453,7 +453,7 @@ const CashFlow = () => {
               ))}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
               {/* Data Inicial */}
               <div>
                 <Label className="text-xs">Data Inicial</Label>
@@ -469,6 +469,11 @@ const CashFlow = () => {
                   </PopoverContent>
                 </Popover>
               </div>
+              {/* Hora Inicial */}
+              <div>
+                <Label className="text-xs">Hora Inicial</Label>
+                <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="h-9 text-xs" />
+              </div>
               {/* Data Final */}
               <div>
                 <Label className="text-xs">Data Final</Label>
@@ -483,6 +488,11 @@ const CashFlow = () => {
                     <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus className="pointer-events-auto" />
                   </PopoverContent>
                 </Popover>
+              </div>
+              {/* Hora Final */}
+              <div>
+                <Label className="text-xs">Hora Final</Label>
+                <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="h-9 text-xs" />
               </div>
               {/* Tipo */}
               <div>
