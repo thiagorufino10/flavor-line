@@ -228,10 +228,12 @@ const CashFlow = () => {
   };
 
   const filteredTransactions = useMemo(() => {
+    const effStart = applyTime(startDate, startTime, false);
+    const effEnd = applyTime(endDate, endTime, true);
     return transactions.filter((t) => {
-      // Filtro de data
-      if (startDate && t.rawDate < startOfDay(startDate)) return false;
-      if (endDate && t.rawDate > endOfDay(endDate)) return false;
+      // Filtro de data/hora
+      if (effStart && t.rawDate < effStart) return false;
+      if (effEnd && t.rawDate > effEnd) return false;
       // Tipo
       if (filterType !== "todos" && t.type !== filterType) return false;
       // Pagamento
@@ -245,7 +247,7 @@ const CashFlow = () => {
       if (filterCategory !== "todos" && t.category !== filterCategory) return false;
       return true;
     });
-  }, [transactions, startDate, endDate, filterType, filterPayment, filterSource, filterCategory]);
+  }, [transactions, startDate, endDate, startTime, endTime, filterType, filterPayment, filterSource, filterCategory]);
 
   const totalEntradas = useMemo(() => filteredTransactions.filter(t => t.type === "entrada").reduce((s, t) => s + t.amount, 0), [filteredTransactions]);
   const totalSaidas = useMemo(() => filteredTransactions.filter(t => t.type === "saida").reduce((s, t) => s + t.amount, 0), [filteredTransactions]);
