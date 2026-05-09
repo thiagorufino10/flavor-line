@@ -27,6 +27,28 @@ export default function Food99Integration() {
   const [environment, setEnvironment] = useState<"sandbox" | "production">("sandbox");
   const [saving, setSaving] = useState(false);
   const [credLoaded, setCredLoaded] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<any>(null);
+
+  const syncMenu = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    const { data, error } = await supabase.functions.invoke("food99-menu-sync", { body: {} });
+    setSyncing(false);
+    if (error) {
+      toast.error("Falha: " + error.message);
+      setSyncResult({ error: error.message });
+      return;
+    }
+    setSyncResult(data);
+    if (data?.dry_run) {
+      toast.success(`Dry-run: ${data.items_count} itens prontos para envio`);
+    } else if (data?.ok) {
+      toast.success(`Cardápio sincronizado (${data.items_count} itens)`);
+    } else {
+      toast.error("Resposta com erro do 99Food");
+    }
+  };
 
   useEffect(() => {
     if (!clientId || !enabled) return;
@@ -119,6 +141,7 @@ export default function Food99Integration() {
             <TabsTrigger value="setup">Passo a passo</TabsTrigger>
             <TabsTrigger value="credentials">Credenciais</TabsTrigger>
             <TabsTrigger value="webhook">Webhook</TabsTrigger>
+            <TabsTrigger value="menu">Cardápio</TabsTrigger>
           </TabsList>
 
           <TabsContent value="setup" className="space-y-4">
@@ -252,6 +275,44 @@ export default function Food99Integration() {
                   <CheckCircle2 className="w-4 h-4" />
                   Endpoint já implantado e respondendo a verificação (challenge / echostr).
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="menu" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sincronizar cardápio com 99Food</CardTitle>
+                <CardDescription>
+                  Envia todas as categorias e itens ativos para o 99Food. O UUID de cada item
+                  vira o <code>APPitemID</code> que o sandbox aceitará na criação de pedidos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm rounded">
+                  <strong>Modo dry-run:</strong> enquanto a URL oficial do endpoint de sync da
+                  99Food não estiver configurada (segredo <code>FOOD99_MENU_SYNC_URL</code>), o
+                  botão abaixo apenas mostra o payload que seria enviado. Encaminhe esse JSON
+                  ao suporte 99Food para validarem o formato.
+                </div>
+
+                <Button onClick={syncMenu} disabled={syncing}>
+                  {syncing ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  Sincronizar agora
+                </Button>
+
+                {syncResult && (
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium">Resultado:</div>
+                    <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-96">
+{JSON.stringify(syncResult, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
