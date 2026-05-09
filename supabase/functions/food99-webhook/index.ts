@@ -47,15 +47,16 @@ Deno.serve(async (req) => {
 
     console.log("[99food-webhook] evento recebido:", JSON.stringify(payload).slice(0, 500));
 
-    // Responde 200 rapidamente — processamento real virá depois
-    return new Response(JSON.stringify({ ok: true }), {
+    // 99Food/DiDi espera ACK no formato { code: 0, msg: "success" }
+    return new Response(JSON.stringify({ code: 0, msg: "success" }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("[99food-webhook] erro:", e);
-    return new Response(JSON.stringify({ error: String(e) }), {
-      status: 500,
+    // Mesmo em erro, retornamos 200 com code != 0 pra DiDi não ficar reenviando infinitamente
+    return new Response(JSON.stringify({ code: 1, msg: String(e) }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
