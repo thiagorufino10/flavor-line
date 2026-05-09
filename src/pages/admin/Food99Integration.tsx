@@ -141,6 +141,7 @@ export default function Food99Integration() {
             <TabsTrigger value="setup">Passo a passo</TabsTrigger>
             <TabsTrigger value="credentials">Credenciais</TabsTrigger>
             <TabsTrigger value="webhook">Webhook</TabsTrigger>
+            <TabsTrigger value="menu">Cardápio</TabsTrigger>
           </TabsList>
 
           <TabsContent value="setup" className="space-y-4">
