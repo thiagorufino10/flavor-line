@@ -44,9 +44,7 @@ export const useSales = (startDate?: Date, endDate?: Date) => {
         query = query.gte("created_at", startDate.toISOString());
       }
       if (endDate) {
-        const endOfDay = new Date(endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        query = query.lte("created_at", endOfDay.toISOString());
+        query = query.lte("created_at", endDate.toISOString());
       }
 
       const { data, error } = await query;
