@@ -88,10 +88,24 @@ const CashFlow = () => {
   // Filtros
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
+  const [startTime, setStartTime] = useState<string>("");
+  const [endTime, setEndTime] = useState<string>("");
   const [filterType, setFilterType] = useState<string>("todos");
   const [filterPayment, setFilterPayment] = useState<string>("todos");
   const [filterSource, setFilterSource] = useState<string>("todos");
   const [filterCategory, setFilterCategory] = useState<string>("todos");
+
+  const applyTime = (date: Date | undefined, time: string, isEnd: boolean): Date | undefined => {
+    if (!date) return undefined;
+    const d = new Date(date);
+    if (time && /^\d{2}:\d{2}$/.test(time)) {
+      const [h, m] = time.split(":").map(Number);
+      d.setHours(h, m, isEnd ? 59 : 0, isEnd ? 999 : 0);
+    } else {
+      d.setHours(isEnd ? 23 : 0, isEnd ? 59 : 0, isEnd ? 59 : 0, isEnd ? 999 : 0);
+    }
+    return d;
+  };
 
   const [newTransaction, setNewTransaction] = useState({
     type: "entrada" as "entrada" | "saida",
