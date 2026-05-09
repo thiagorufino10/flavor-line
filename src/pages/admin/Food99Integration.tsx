@@ -278,6 +278,44 @@ export default function Food99Integration() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="menu" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sincronizar cardápio com 99Food</CardTitle>
+                <CardDescription>
+                  Envia todas as categorias e itens ativos para o 99Food. O UUID de cada item
+                  vira o <code>APPitemID</code> que o sandbox aceitará na criação de pedidos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm rounded">
+                  <strong>Modo dry-run:</strong> enquanto a URL oficial do endpoint de sync da
+                  99Food não estiver configurada (segredo <code>FOOD99_MENU_SYNC_URL</code>), o
+                  botão abaixo apenas mostra o payload que seria enviado. Encaminhe esse JSON
+                  ao suporte 99Food para validarem o formato.
+                </div>
+
+                <Button onClick={syncMenu} disabled={syncing}>
+                  {syncing ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  Sincronizar agora
+                </Button>
+
+                {syncResult && (
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium">Resultado:</div>
+                    <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-96">
+{JSON.stringify(syncResult, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </AppLayout>
