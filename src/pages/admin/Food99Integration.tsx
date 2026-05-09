@@ -27,6 +27,28 @@ export default function Food99Integration() {
   const [environment, setEnvironment] = useState<"sandbox" | "production">("sandbox");
   const [saving, setSaving] = useState(false);
   const [credLoaded, setCredLoaded] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<any>(null);
+
+  const syncMenu = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    const { data, error } = await supabase.functions.invoke("food99-menu-sync", { body: {} });
+    setSyncing(false);
+    if (error) {
+      toast.error("Falha: " + error.message);
+      setSyncResult({ error: error.message });
+      return;
+    }
+    setSyncResult(data);
+    if (data?.dry_run) {
+      toast.success(`Dry-run: ${data.items_count} itens prontos para envio`);
+    } else if (data?.ok) {
+      toast.success(`Cardápio sincronizado (${data.items_count} itens)`);
+    } else {
+      toast.error("Resposta com erro do 99Food");
+    }
+  };
 
   useEffect(() => {
     if (!clientId || !enabled) return;
