@@ -7,11 +7,21 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-99food-signature",
 };
 
-const ackOk = () =>
-  new Response(JSON.stringify({ code: 0, msg: "success" }), {
-    status: 200,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+// Formato de ACK aceito pela DiDi/99Food: code numérico 0 + msg/message "success" + success:true
+const ackOk = (extra: Record<string, unknown> = {}) =>
+  new Response(
+    JSON.stringify({
+      code: 0,
+      msg: "success",
+      message: "success",
+      success: true,
+      ...extra,
+    }),
+    {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    }
+  );
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
