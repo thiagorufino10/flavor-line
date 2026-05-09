@@ -379,10 +379,12 @@ const Reports = () => {
                 <FileSpreadsheet className="w-4 h-4" />
                 Exportar Excel
               </Button>
-              {(filterStartDate || filterEndDate || filterPaymentMethod !== "todos" || filterProduct !== "todos" || filterStatus !== "todos") && (
+              {(filterStartDate || filterEndDate || filterStartTime || filterEndTime || filterPaymentMethod !== "todos" || filterProduct !== "todos" || filterStatus !== "todos") && (
                 <Button variant="ghost" onClick={() => {
                   setFilterStartDate(undefined);
                   setFilterEndDate(undefined);
+                  setFilterStartTime("");
+                  setFilterEndTime("");
                   setFilterPaymentMethod("todos");
                   setFilterProduct("todos");
                   setFilterStatus("todos");
