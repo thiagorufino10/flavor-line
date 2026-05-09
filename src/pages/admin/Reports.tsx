@@ -294,31 +294,47 @@ const Reports = () => {
             <CardTitle className="text-lg">Filtros</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("justify-start text-left font-normal text-sm", !filterStartDate && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filterStartDate ? format(filterStartDate, "dd/MM/yy", { locale: ptBR }) : "Data Inicial"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={filterStartDate} onSelect={setFilterStartDate} initialFocus className="pointer-events-auto" />
-                </PopoverContent>
-              </Popover>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Data Inicial</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-sm", !filterStartDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {filterStartDate ? format(filterStartDate, "dd/MM/yy", { locale: ptBR }) : "Data Inicial"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={filterStartDate} onSelect={setFilterStartDate} initialFocus className="pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Hora Inicial</label>
+                <Input type="time" value={filterStartTime} onChange={(e) => setFilterStartTime(e.target.value)} className="text-sm" />
+              </div>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("justify-start text-left font-normal text-sm", !filterEndDate && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filterEndDate ? format(filterEndDate, "dd/MM/yy", { locale: ptBR }) : "Data Final"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={filterEndDate} onSelect={setFilterEndDate} initialFocus className="pointer-events-auto" />
-                </PopoverContent>
-              </Popover>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Data Final</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-sm", !filterEndDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {filterEndDate ? format(filterEndDate, "dd/MM/yy", { locale: ptBR }) : "Data Final"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={filterEndDate} onSelect={setFilterEndDate} initialFocus className="pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Hora Final</label>
+                <Input type="time" value={filterEndTime} onChange={(e) => setFilterEndTime(e.target.value)} className="text-sm" />
+              </div>
+            </div>
 
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <Select value={filterPaymentMethod} onValueChange={setFilterPaymentMethod}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Pagamento" />
