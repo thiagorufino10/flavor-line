@@ -303,6 +303,8 @@ const CashFlow = () => {
   const clearFilters = () => {
     setStartDate(undefined);
     setEndDate(undefined);
+    setStartTime("");
+    setEndTime("");
     setFilterType("todos");
     setFilterPayment("todos");
     setFilterSource("todos");
