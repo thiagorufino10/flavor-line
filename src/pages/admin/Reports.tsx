@@ -40,15 +40,31 @@ const statusLabel: Record<string, string> = {
   entregue: "Entregue",
 };
 
+const combineDateTime = (date: Date | undefined, time: string, isEnd: boolean): Date | undefined => {
+  if (!date) return undefined;
+  const d = new Date(date);
+  if (time && /^\d{2}:\d{2}$/.test(time)) {
+    const [h, m] = time.split(":").map(Number);
+    d.setHours(h, m, isEnd ? 59 : 0, isEnd ? 999 : 0);
+  } else {
+    d.setHours(isEnd ? 23 : 0, isEnd ? 59 : 0, isEnd ? 59 : 0, isEnd ? 999 : 0);
+  }
+  return d;
+};
+
 const Reports = () => {
   const navigate = useNavigate();
   const [filterStartDate, setFilterStartDate] = useState<Date>();
   const [filterEndDate, setFilterEndDate] = useState<Date>();
+  const [filterStartTime, setFilterStartTime] = useState<string>("");
+  const [filterEndTime, setFilterEndTime] = useState<string>("");
   const [filterPaymentMethod, setFilterPaymentMethod] = useState<string>("todos");
   const [filterProduct, setFilterProduct] = useState<string>("todos");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [menuItems, setMenuItems] = useState<{ id: string; name: string }[]>([]);
-  const { sales, orders, loading } = useSales(filterStartDate, filterEndDate);
+  const effectiveStart = useMemo(() => combineDateTime(filterStartDate, filterStartTime, false), [filterStartDate, filterStartTime]);
+  const effectiveEnd = useMemo(() => combineDateTime(filterEndDate, filterEndTime, true), [filterEndDate, filterEndTime]);
+  const { sales, orders, loading } = useSales(effectiveStart, effectiveEnd);
 
   useEffect(() => {
     const fetchMenuItems = async () => {
