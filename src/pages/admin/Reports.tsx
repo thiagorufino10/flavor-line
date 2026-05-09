@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
@@ -40,15 +41,31 @@ const statusLabel: Record<string, string> = {
   entregue: "Entregue",
 };
 
+const combineDateTime = (date: Date | undefined, time: string, isEnd: boolean): Date | undefined => {
+  if (!date) return undefined;
+  const d = new Date(date);
+  if (time && /^\d{2}:\d{2}$/.test(time)) {
+    const [h, m] = time.split(":").map(Number);
+    d.setHours(h, m, isEnd ? 59 : 0, isEnd ? 999 : 0);
+  } else {
+    d.setHours(isEnd ? 23 : 0, isEnd ? 59 : 0, isEnd ? 59 : 0, isEnd ? 999 : 0);
+  }
+  return d;
+};
+
 const Reports = () => {
   const navigate = useNavigate();
   const [filterStartDate, setFilterStartDate] = useState<Date>();
   const [filterEndDate, setFilterEndDate] = useState<Date>();
+  const [filterStartTime, setFilterStartTime] = useState<string>("");
+  const [filterEndTime, setFilterEndTime] = useState<string>("");
   const [filterPaymentMethod, setFilterPaymentMethod] = useState<string>("todos");
   const [filterProduct, setFilterProduct] = useState<string>("todos");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [menuItems, setMenuItems] = useState<{ id: string; name: string }[]>([]);
-  const { sales, orders, loading } = useSales(filterStartDate, filterEndDate);
+  const effectiveStart = useMemo(() => combineDateTime(filterStartDate, filterStartTime, false), [filterStartDate, filterStartTime]);
+  const effectiveEnd = useMemo(() => combineDateTime(filterEndDate, filterEndTime, true), [filterEndDate, filterEndTime]);
+  const { sales, orders, loading } = useSales(effectiveStart, effectiveEnd);
 
   useEffect(() => {
     const fetchMenuItems = async () => {
@@ -277,31 +294,47 @@ const Reports = () => {
             <CardTitle className="text-lg">Filtros</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("justify-start text-left font-normal text-sm", !filterStartDate && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filterStartDate ? format(filterStartDate, "dd/MM/yy", { locale: ptBR }) : "Data Inicial"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={filterStartDate} onSelect={setFilterStartDate} initialFocus className="pointer-events-auto" />
-                </PopoverContent>
-              </Popover>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Data Inicial</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-sm", !filterStartDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {filterStartDate ? format(filterStartDate, "dd/MM/yy", { locale: ptBR }) : "Data Inicial"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={filterStartDate} onSelect={setFilterStartDate} initialFocus className="pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Hora Inicial</label>
+                <Input type="time" value={filterStartTime} onChange={(e) => setFilterStartTime(e.target.value)} className="text-sm" />
+              </div>
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("justify-start text-left font-normal text-sm", !filterEndDate && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filterEndDate ? format(filterEndDate, "dd/MM/yy", { locale: ptBR }) : "Data Final"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={filterEndDate} onSelect={setFilterEndDate} initialFocus className="pointer-events-auto" />
-                </PopoverContent>
-              </Popover>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Data Final</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-sm", !filterEndDate && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {filterEndDate ? format(filterEndDate, "dd/MM/yy", { locale: ptBR }) : "Data Final"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={filterEndDate} onSelect={setFilterEndDate} initialFocus className="pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Hora Final</label>
+                <Input type="time" value={filterEndTime} onChange={(e) => setFilterEndTime(e.target.value)} className="text-sm" />
+              </div>
+            </div>
 
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <Select value={filterPaymentMethod} onValueChange={setFilterPaymentMethod}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Pagamento" />
@@ -346,10 +379,12 @@ const Reports = () => {
                 <FileSpreadsheet className="w-4 h-4" />
                 Exportar Excel
               </Button>
-              {(filterStartDate || filterEndDate || filterPaymentMethod !== "todos" || filterProduct !== "todos" || filterStatus !== "todos") && (
+              {(filterStartDate || filterEndDate || filterStartTime || filterEndTime || filterPaymentMethod !== "todos" || filterProduct !== "todos" || filterStatus !== "todos") && (
                 <Button variant="ghost" onClick={() => {
                   setFilterStartDate(undefined);
                   setFilterEndDate(undefined);
+                  setFilterStartTime("");
+                  setFilterEndTime("");
                   setFilterPaymentMethod("todos");
                   setFilterProduct("todos");
                   setFilterStatus("todos");

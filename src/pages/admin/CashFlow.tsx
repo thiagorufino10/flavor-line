@@ -88,10 +88,24 @@ const CashFlow = () => {
   // Filtros
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
+  const [startTime, setStartTime] = useState<string>("");
+  const [endTime, setEndTime] = useState<string>("");
   const [filterType, setFilterType] = useState<string>("todos");
   const [filterPayment, setFilterPayment] = useState<string>("todos");
   const [filterSource, setFilterSource] = useState<string>("todos");
   const [filterCategory, setFilterCategory] = useState<string>("todos");
+
+  const applyTime = (date: Date | undefined, time: string, isEnd: boolean): Date | undefined => {
+    if (!date) return undefined;
+    const d = new Date(date);
+    if (time && /^\d{2}:\d{2}$/.test(time)) {
+      const [h, m] = time.split(":").map(Number);
+      d.setHours(h, m, isEnd ? 59 : 0, isEnd ? 999 : 0);
+    } else {
+      d.setHours(isEnd ? 23 : 0, isEnd ? 59 : 0, isEnd ? 59 : 0, isEnd ? 999 : 0);
+    }
+    return d;
+  };
 
   const [newTransaction, setNewTransaction] = useState({
     type: "entrada" as "entrada" | "saida",
@@ -214,10 +228,12 @@ const CashFlow = () => {
   };
 
   const filteredTransactions = useMemo(() => {
+    const effStart = applyTime(startDate, startTime, false);
+    const effEnd = applyTime(endDate, endTime, true);
     return transactions.filter((t) => {
-      // Filtro de data
-      if (startDate && t.rawDate < startOfDay(startDate)) return false;
-      if (endDate && t.rawDate > endOfDay(endDate)) return false;
+      // Filtro de data/hora
+      if (effStart && t.rawDate < effStart) return false;
+      if (effEnd && t.rawDate > effEnd) return false;
       // Tipo
       if (filterType !== "todos" && t.type !== filterType) return false;
       // Pagamento
@@ -231,7 +247,7 @@ const CashFlow = () => {
       if (filterCategory !== "todos" && t.category !== filterCategory) return false;
       return true;
     });
-  }, [transactions, startDate, endDate, filterType, filterPayment, filterSource, filterCategory]);
+  }, [transactions, startDate, endDate, startTime, endTime, filterType, filterPayment, filterSource, filterCategory]);
 
   const totalEntradas = useMemo(() => filteredTransactions.filter(t => t.type === "entrada").reduce((s, t) => s + t.amount, 0), [filteredTransactions]);
   const totalSaidas = useMemo(() => filteredTransactions.filter(t => t.type === "saida").reduce((s, t) => s + t.amount, 0), [filteredTransactions]);
@@ -287,6 +303,8 @@ const CashFlow = () => {
   const clearFilters = () => {
     setStartDate(undefined);
     setEndDate(undefined);
+    setStartTime("");
+    setEndTime("");
     setFilterType("todos");
     setFilterPayment("todos");
     setFilterSource("todos");
@@ -435,7 +453,7 @@ const CashFlow = () => {
               ))}
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
               {/* Data Inicial */}
               <div>
                 <Label className="text-xs">Data Inicial</Label>
@@ -451,6 +469,11 @@ const CashFlow = () => {
                   </PopoverContent>
                 </Popover>
               </div>
+              {/* Hora Inicial */}
+              <div>
+                <Label className="text-xs">Hora Inicial</Label>
+                <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="h-9 text-xs" />
+              </div>
               {/* Data Final */}
               <div>
                 <Label className="text-xs">Data Final</Label>
@@ -465,6 +488,11 @@ const CashFlow = () => {
                     <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus className="pointer-events-auto" />
                   </PopoverContent>
                 </Popover>
+              </div>
+              {/* Hora Final */}
+              <div>
+                <Label className="text-xs">Hora Final</Label>
+                <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="h-9 text-xs" />
               </div>
               {/* Tipo */}
               <div>
