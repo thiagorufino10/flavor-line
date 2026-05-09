@@ -55,8 +55,12 @@ Deno.serve(async (req) => {
     );
     const data = payload?.data ?? payload;
 
-    // Tenta resolver client_id pelo merchant_id (appShopID / shopId / merchantId)
+    console.log(`[99food-webhook] RAW payload:`, raw);
+
+    // Tenta resolver merchant pelo shop id (vários nomes possíveis usados pela DiDi)
     const shopId: string | null =
+      payload?.app_shop_id ??
+      data?.app_shop_id ??
       data?.appShopID ??
       data?.shopId ??
       data?.merchantId ??
