@@ -7,11 +7,21 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-99food-signature",
 };
 
-const ackOk = () =>
-  new Response(JSON.stringify({ code: 0, msg: "success" }), {
-    status: 200,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+// Formato de ACK aceito pela DiDi/99Food: code numérico 0 + msg/message "success" + success:true
+const ackOk = (extra: Record<string, unknown> = {}) =>
+  new Response(
+    JSON.stringify({
+      code: 0,
+      msg: "success",
+      message: "success",
+      success: true,
+      ...extra,
+    }),
+    {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    }
+  );
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -45,8 +55,12 @@ Deno.serve(async (req) => {
     );
     const data = payload?.data ?? payload;
 
-    // Tenta resolver client_id pelo merchant_id (appShopID / shopId / merchantId)
+    console.log(`[99food-webhook] RAW payload:`, raw);
+
+    // Tenta resolver merchant pelo shop id (vários nomes possíveis usados pela DiDi)
     const shopId: string | null =
+      payload?.app_shop_id ??
+      data?.app_shop_id ??
       data?.appShopID ??
       data?.shopId ??
       data?.merchantId ??
