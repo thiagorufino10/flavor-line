@@ -92,8 +92,14 @@ export default function LojaIfood() {
   const [statusInfo, setStatusInfo] = useState<ReturnType<typeof normalizeStatus> | null>(null);
   const [merchantDetails, setMerchantDetails] = useState<any>(null);
   const [merchantsList, setMerchantsList] = useState<any[]>([]);
-  const [shifts, setShifts] = useState<Record<string, { start: string; end: string; enabled: boolean }>>(
-    Object.fromEntries(DAYS.map((d) => [d.key, { start: "08:00", end: "18:00", enabled: false }])),
+  type DayShift = { start: string; end: string; enabled: boolean };
+  const emptyDay = (): DayShift[] => [
+    { start: "08:00", end: "12:00", enabled: false },
+    { start: "13:00", end: "18:00", enabled: false },
+    { start: "19:00", end: "23:00", enabled: false },
+  ];
+  const [shifts, setShifts] = useState<Record<string, DayShift[]>>(
+    Object.fromEntries(DAYS.map((d) => [d.key, emptyDay()])),
   );
   const [interruptions, setInterruptions] = useState<any[]>([]);
 
