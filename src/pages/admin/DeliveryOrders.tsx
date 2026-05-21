@@ -128,8 +128,11 @@ const printOrder = (order: DeliveryOrder) => {
   .item { margin-bottom: 2.5mm; }
   .total { font-size: 12.5pt; }
   strong, b { font-weight: 900; }
+  .logo { display: block; margin: 0 auto 2mm; max-width: 55mm; max-height: 20mm; object-fit: contain; filter: grayscale(100%) contrast(1.4); }
 </style></head><body>
-  <h1>*** PEDIDO DELIVERY ***</h1>
+  ${localStorage.getItem("systemLogo") ? `<img class="logo" src="${localStorage.getItem("systemLogo")}" alt="logo" />` : ""}
+  <h1>${(localStorage.getItem("systemName") || "PEDIDO DELIVERY").toUpperCase()}</h1>
+  <div class="center">*** PEDIDO DELIVERY ***</div>
   <div class="center">${data}</div>
   <div class="line"></div>
   <div><strong>Cliente:</strong> ${order.customer_name}</div>
