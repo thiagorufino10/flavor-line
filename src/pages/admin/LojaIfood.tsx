@@ -418,39 +418,49 @@ export default function LojaIfood() {
           </CardHeader>
           <CardContent className="space-y-3">
             {DAYS.map((d) => {
-              const s = shifts[d.key];
+              const turnos = shifts[d.key];
+              const dayClosed = turnos.every((t) => !t.enabled);
+              const updateTurno = (idx: number, patch: Partial<DayShift>) => {
+                const next = turnos.map((t, i) => (i === idx ? { ...t, ...patch } : t));
+                setShifts({ ...shifts, [d.key]: next });
+              };
               return (
-                <div key={d.key} className="flex flex-wrap items-center gap-3 p-3 rounded-md border">
-                  <div className="flex items-center gap-3 w-32">
-                    <Switch
-                      checked={s.enabled}
-                      onCheckedChange={(v) => setShifts({ ...shifts, [d.key]: { ...s, enabled: v } })}
-                    />
+                <div key={d.key} className="p-3 rounded-md border space-y-2">
+                  <div className="flex items-center justify-between">
                     <span className="font-medium">{d.label}</span>
+                    {dayClosed && <Badge variant="outline" className="text-xs">Fechado</Badge>}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground">Abre</Label>
-                    <Input
-                      type="time"
-                      value={s.start}
-                      disabled={!s.enabled}
-                      onChange={(e) => setShifts({ ...shifts, [d.key]: { ...s, start: e.target.value } })}
-                      className="w-32"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground">Fecha</Label>
-                    <Input
-                      type="time"
-                      value={s.end}
-                      disabled={!s.enabled}
-                      onChange={(e) => setShifts({ ...shifts, [d.key]: { ...s, end: e.target.value } })}
-                      className="w-32"
-                    />
-                  </div>
-                  {!s.enabled && (
-                    <Badge variant="outline" className="text-xs">Fechado</Badge>
-                  )}
+                  {turnos.map((t, idx) => (
+                    <div key={idx} className="flex flex-wrap items-center gap-3 pl-2">
+                      <div className="flex items-center gap-2 w-36">
+                        <Switch
+                          checked={t.enabled}
+                          onCheckedChange={(v) => updateTurno(idx, { enabled: v })}
+                        />
+                        <span className="text-sm text-muted-foreground">Turno {idx + 1}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-muted-foreground">Abre</Label>
+                        <Input
+                          type="time"
+                          value={t.start}
+                          disabled={!t.enabled}
+                          onChange={(e) => updateTurno(idx, { start: e.target.value })}
+                          className="w-28"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-muted-foreground">Fecha</Label>
+                        <Input
+                          type="time"
+                          value={t.end}
+                          disabled={!t.enabled}
+                          onChange={(e) => updateTurno(idx, { end: e.target.value })}
+                          className="w-28"
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               );
             })}
