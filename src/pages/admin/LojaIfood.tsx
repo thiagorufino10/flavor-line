@@ -92,8 +92,14 @@ export default function LojaIfood() {
   const [statusInfo, setStatusInfo] = useState<ReturnType<typeof normalizeStatus> | null>(null);
   const [merchantDetails, setMerchantDetails] = useState<any>(null);
   const [merchantsList, setMerchantsList] = useState<any[]>([]);
-  const [shifts, setShifts] = useState<Record<string, { start: string; end: string; enabled: boolean }>>(
-    Object.fromEntries(DAYS.map((d) => [d.key, { start: "08:00", end: "18:00", enabled: false }])),
+  type DayShift = { start: string; end: string; enabled: boolean };
+  const emptyDay = (): DayShift[] => [
+    { start: "08:00", end: "12:00", enabled: false },
+    { start: "13:00", end: "18:00", enabled: false },
+    { start: "19:00", end: "23:00", enabled: false },
+  ];
+  const [shifts, setShifts] = useState<Record<string, DayShift[]>>(
+    Object.fromEntries(DAYS.map((d) => [d.key, emptyDay()])),
   );
   const [interruptions, setInterruptions] = useState<any[]>([]);
 
@@ -140,14 +146,22 @@ export default function LojaIfood() {
       setMerchantsList(Array.isArray(list) ? list : []);
 
       if (oh && Array.isArray(oh.shifts)) {
-        const next: typeof shifts = Object.fromEntries(
-          DAYS.map((d) => [d.key, { start: "08:00", end: "18:00", enabled: false }]),
-        ) as any;
+        const next: Record<string, DayShift[]> = Object.fromEntries(
+          DAYS.map((d) => [d.key, emptyDay()]),
+        );
+        // Agrupa shifts por dia, preservando ordem
+        const grouped: Record<string, DayShift[]> = {};
         for (const s of oh.shifts as Shift[]) {
           if (!s?.dayOfWeek || !(Number(s.duration) > 0)) continue;
           const start = (s.start || "08:00:00").slice(0, 5);
           const end = durationToEnd(start, Number(s.duration));
-          next[s.dayOfWeek] = { start, end, enabled: true };
+          (grouped[s.dayOfWeek] ||= []).push({ start, end, enabled: true });
+        }
+        for (const day of Object.keys(grouped)) {
+          const list = grouped[day].slice(0, 3);
+          // Preenche até 3 turnos
+          while (list.length < 3) list.push({ start: "00:00", end: "00:00", enabled: false });
+          next[day] = list;
         }
         setShifts(next);
       }
@@ -171,25 +185,19 @@ export default function LojaIfood() {
     try {
       // Envia TODOS os dias — desativados vão com enabled:false e duração 0
       // para que o iFood feche a loja naquele dia.
-      const payload: Shift[] = DAYS.map((d) => {
-        const s = shifts[d.key];
-        if (!s.enabled) {
-          return {
-            dayOfWeek: d.key,
-            start: "00:00:00",
-            duration: 0,
-            enabled: false,
-          };
+      const payload: Shift[] = [];
+      for (const d of DAYS) {
+        const turnos = shifts[d.key].filter((t) => t.enabled);
+        if (turnos.length === 0) {
+          payload.push({ dayOfWeek: d.key, start: "00:00:00", duration: 0, enabled: false });
+          continue;
         }
-        const dur = minutesBetween(s.start, s.end);
-        if (dur <= 0) throw new Error(`Horário inválido em ${d.label}`);
-        return {
-          dayOfWeek: d.key,
-          start: `${s.start}:00`,
-          duration: dur,
-          enabled: true,
-        };
-      });
+        for (const [i, t] of turnos.entries()) {
+          const dur = minutesBetween(t.start, t.end);
+          if (dur <= 0) throw new Error(`Horário inválido em ${d.label} (turno ${i + 1})`);
+          payload.push({ dayOfWeek: d.key, start: `${t.start}:00`, duration: dur, enabled: true });
+        }
+      }
       await call("update_opening_hours", { shifts: payload });
       toast({ title: "Horários atualizados", description: "Enviados ao iFood com sucesso." });
       loadAll();
@@ -410,39 +418,49 @@ export default function LojaIfood() {
           </CardHeader>
           <CardContent className="space-y-3">
             {DAYS.map((d) => {
-              const s = shifts[d.key];
+              const turnos = shifts[d.key];
+              const dayClosed = turnos.every((t) => !t.enabled);
+              const updateTurno = (idx: number, patch: Partial<DayShift>) => {
+                const next = turnos.map((t, i) => (i === idx ? { ...t, ...patch } : t));
+                setShifts({ ...shifts, [d.key]: next });
+              };
               return (
-                <div key={d.key} className="flex flex-wrap items-center gap-3 p-3 rounded-md border">
-                  <div className="flex items-center gap-3 w-32">
-                    <Switch
-                      checked={s.enabled}
-                      onCheckedChange={(v) => setShifts({ ...shifts, [d.key]: { ...s, enabled: v } })}
-                    />
+                <div key={d.key} className="p-3 rounded-md border space-y-2">
+                  <div className="flex items-center justify-between">
                     <span className="font-medium">{d.label}</span>
+                    {dayClosed && <Badge variant="outline" className="text-xs">Fechado</Badge>}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground">Abre</Label>
-                    <Input
-                      type="time"
-                      value={s.start}
-                      disabled={!s.enabled}
-                      onChange={(e) => setShifts({ ...shifts, [d.key]: { ...s, start: e.target.value } })}
-                      className="w-32"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground">Fecha</Label>
-                    <Input
-                      type="time"
-                      value={s.end}
-                      disabled={!s.enabled}
-                      onChange={(e) => setShifts({ ...shifts, [d.key]: { ...s, end: e.target.value } })}
-                      className="w-32"
-                    />
-                  </div>
-                  {!s.enabled && (
-                    <Badge variant="outline" className="text-xs">Fechado</Badge>
-                  )}
+                  {turnos.map((t, idx) => (
+                    <div key={idx} className="flex flex-wrap items-center gap-3 pl-2">
+                      <div className="flex items-center gap-2 w-36">
+                        <Switch
+                          checked={t.enabled}
+                          onCheckedChange={(v) => updateTurno(idx, { enabled: v })}
+                        />
+                        <span className="text-sm text-muted-foreground">Turno {idx + 1}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-muted-foreground">Abre</Label>
+                        <Input
+                          type="time"
+                          value={t.start}
+                          disabled={!t.enabled}
+                          onChange={(e) => updateTurno(idx, { start: e.target.value })}
+                          className="w-28"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-muted-foreground">Fecha</Label>
+                        <Input
+                          type="time"
+                          value={t.end}
+                          disabled={!t.enabled}
+                          onChange={(e) => updateTurno(idx, { end: e.target.value })}
+                          className="w-28"
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               );
             })}
