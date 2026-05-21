@@ -146,14 +146,22 @@ export default function LojaIfood() {
       setMerchantsList(Array.isArray(list) ? list : []);
 
       if (oh && Array.isArray(oh.shifts)) {
-        const next: typeof shifts = Object.fromEntries(
-          DAYS.map((d) => [d.key, { start: "08:00", end: "18:00", enabled: false }]),
-        ) as any;
+        const next: Record<string, DayShift[]> = Object.fromEntries(
+          DAYS.map((d) => [d.key, emptyDay()]),
+        );
+        // Agrupa shifts por dia, preservando ordem
+        const grouped: Record<string, DayShift[]> = {};
         for (const s of oh.shifts as Shift[]) {
           if (!s?.dayOfWeek || !(Number(s.duration) > 0)) continue;
           const start = (s.start || "08:00:00").slice(0, 5);
           const end = durationToEnd(start, Number(s.duration));
-          next[s.dayOfWeek] = { start, end, enabled: true };
+          (grouped[s.dayOfWeek] ||= []).push({ start, end, enabled: true });
+        }
+        for (const day of Object.keys(grouped)) {
+          const list = grouped[day].slice(0, 3);
+          // Preenche até 3 turnos
+          while (list.length < 3) list.push({ start: "00:00", end: "00:00", enabled: false });
+          next[day] = list;
         }
         setShifts(next);
       }
