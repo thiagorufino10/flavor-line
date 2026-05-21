@@ -185,25 +185,19 @@ export default function LojaIfood() {
     try {
       // Envia TODOS os dias — desativados vão com enabled:false e duração 0
       // para que o iFood feche a loja naquele dia.
-      const payload: Shift[] = DAYS.map((d) => {
-        const s = shifts[d.key];
-        if (!s.enabled) {
-          return {
-            dayOfWeek: d.key,
-            start: "00:00:00",
-            duration: 0,
-            enabled: false,
-          };
+      const payload: Shift[] = [];
+      for (const d of DAYS) {
+        const turnos = shifts[d.key].filter((t) => t.enabled);
+        if (turnos.length === 0) {
+          payload.push({ dayOfWeek: d.key, start: "00:00:00", duration: 0, enabled: false });
+          continue;
         }
-        const dur = minutesBetween(s.start, s.end);
-        if (dur <= 0) throw new Error(`Horário inválido em ${d.label}`);
-        return {
-          dayOfWeek: d.key,
-          start: `${s.start}:00`,
-          duration: dur,
-          enabled: true,
-        };
-      });
+        for (const [i, t] of turnos.entries()) {
+          const dur = minutesBetween(t.start, t.end);
+          if (dur <= 0) throw new Error(`Horário inválido em ${d.label} (turno ${i + 1})`);
+          payload.push({ dayOfWeek: d.key, start: `${t.start}:00`, duration: dur, enabled: true });
+        }
+      }
       await call("update_opening_hours", { shifts: payload });
       toast({ title: "Horários atualizados", description: "Enviados ao iFood com sucesso." });
       loadAll();
