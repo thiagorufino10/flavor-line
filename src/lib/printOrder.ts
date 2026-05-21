@@ -85,8 +85,10 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
   .item { margin-bottom: 2.5mm; text-align: left; }
   .total { font-size: 12.5pt; }
   strong, b { font-weight: 900; }
+  .logo { display: block; margin: 0 auto 2mm; max-width: ${is58 ? "40mm" : "55mm"}; max-height: 20mm; object-fit: contain; filter: grayscale(100%) contrast(1.4); }
 </style></head><body>
-  <h1>MALUKUS BATATA</h1>
+  ${(typeof window !== "undefined" && localStorage.getItem("systemLogo")) ? `<img class="logo" src="${localStorage.getItem("systemLogo")}" alt="logo" />` : ""}
+  <h1>${((typeof window !== "undefined" && localStorage.getItem("systemName")) || "MALUKUS BATATA").toUpperCase()}</h1>
   <div class="center">*** COMANDA DE PRODUÇÃO ***</div>
   <div class="center">${now}</div>
   <div class="line"></div>
