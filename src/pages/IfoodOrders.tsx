@@ -530,6 +530,16 @@ export default function IfoodOrders() {
           <DeliveryInfo payload={o.ifood_payload} orderType={o.ifood_order_type} />
           <PaymentInfo payload={o.ifood_payload} />
           <BenefitsInfo payload={o.ifood_payload} />
+          <OrderObservation payload={o.ifood_payload} />
+          {o.ifood_status === "CANCELLATION_REQUESTED" && (
+            <div className="flex items-start gap-2 p-2 rounded border-2 border-destructive bg-destructive/10 text-sm">
+              <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-destructive">Cancelamento solicitado pela Plataforma iFood.</strong>{" "}
+                Avalie e cancele o pedido para concluir o atendimento ao cliente.
+              </div>
+            </div>
+          )}
 
           <Button
             variant="ghost"
