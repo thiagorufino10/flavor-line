@@ -259,6 +259,21 @@ function DeliveryInfo({ payload, orderType }: { payload: any; orderType: string 
   );
 }
 
+function OrderObservation({ payload }: { payload: any }) {
+  const obs =
+    payload?.extraInfo ??
+    payload?.observations ??
+    payload?.merchantObservations ??
+    payload?.merchantNote ??
+    null;
+  if (!obs) return null;
+  return (
+    <div className="text-sm italic text-amber-800 bg-amber-50 p-2 rounded border border-amber-200">
+      <strong>Observação do pedido:</strong> {obs}
+    </div>
+  );
+}
+
 function ScheduledBadge({ scheduledFor }: { scheduledFor: string | null }) {
   if (!scheduledFor) return null;
   return (
