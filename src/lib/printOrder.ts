@@ -31,10 +31,45 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
     null;
   const pickupCode = (order as any).ifood_pickup_code ?? null;
   const orderType = (order as any).ifood_order_type ?? null;
+  const orderTiming = (order as any).ifood_order_timing ?? null;
+  const scheduledFor = (order as any).ifood_scheduled_for ?? null;
+
+  // Observação geral do pedido (não confundir com obs por item nem obs de entrega)
+  const orderObs =
+    ifoodPayload?.extraInfo ??
+    ifoodPayload?.observations ??
+    ifoodPayload?.merchantObservations ??
+    ifoodPayload?.merchantNote ??
+    null;
+
+  // Troco em dinheiro
+  const methodsArr = ifoodPayload?.payments?.methods ?? ifoodPayload?.payments ?? [];
+  let changeHtml = "";
+  if (Array.isArray(methodsArr)) {
+    for (const m of methodsArr) {
+      const mName = (m.method ?? m.code ?? "").toString().toUpperCase();
+      const isCash = mName.includes("CASH") || mName === "DINHEIRO";
+      const changeFor = isCash ? Number(m.cash?.changeFor ?? m.changeFor ?? 0) : 0;
+      const value = Number(m.value ?? m.amount ?? 0);
+      if (isCash && changeFor > 0) {
+        const troco = Math.max(0, changeFor - value);
+        changeHtml += `<div class="left"><strong>DINHEIRO:</strong> Troco p/ R$ ${formatBRLNumber(changeFor)} (devolver R$ ${formatBRLNumber(troco)})</div>`;
+      } else if (isCash) {
+        changeHtml += `<div class="left"><strong>DINHEIRO:</strong> Sem troco</div>`;
+      }
+    }
+  }
+
+  // Cupons / benefícios
+  const benefitsArr = ifoodPayload?.benefits ?? [];
+  const benefitsHtml = Array.isArray(benefitsArr) && benefitsArr.length > 0
+    ? benefitsArr.map((b: any) => `<div class="left"><strong>Cupom:</strong> ${b.description ?? b.targetType ?? "Desconto"} - R$ ${formatBRLNumber(Number(b.value ?? 0))}</div>`).join("")
+    : "";
 
   const ifoodHtml = ifoodPayload
     ? `<div class="line"></div>
-       <div class="left"><strong>iFood:</strong> ${orderType ?? "DELIVERY"}</div>
+       <div class="left"><strong>iFood:</strong> ${orderType ?? "DELIVERY"}${orderTiming === "SCHEDULED" ? " · AGENDADO" : ""}</div>
+       ${scheduledFor ? `<div class="left"><strong>Agendado p/:</strong> ${new Date(scheduledFor).toLocaleString("pt-BR")}</div>` : ""}
        ${customerDoc ? `<div class="left"><strong>CPF/CNPJ:</strong> ${customerDoc}</div>` : ""}
        ${pickupCode ? `<div class="left"><strong>Código de coleta:</strong> ${pickupCode}</div>` : ""}
        ${
@@ -42,7 +77,10 @@ export const buildOrderHtml = (order: Order, paperWidth: string): string => {
            ? `<div class="left"><strong>Entrega:</strong> ${deliveryAddr.streetName ?? ""}${deliveryAddr.streetNumber ? ", " + deliveryAddr.streetNumber : ""} ${deliveryAddr.neighborhood ? "- " + deliveryAddr.neighborhood : ""}${deliveryAddr.complement ? " (" + deliveryAddr.complement + ")" : ""}</div>`
            : ""
        }
-       ${deliveryObs ? `<div class="left"><strong>Obs. ENTREGA:</strong> ${deliveryObs}</div>` : ""}`
+       ${deliveryObs ? `<div class="left"><strong>Obs. ENTREGA:</strong> ${deliveryObs}</div>` : ""}
+       ${orderObs ? `<div class="left"><strong>OBSERVAÇÃO:</strong> ${orderObs}</div>` : ""}
+       ${changeHtml}
+       ${benefitsHtml}`
     : "";
 
   const itemsHtml = items
