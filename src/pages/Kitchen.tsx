@@ -301,7 +301,7 @@ const Kitchen = () => {
             </div>
             
             {filterOrders("finalizado").map(order => (
-              <Card key={order.id} className="border-success opacity-75">
+              <Card key={order.id} className={isDelivery(order.origin) ? deliveryCardClass("border-success opacity-75") : "border-success opacity-75"}>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center justify-between">
                     <span className="text-2xl font-bold">#{order.order_number}</span>
