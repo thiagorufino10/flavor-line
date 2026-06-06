@@ -92,9 +92,23 @@ const Kitchen = () => {
     return statusConfig[status] || statusConfig.novo;
   };
 
+  const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
   const filterOrders = (status: string) => {
-    return orders.filter(order => order.status === status);
+    return orders.filter(order => {
+      if (order.status !== status) return false;
+      if (status === "finalizado") {
+        const ref = new Date(order.updated_at || order.created_at).getTime();
+        if (now - ref > FOUR_HOURS_MS) return false;
+      }
+      return true;
+    });
   };
+
+  const isDelivery = (origin?: string) =>
+    !!origin && origin !== "avulso";
+
+  const deliveryCardClass = (base: string) =>
+    `${base} bg-accent/20 ring-2 ring-accent`;
 
   if (loading || !operationMode) {
     return (
