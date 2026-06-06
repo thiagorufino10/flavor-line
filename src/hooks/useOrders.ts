@@ -19,6 +19,7 @@ export interface Order {
   total_amount: number;
   payment_method: string;
   status: string;
+  origin?: string;
   created_at: string;
   updated_at: string;
   items?: OrderItem[];
