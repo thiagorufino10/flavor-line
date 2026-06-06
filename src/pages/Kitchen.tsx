@@ -28,13 +28,20 @@ const Kitchen = () => {
   const [operationMode, setOperationMode] = useState<string>("");
   const [systemName, setSystemName] = useState("TARMFood");
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const mode = localStorage.getItem("operationMode") || "display";
     setOperationMode(mode);
-    
+
     const savedName = localStorage.getItem("systemName");
     if (savedName) setSystemName(savedName);
+  }, []);
+
+  // Re-avalia a janela de 4h em finalizados a cada minuto
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
