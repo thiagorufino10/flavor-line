@@ -19,6 +19,7 @@ import {
   Bike,
   Plug,
   Store,
+  DatabaseBackup,
 } from "lucide-react";
 import { useIfoodEnabled } from "@/hooks/useIfoodEnabled";
 import { useFood99Enabled } from "@/hooks/useFood99Enabled";
@@ -77,6 +78,7 @@ const configuracoes: Item[] = [
   { title: "Marca e Identidade", url: "/admin/branding", icon: Palette, roles: ["admin"] },
   { title: "WhatsApp / Loja Online", url: "/admin/whatsapp", icon: MessageCircle, roles: ["admin"] },
   { title: "Delivery / Bairros", url: "/admin/delivery", icon: Bike, roles: ["admin"] },
+  { title: "Backup", url: "/admin/backup", icon: DatabaseBackup, roles: ["admin"] },
 ];
 
 export function AppSidebar() {
